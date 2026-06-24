@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## 3.1.5 - 2026-06-24
+
+- Re-ran the 3.1.x desktop feature release with Windows unsigned publish
+  restoring per runtime during publish instead of relying on stale no-restore
+  assets.
+- Tightened Mac Catalyst release artifact gating to Xcode 26.4.x, matching the
+  installed .NET 10 Mac Catalyst workload requirement.
+- Includes the 3.1.2 desktop UX, privacy, diagnostics, Demo Mode, Wakeword-gated
+  UI and non-functional requirement coverage.
+
 ## 3.1.4 - 2026-06-24
 
 - Re-ran the 3.1.x desktop feature release with explicit Windows runtime
