@@ -9,8 +9,10 @@ small enough to inspect and update docs when behavior changes.
 - Do not introduce storage for Spotify credentials, OAuth tokens, DJ Memory or
   Ask DJ history as source of truth.
 - Keep `client_type` and device-id conventions centralized.
-- Add or update tests for protocol behavior once the test project exists.
+- Add or update tests for protocol behavior in `tests/DJConnect.Tests`.
 - Update `THIRD_PARTY_NOTICES.md` when dependencies change.
+- Update `docs/release-notes/en/vX.Y.Z.md` and
+  `docs/release-notes/nl/vX.Y.Z.md` for user-visible release changes.
 - Never commit secrets, tokens, passwords, local settings or build artifacts.
 
 ## Checks
@@ -22,3 +24,5 @@ Run, where available:
 dotnet format DJConnect.Windows.sln --verify-no-changes --no-restore
 dotnet build DJConnect.Windows.sln
 ```
+
+Do not push branches, tags or releases unless the maintainer explicitly asks.

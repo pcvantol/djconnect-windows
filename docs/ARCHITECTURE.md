@@ -38,7 +38,8 @@ net10.0-maccatalyst
 ```
 
 The project contains the MAUI shell, view model, typed Home Assistant client,
-request/response models, settings store and platform credential storage.
+request/response models, settings store, platform credential storage and
+platform entrypoints for Windows and Mac Catalyst.
 
 ## Runtime Flow
 
@@ -50,6 +51,23 @@ request/response models, settings store and platform credential storage.
 5. Ask DJ uses server-side history and message endpoints.
 6. Playback actions and follow-up buttons are sent through
    `POST /api/djconnect/command`.
+
+## Release Artifacts
+
+The source repo release tag is `vX.Y.Z`. The public unsigned release workflow
+publishes diagnostic artifacts to `pcvantol/djconnect-app-releases` with
+platform-specific tags:
+
+- `windows/vX.Y.Z`
+- `maccatalyst/vX.Y.Z`
+
+The same workflow publishes startup What's New content as static files on
+`djconnect.dev`:
+
+- `/release-notes/windows/{en|nl}/vX.Y.Z.json`
+- `/release-notes/maccatalyst/{en|nl}/vX.Y.Z.json`
+
+These artifacts are not signed Windows installers and not notarized Mac apps.
 
 ## Ask DJ And History
 

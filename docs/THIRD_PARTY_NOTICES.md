@@ -2,9 +2,10 @@
 
 Copyright (c) 2026 Peter van Tol.
 
-DJConnect currently uses the .NET runtime, .NET MAUI, Windows Credential
-Manager APIs and macOS Keychain access through the platform `security` tool.
-Their licenses and platform terms remain with Microsoft and Apple respectively.
+DJConnect currently uses the .NET runtime, .NET MAUI, Microsoft.Maui.Controls,
+Windows Credential Manager APIs and macOS Keychain access through the platform
+`security` tool. Their licenses and platform terms remain with Microsoft and
+Apple respectively.
 
 DJConnect integrates with the Home Assistant `djconnect` custom integration
 through its documented HTTP endpoints. Home Assistant and any installed custom

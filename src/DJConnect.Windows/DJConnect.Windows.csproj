@@ -11,9 +11,12 @@
     <RootNamespace>DJConnect.Windows</RootNamespace>
     <ApplicationTitle>DJConnect</ApplicationTitle>
     <ApplicationId>dev.djconnect.windows</ApplicationId>
-    <ApplicationDisplayVersion>3.1.0</ApplicationDisplayVersion>
-    <ApplicationVersion>310</ApplicationVersion>
-    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">14.0</SupportedOSPlatformVersion>
+    <ApplicationDisplayVersion>3.1.1</ApplicationDisplayVersion>
+    <ApplicationVersion>311</ApplicationVersion>
+    <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">15.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</SupportedOSPlatformVersion>
   </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.20" />
+  </ItemGroup>
 </Project>

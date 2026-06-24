@@ -7,13 +7,15 @@ Windows and macOS. The app targets the DJConnect `3.1.x` Home Assistant
 protocol line and remains a thin client for Home Assistant-owned playback,
 Ask DJ and memory state.
 
-Current app release: `3.1.0`.
+Current app release: `3.1.1`.
 
 ## Project Shape
 
 - `src/DJConnect.Windows/DJConnect.Windows.csproj`: .NET MAUI single-project
   app.
 - `MainPage.xaml`: native tabbed UI for pairing, Ask DJ, Now Playing and About.
+- `Platforms/MacCatalyst/Program.cs` and `AppDelegate.cs`: Mac Catalyst MAUI
+  entrypoint.
 - `ViewModels/MainViewModel.cs`: runtime state and user actions.
 - `Services/DJConnectApiClient.cs`: typed HTTP client for Home Assistant.
 - `Services/CredentialStore.cs`: Windows Credential Manager and macOS Keychain.
@@ -47,8 +49,11 @@ Settings JSON must remain non-secret.
 
 ## Dependencies
 
-Current app-level dependencies are limited to the .NET SDK, .NET MAUI and
-platform APIs. There are no third-party NuGet packages in the scaffold.
+Current app-level dependencies are limited to the .NET SDK, .NET MAUI,
+`Microsoft.Maui.Controls` and platform APIs. The Mac Catalyst target uses
+minimum supported OS platform version `15.0`, matching the .NET 10
+MacCatalyst workload requirement. There are no third-party NuGet packages in
+the scaffold.
 
 ## Test Strategy
 

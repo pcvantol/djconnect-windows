@@ -8,7 +8,13 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: write
+  pull-requests: write
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+  DOTNET_NOLOGO: "1"
 
 jobs:
   protocol-tests:
@@ -42,10 +48,10 @@ jobs:
           global-json-file: global.json
 
       - name: Install MAUI workload
-        run: dotnet workload install maui
+        run: dotnet workload restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-maccatalyst
 
       - name: Restore app dependencies
-        run: dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-maccatalyst
+        run: dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-maccatalyst
 
       - name: Build Mac Catalyst app
         run: dotnet build src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-maccatalyst --no-restore
@@ -63,10 +69,10 @@ jobs:
           global-json-file: global.json
 
       - name: Install MAUI workload
-        run: dotnet workload install maui
+        run: dotnet workload restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-windows10.0.19041.0
 
       - name: Restore app dependencies
-        run: dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-windows10.0.19041.0
+        run: dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-windows10.0.19041.0
 
       - name: Build Windows app
         run: dotnet build src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-windows10.0.19041.0 --no-restore

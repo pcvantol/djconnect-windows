@@ -48,3 +48,20 @@ Rationale:
 - Windows support is not yet documented in the backend contract.
 - Changing the canonical spelling or prefix should not require sweeping the UI
   and service code.
+
+## Publish Platform-Specific Public Releases
+
+Decision: publish unsigned Windows and Mac Catalyst diagnostic artifacts to the
+shared public release repository with namespaced tags.
+
+Rationale:
+
+- The Apple app already uses platform tags in
+  `pcvantol/djconnect-app-releases`.
+- `windows/vX.Y.Z` and `maccatalyst/vX.Y.Z` keep app startup fallback release
+  metadata unambiguous.
+- EN/NL static What's New files on `djconnect.dev` avoid relying on GitHub API
+  availability during normal startup.
+
+Trade-off: these artifacts are useful for diagnostics and internal validation
+only until Windows signing/installers and Mac Catalyst notarization are added.

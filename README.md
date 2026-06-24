@@ -14,7 +14,7 @@ and Keychain on macOS.
 
 ## Current Version
 
-- Desktop app: `3.1.0`
+- Desktop app: `3.1.1`
 - Home Assistant protocol line: `3.1.x`
 - Current local `client_type`: `windows`
 
@@ -48,7 +48,7 @@ API contracts rather than copying SwiftUI or Apple-specific code.
   code-level patterns and dependency notes.
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md): local setup, build and pairing.
 - [docs/RELEASE.md](docs/RELEASE.md): release checklist and packaging open
-  work.
+  work, public unsigned release publication and What's New publication.
 - [docs/HANDOFF.md](docs/HANDOFF.md), [docs/TODO.md](docs/TODO.md) and
   [docs/ISSUES.md](docs/ISSUES.md): current status and backlog.
 - [PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md),
@@ -60,6 +60,21 @@ Release cleanup helper:
 ```sh
 ./clear_old_releases.sh --keep 1 --keep-workflow-runs 1
 ```
+
+Release and cleanup automation requires GitHub Actions read/write workflow
+permissions plus workflow `contents: write` and `actions: write`; see
+[docs/RELEASE.md](docs/RELEASE.md).
+
+Public unsigned releases use platform-specific tags in
+[pcvantol/djconnect-app-releases](https://github.com/pcvantol/djconnect-app-releases):
+
+- `windows/vX.Y.Z`
+- `maccatalyst/vX.Y.Z`
+
+The same release workflow publishes English and Dutch What's New JSON files to
+`djconnect.dev` under `/release-notes/{windows|maccatalyst}/{en|nl}/vX.Y.Z.json`.
+These artifacts are for diagnostics and internal validation until signed
+Windows packaging and Mac Catalyst notarization are added.
 
 Key screens and flows mirrored from macOS:
 
@@ -110,6 +125,15 @@ Build on macOS:
 dotnet build -f net10.0-maccatalyst
 ```
 
+If the installed .NET Mac Catalyst pack requires Xcode 26.4 while the default
+Xcode is newer, point .NET at the side-by-side Xcode app:
+
+```sh
+MD_APPLE_SDK_ROOT=/Applications/Xcode_26.4.1.app \
+DEVELOPER_DIR=/Applications/Xcode_26.4.1.app/Contents/Developer \
+dotnet build src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-maccatalyst
+```
+
 Run automatic protocol/core tests:
 
 ```sh
@@ -118,6 +142,10 @@ Run automatic protocol/core tests:
 
 GitHub Actions runs these tests on every push and pull request, plus MAUI build
 jobs for Mac Catalyst and Windows.
+
+Release tags run `.github/workflows/public-unsigned-release.yml`, which builds
+unsigned Windows and Mac Catalyst diagnostic artifacts and publishes EN/NL
+What's New files when the required repository secrets are configured.
 
 This scaffold has no app-level third-party NuGet dependencies. The MAUI
 workloads are SDK/platform prerequisites and may download Microsoft workload
