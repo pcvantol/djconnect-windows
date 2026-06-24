@@ -2,7 +2,7 @@
 
 ## Current Status
 
-DJConnect desktop `3.1.7` has been scaffolded as a .NET MAUI app targeting
+DJConnect desktop `3.1.8` has been scaffolded as a .NET MAUI app targeting
 Windows and macOS. It includes:
 
 - onboarding-gated local pairing API and pairable `_djconnect._tcp` mDNS;

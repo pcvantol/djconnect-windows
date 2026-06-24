@@ -155,8 +155,7 @@ jobs:
 
       - name: Restore app dependencies
         shell: pwsh
-        run: |
-          dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM -p:RuntimeIdentifiers=win-x64%3Bwin-arm64
+        run: dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM
 
       - name: Publish unsigned Windows app
         shell: pwsh
@@ -167,6 +166,14 @@ jobs:
 
           foreach ($rid in @("win-x64", "win-arm64")) {
             $outputDir = ".public-release/windows/$rid"
+            dotnet restore $env:PROJECT_PATH `
+              -p:TargetFramework=$env:WINDOWS_TFM `
+              -p:RuntimeIdentifier=$rid `
+              -r $rid
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+
             dotnet publish $env:PROJECT_PATH `
               -c Release `
               -f $env:WINDOWS_TFM `

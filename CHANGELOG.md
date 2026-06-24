@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 3.1.8 - 2026-06-24
+
+- Re-ran the 3.1.x desktop feature release with Windows unsigned artifacts
+  restoring each runtime immediately before its matching no-restore publish.
+- Includes the 3.1.2 desktop UX, privacy, diagnostics, Demo Mode, Wakeword-gated
+  UI and non-functional requirement coverage.
+
 ## 3.1.7 - 2026-06-24
 
 - Re-ran the 3.1.x desktop feature release with the Windows runtime identifier
