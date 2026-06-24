@@ -7,7 +7,7 @@
 ## P1
 
 - Validate GitHub Actions CI and public unsigned release publication after
-  pushing the repo and `v3.1.5` tag. GitHub-hosted macOS runners may have Xcode
+  pushing the repo and `v3.1.6` tag. GitHub-hosted macOS runners may have Xcode
   16.x while the .NET 10 Mac Catalyst workload currently requires Xcode 26.x;
   the workflow skips Mac Catalyst artifacts on incompatible hosted runners.
   Local Xcode 26.4.1 builds pass with both `MD_APPLE_SDK_ROOT` and

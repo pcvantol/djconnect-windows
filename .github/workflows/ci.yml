@@ -59,11 +59,13 @@ jobs:
           xcodebuild -version
           version="$(xcodebuild -version | awk '/Xcode/ {print $2}')"
           major="${version%%.*}"
-          if [[ "$major" -ge 26 ]]; then
+          minor="${version#*.}"
+          minor="${minor%%.*}"
+          if [[ "$major" -eq 26 && "$minor" -eq 4 ]]; then
             echo "supported=true" >> "$GITHUB_OUTPUT"
           else
             echo "supported=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::Skipping Mac Catalyst build because this runner has Xcode ${version}; the .NET 10 Mac Catalyst workload currently requires Xcode 26.x."
+            echo "::notice::Skipping Mac Catalyst build because this runner has Xcode ${version}; the .NET 10 Mac Catalyst workload currently requires Xcode 26.4.x."
           fi
 
       - name: Install MAUI workload

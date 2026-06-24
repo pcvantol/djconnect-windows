@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 3.1.6 - 2026-06-24
+
+- Re-ran the 3.1.x desktop feature release with CI and release Mac Catalyst
+  gating fixed to Xcode 26.4.x.
+- Restored Windows unsigned artifacts with a single explicit
+  `win-x64;win-arm64` restore before no-restore publish.
+- Includes the 3.1.2 desktop UX, privacy, diagnostics, Demo Mode, Wakeword-gated
+  UI and non-functional requirement coverage.
+
 ## 3.1.5 - 2026-06-24
 
 - Re-ran the 3.1.x desktop feature release with Windows unsigned publish
