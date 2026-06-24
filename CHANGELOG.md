@@ -1,5 +1,90 @@
 # Changelog
 
+## Unreleased
+
+## 3.1.2 - 2026-06-24
+
+- Added client-side local pairing API and `_djconnect._tcp` mDNS discovery flow
+  matching the Apple client contract.
+- Added onboarding gating so mDNS discovery starts only after onboarding is
+  dismissed and the pairing screen is active.
+- Added the one-time interactive DJConnect welcome wizard persisted through
+  `DJConnectWelcomeSeen`, with Home Assistant setup guidance and feature steps.
+- Implemented the data-driven Speelt Nu / Now Playing page with playback
+  status, artwork fallback, generic playback commands, output selection,
+  volume debounce and compatibility gating.
+- Implemented the Ask DJ chat page with backend-synchronized history merge,
+  pending user bubbles, system-message rendering, optional audio replay,
+  returned playback/confirmation actions and privacy-safe error notices.
+- Implemented the Wachtrij / Queue page with backend queue normalization,
+  deterministic dedupe, a 100-item render limit, empty/loading/notices and
+  generic queue item start commands.
+- Added pairing reset behavior that clears the stored DJConnect device token,
+  rotates install identity and pairing code, then re-enables pairable mDNS.
+- Replaced the mobile bottom-tab scaffold with a desktop sidebar flow that
+  follows the macOS client's NavigationSplitView structure.
+- Added DJConnect app icon resources for Windows and Mac Catalyst builds.
+- Fixed default Mac Catalyst contrast by forcing the light app theme and
+  explicit desktop content colors.
+- Added Windows ARM64 unsigned diagnostic release artifacts for Windows on ARM,
+  including Parallels Windows VMs on Apple Silicon Macs.
+- Added CI concurrency cancellation so newer runs for the same branch cancel
+  older in-progress CI attempts.
+- Updated repository documentation to reflect the `3.1.2` release state,
+  public unsigned release flow and EN/NL What's New publication.
+- Documented standard release hygiene: docs, tests, GitHub CI validation and
+  old release/tag/workflow cleanup.
+- Fixed CI/release workflow handling for GitHub-hosted macOS runners without
+  Xcode 26.x and restored Windows release publish with an explicit `win-x64`
+  runtime restore.
+- Disabled ReadyToRun for unsigned Windows diagnostic publish artifacts so
+  GitHub release builds do not require an unavailable optimization runtime pack.
+- Added contextual app-permission explanations for Ask DJ microphone use,
+  notification opt-in and local network/firewall pairing before relevant
+  Windows prompts or settings actions.
+- Added an Update Required screen that blocks runtime controls on DJConnect
+  protocol mismatches while keeping settings, logs, privacy, legal and feedback
+  available.
+- Reworked the About screen with privacy-safe app metadata, setup/help links,
+  project notes, credits and navigation to privacy, legal, feedback, logs and
+  release notes.
+- Added a local-only Mini-games screen with Paddle Rally, Meteor Run, Sky Dash
+  and Maze Chase, local highscores and lifecycle cleanup when leaving the page.
+- Added a one-time What's New screen after app updates with localized release
+  note loading from djconnect.dev and a safe fallback when notes are unavailable.
+- Reworked the pairing screen with Client adres and koppelcode copy actions,
+  local-network setup guidance, stricter pairable mDNS gating and a success
+  state before entering the runtime UI.
+- Reworked the Legal screen with MIT license details, copy actions, privacy and
+  trademark summaries, Home Assistant backend notes, third-party notices and
+  project/security links.
+- Implemented the Feedback screen with Bug/Idee/Vraag/App Store feedback
+  types, privacy-safe context, opt-in redacted logs, editable preview, clipboard
+  copy and optional GitHub issue prefill without automatic upload.
+- Implemented the Settings screen with connection, output/playback, Ask DJ,
+  Demo Mode, permissions, diagnostics and app-info sections, including pairing
+  reset confirmation and privacy-safe client-address copy.
+- Implemented the Afspeellijsten / Playlists page with backend shape
+  normalization, deterministic dedupe, search/filtering, 100-item cap, selected
+  output support and generic `playlist_start` commands.
+- Implemented the Privacy screen with local stored/not-stored data summaries,
+  Home Assistant ownership notes, diagnostics controls, permission explanations
+  and deletion/reset actions.
+- Implemented privacy-safe Crash report prompting after unclean shutdowns, with
+  debugger/UI-test suppression, redacted preview/copy/open-issue actions and no
+  automatic upload.
+- Implemented Logs / Diagnostiek with structured redacted log entries, bounded
+  persistence, level filtering, search navigation, copy and wipe actions.
+- Added Wakeword / Stemactivatie prompt state and disabled settings controls
+  behind a feature gate until a real foreground wakeword engine exists.
+- Implemented session-only Demo Mode as a separate local UX flow with sample
+  queue/playlists, local Ask DJ responses and no Home Assistant calls, mDNS or
+  token writes.
+- Added shared `DiagnosticRedactor` coverage and non-functional requirement
+  tests for redaction, compatibility, playlist/queue normalization, crash flags,
+  wakeword defaults, demo session behavior, diagnostics preferences, permission
+  flags and mDNS lifecycle.
+
 ## 3.1.1 - 2026-06-24
 
 - Fixed GitHub Actions MAUI restore commands to pass target frameworks through
@@ -30,15 +115,3 @@
 - Added package-free automatic protocol/core tests runnable through
   `./run_tests.sh`.
 - Added GitHub Actions CI for protocol tests and Windows/macOS MAUI builds.
-
-## Unreleased
-
-- Updated repository documentation to reflect the `3.1.1` release state,
-  public unsigned release flow and EN/NL What's New publication.
-- Documented standard release hygiene: docs, tests, GitHub CI validation and
-  old release/tag/workflow cleanup.
-- Fixed CI/release workflow handling for GitHub-hosted macOS runners without
-  Xcode 26.x and restored Windows release publish with an explicit `win-x64`
-  runtime restore.
-- Disabled ReadyToRun for unsigned Windows diagnostic publish artifacts so
-  GitHub release builds do not require an unavailable optimization runtime pack.

@@ -4,7 +4,7 @@ This repo is an early desktop scaffold. Public CI releases are unsigned
 diagnostic artifacts until the app has Windows packaging/signing, Mac Catalyst
 signing/notarization and live Home Assistant validation.
 
-Current release: `3.1.1`.
+Current release: `3.1.2`.
 
 ## Pre-Release Checklist
 
@@ -62,6 +62,9 @@ for a different flow:
    gh release list --repo pcvantol/djconnect-app-releases --limit 10
    ```
 
+   Newer workflow runs for the same branch/tag should cancel older in-progress
+   attempts through workflow concurrency.
+
 6. Run cleanup:
 
    ```sh
@@ -89,7 +92,8 @@ pcvantol/djconnect-app-releases
 
 Public release tags in that repository:
 
-- `windows/vX.Y.Z`: unsigned Windows publish output zip.
+- `windows/vX.Y.Z`: unsigned Windows publish output zips for `x64` and
+  `arm64`.
 - `maccatalyst/vX.Y.Z`: unsigned Mac Catalyst app bundle zip.
 
 This mirrors the Apple client repo's public unsigned release model, where each
@@ -156,6 +160,8 @@ Source order for the static notes:
 
 - Windows MSIX or installer packaging.
 - Windows signing.
+- Windows ARM64 release artifacts are unsigned diagnostic zips intended for
+  Windows on ARM, including Parallels Windows VMs on Apple Silicon Macs.
 - Mac Catalyst app bundle signing and notarization.
 - GitHub-hosted Mac Catalyst release artifacts require a runner with Xcode
   26.x. The workflow skips Mac Catalyst artifact publication when hosted macOS

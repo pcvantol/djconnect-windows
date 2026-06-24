@@ -9,6 +9,10 @@ Report private security issues to `security@djconnect.dev`.
 - Store the DJConnect bearer token only in Windows Credential Manager or macOS
   Keychain.
 - Keep local JSON settings non-secret.
+- Run logs, diagnostics, feedback bodies, crash reports, clipboard exports and
+  GitHub issue prefill text through `DiagnosticRedactor` before the user sees or
+  shares them.
+- Do not automatically upload screenshots, logs, crash reports or diagnostics.
 - Treat `401`/`403` from authenticated DJConnect routes as stale pairing.
 - Treat HTTP `426` protocol mismatch as an update-required condition, not as a
   token failure.

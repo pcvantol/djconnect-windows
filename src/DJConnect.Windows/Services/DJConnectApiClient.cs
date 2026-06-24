@@ -2,6 +2,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using DJConnect.Windows.Models;
 
 namespace DJConnect.Windows.Services;
@@ -86,15 +87,32 @@ public sealed class DJConnectApiClient
 
     public async Task<CommandResponse> RunCommandAsync(ClientIdentity identity, string command, CancellationToken cancellationToken)
     {
-        var payload = new
-        {
-            command,
-            device_id = identity.DeviceId,
-            device_name = identity.DeviceName,
-            client_type = identity.ClientType
-        };
+        return await RunCommandAsync(identity, command, null, cancellationToken);
+    }
+
+    public async Task<CommandResponse> RunCommandAsync(ClientIdentity identity, string command, object? args, CancellationToken cancellationToken)
+    {
+        var payload = BuildCommandPayload(identity, command, args);
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/command", payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<CommandResponse>(response, cancellationToken);
+    }
+
+    public static IReadOnlyDictionary<string, object?> BuildCommandPayload(ClientIdentity identity, string command, object? args = null)
+    {
+        var payload = new Dictionary<string, object?>
+        {
+            ["command"] = command,
+            ["device_id"] = identity.DeviceId,
+            ["device_name"] = identity.DeviceName,
+            ["client_type"] = identity.ClientType
+        };
+
+        if (args is not null)
+        {
+            payload["args"] = args;
+        }
+
+        return payload;
     }
 
     private static string DefaultCommandFor(PlaybackAction action)
@@ -111,7 +129,36 @@ public sealed class DJConnectApiClient
             throw new InvalidOperationException("Pairing is stale or this Home Assistant token is no longer accepted.");
         }
 
+        if (response.StatusCode == System.Net.HttpStatusCode.UpgradeRequired)
+        {
+            var mismatch = await response.Content.ReadFromJsonAsync<VersionMismatchError>(JsonOptions, cancellationToken);
+            throw new DJConnectVersionMismatchException(mismatch?.Error, mismatch?.Message, mismatch?.HaVersion, mismatch?.HaMajorMinor);
+        }
+
         var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
         return result ?? throw new InvalidOperationException("Home Assistant returned an empty DJConnect response.");
     }
+
+    private sealed record VersionMismatchError(
+        [property: JsonPropertyName("error")] string? Error,
+        [property: JsonPropertyName("message")] string? Message,
+        [property: JsonPropertyName("ha_version")] string? HaVersion,
+        [property: JsonPropertyName("ha_major_minor")] string? HaMajorMinor);
+}
+
+public sealed class DJConnectVersionMismatchException : Exception
+{
+    public DJConnectVersionMismatchException(string? error, string? userMessage, string? haVersion, string? haMajorMinor)
+        : base("DJConnect protocol version mismatch.")
+    {
+        Error = error;
+        UserMessage = userMessage;
+        HaVersion = haVersion;
+        HaMajorMinor = haMajorMinor;
+    }
+
+    public string? Error { get; }
+    public string? UserMessage { get; }
+    public string? HaVersion { get; }
+    public string? HaMajorMinor { get; }
 }

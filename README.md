@@ -2,19 +2,23 @@
 
 DJConnect is a native desktop client for the Home Assistant `djconnect` custom
 integration, targeting Windows and macOS from one .NET codebase. It follows the
-macOS app's functional shape: pairing, Ask DJ chat with server-side history,
-Play Now/follow-up actions, recent listening list rendering, playback controls,
-status, settings and a compact legal/about section.
+macOS app's functional shape: first-start onboarding, pairing, Now Playing,
+Ask DJ chat with server-side history, Queue, Playlists, Play Now/follow-up
+actions, recent listening list rendering, playback controls, status, Settings,
+Logs, Privacy, Feedback, Crash report, Demo Mode and compact legal/about
+sections.
 
 Home Assistant remains the trusted backend. The desktop app does not store
 Spotify credentials, Spotify OAuth tokens, DJ Memory or Ask DJ server history as
 the source of truth. The only app-owned credential is the DJConnect bearer token
 issued by Home Assistant, stored through Windows Credential Manager on Windows
-and Keychain on macOS.
+and Keychain on macOS. Diagnostics, feedback and crash-report text are generated
+locally, redacted before preview/copy/open-issue actions and never uploaded
+automatically.
 
 ## Current Version
 
-- Desktop app: `3.1.1`
+- Desktop app: `3.1.2`
 - Home Assistant protocol line: `3.1.x`
 - Current local `client_type`: `windows`
 
@@ -44,6 +48,9 @@ API contracts rather than copying SwiftUI or Apple-specific code.
 - [docs/ARCHITECTURE_DECISIONS.md](docs/ARCHITECTURE_DECISIONS.md): stack and
   design decisions.
 - [docs/API_CONTRACT.md](docs/API_CONTRACT.md): Home Assistant endpoint shapes.
+- [docs/NON_FUNCTIONAL_REQUIREMENTS.md](docs/NON_FUNCTIONAL_REQUIREMENTS.md):
+  security, privacy, lifecycle, accessibility and performance acceptance
+  requirements.
 - [docs/TECHNICAL_DESIGN_DECISIONS.md](docs/TECHNICAL_DESIGN_DECISIONS.md):
   code-level patterns and dependency notes.
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md): local setup, build and pairing.
@@ -71,15 +78,21 @@ Public unsigned releases use platform-specific tags in
 - `windows/vX.Y.Z`
 - `maccatalyst/vX.Y.Z`
 
+The Windows release contains separate unsigned diagnostic zips for:
+
+- `x64`: regular Intel/AMD Windows PCs.
+- `arm64`: Windows on ARM, including Parallels Windows VMs on Apple Silicon
+  Macs.
+
 The same release workflow publishes English and Dutch What's New JSON files to
 `djconnect.dev` under `/release-notes/{windows|maccatalyst}/{en|nl}/vX.Y.Z.json`.
 These artifacts are for diagnostics and internal validation until signed
 Windows packaging and Mac Catalyst notarization are added.
 
-Key screens and flows mirrored from macOS:
+Key screens and flows mirrored from macOS and extended for desktop:
 
-- Pairing/configuration: Home Assistant URL, token/pairing code and stable
-  client identity.
+- Pairing/configuration: onboarding-gated local Client API, pairable mDNS,
+  client address, pairing code, stable client identity and pairing reset.
 - Ask DJ: `POST /api/djconnect/ask_dj/message`, server-side history sync via
   `GET /api/djconnect/ask_dj/history`, clear via
   `POST /api/djconnect/ask_dj/history/clear`.
@@ -87,7 +100,20 @@ Key screens and flows mirrored from macOS:
   `POST /api/djconnect/command`.
 - Recent played answers: compact list rendering from returned `items[]`.
 - Now Playing/status: Home Assistant status and generic playback commands.
-- Settings/about: local configuration, status, MIT license and Spotify notice.
+- Queue and Playlists: backend-owned collections normalized locally, capped at
+  100 rendered items, deterministic dedupe and generic start commands.
+- Settings: connection status, pairing reset, output/playback preferences,
+  Ask DJ, Demo Mode, permissions, diagnostics, app info and legal/privacy links.
+- Logs/diagnostics: bounded local logs, log-level filtering, search, copy and
+  wipe actions after shared redaction.
+- Feedback and Crash reports: user-controlled preview/copy/open-issue flows
+  with opt-in redacted diagnostics and no automatic upload.
+- Privacy/legal/about: local data explanation, app metadata, MIT license,
+  Spotify notice, project/security links and deletion/reset actions.
+- Demo Mode: session-only local demo runtime with sample Now Playing, Ask DJ,
+  Queue and Playlists; no Home Assistant calls, mDNS or token writes.
+- Wakeword prompt: state and settings are present, but the foreground wakeword
+  listener is feature-gated off until a real engine exists.
 
 ## Client Identity
 
@@ -159,6 +185,11 @@ packs when first installed.
 - Local app settings are non-secret JSON under the user's application data
   folder. The DJConnect bearer token is stored in Windows Credential Manager or
   macOS Keychain.
+- Logs, feedback bodies, crash reports, diagnostics and clipboard exports must
+  pass through `DiagnosticRedactor` before preview, copy, storage or issue URL
+  creation.
+- Diagnostics and crash reports are never uploaded automatically; opening a
+  GitHub issue only pre-fills redacted text and leaves submission to the user.
 
 ## License And Legal
 

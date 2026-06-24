@@ -65,3 +65,40 @@ Rationale:
 
 Trade-off: these artifacts are useful for diagnostics and internal validation
 only until Windows signing/installers and Mac Catalyst notarization are added.
+
+## Centralize Diagnostic Redaction
+
+Decision: use a shared `DiagnosticRedactor` before diagnostics reach storage,
+preview, clipboard text or GitHub issue URLs.
+
+Rationale:
+
+- Feedback, crash reports and logs are user-controlled preparation tools, not
+  automatic upload surfaces.
+- A single redaction path keeps bearer tokens, Authorization headers, pairing
+  codes, bootstrap proofs, HA tokens, push tokens, cookies, secrets and private
+  URLs out of visible/exported text.
+- Tests can guard the privacy contract without needing MAUI UI automation.
+
+## Keep Demo Mode Session-Only
+
+Decision: force Demo Mode off during startup and avoid persisting it as a
+connection state.
+
+Rationale:
+
+- Demo Mode must never mask a real stale pairing/token problem across launches.
+- It must not advertise mDNS, call Home Assistant or write credentials.
+- A fresh launch should always prefer real pairing/runtime state.
+
+## Gate Wakeword Until There Is A Real Engine
+
+Decision: keep wakeword prompt/settings state, but expose the feature as
+unavailable until a real foreground wakeword listener exists.
+
+Rationale:
+
+- The app should not imply background audio capture or hotword detection that is
+  not implemented.
+- Push-to-talk and typed Ask DJ remain usable without wakeword.
+- Future wakeword work needs explicit privacy, permission and lifecycle checks.

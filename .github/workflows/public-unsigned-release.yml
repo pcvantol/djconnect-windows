@@ -153,7 +153,9 @@ jobs:
 
       - name: Restore app dependencies
         shell: pwsh
-        run: dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM -r win-x64
+        run: |
+          dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM -r win-x64
+          dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM -r win-arm64
 
       - name: Publish unsigned Windows app
         shell: pwsh
@@ -161,23 +163,28 @@ jobs:
           $ErrorActionPreference = "Stop"
           $version = "${{ needs.resolve-version.outputs.version }}"
           New-Item -ItemType Directory -Force -Path ".public-release/artifacts" | Out-Null
-          dotnet publish $env:PROJECT_PATH `
-            -c Release `
-            -f $env:WINDOWS_TFM `
-            -r win-x64 `
-            --no-restore `
-            -p:PublishReadyToRun=false `
-            -p:WindowsPackageType=None `
-            -o ".public-release/windows"
-          if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-          }
 
-          $zipPath = ".public-release/artifacts/DJConnect-Windows-$version-unsigned.zip"
-          Compress-Archive -Path ".public-release/windows/*" -DestinationPath $zipPath -Force
-          $hashPath = ".public-release/artifacts/DJConnect-Windows-$version-SHA256SUMS.txt"
-          $hash = Get-FileHash -Algorithm SHA256 $zipPath
-          "$($hash.Hash.ToLowerInvariant())  $(Split-Path -Leaf $zipPath)" | Set-Content -NoNewline -Encoding ascii $hashPath
+          foreach ($rid in @("win-x64", "win-arm64")) {
+            $outputDir = ".public-release/windows/$rid"
+            dotnet publish $env:PROJECT_PATH `
+              -c Release `
+              -f $env:WINDOWS_TFM `
+              -r $rid `
+              --no-restore `
+              -p:PublishReadyToRun=false `
+              -p:WindowsPackageType=None `
+              -o $outputDir
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+
+            $arch = if ($rid -eq "win-arm64") { "arm64" } else { "x64" }
+            $zipPath = ".public-release/artifacts/DJConnect-Windows-$arch-$version-unsigned.zip"
+            Compress-Archive -Path "$outputDir/*" -DestinationPath $zipPath -Force
+            $hashPath = ".public-release/artifacts/DJConnect-Windows-$arch-$version-SHA256SUMS.txt"
+            $hash = Get-FileHash -Algorithm SHA256 $zipPath
+            "$($hash.Hash.ToLowerInvariant())  $(Split-Path -Leaf $zipPath)" | Set-Content -NoNewline -Encoding ascii $hashPath
+          }
 
       - name: Upload Windows artifact
         uses: actions/upload-artifact@v4
@@ -334,8 +341,10 @@ jobs:
             "$windows_tag" \
             "DJConnect Windows ${version}" \
             .public-release/release-notes-Windows-en.md \
-            ".public-release/artifacts/DJConnect-Windows-${version}-unsigned.zip" \
-            ".public-release/artifacts/DJConnect-Windows-${version}-SHA256SUMS.txt" \
+            ".public-release/artifacts/DJConnect-Windows-x64-${version}-unsigned.zip" \
+            ".public-release/artifacts/DJConnect-Windows-x64-${version}-SHA256SUMS.txt" \
+            ".public-release/artifacts/DJConnect-Windows-arm64-${version}-unsigned.zip" \
+            ".public-release/artifacts/DJConnect-Windows-arm64-${version}-SHA256SUMS.txt" \
             .public-release/artifacts/SHA256SUMS.txt
 
           if [[ -f ".public-release/artifacts/DJConnect-MacCatalyst-${version}-unsigned.zip" ]]; then

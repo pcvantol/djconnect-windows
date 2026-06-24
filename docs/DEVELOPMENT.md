@@ -47,11 +47,14 @@ dotnet build DJConnect.Windows.sln
 ## Local Pairing
 
 1. Start the app.
-2. Enter the Home Assistant base URL, for example
-   `http://homeassistant.local:8123`.
-3. Enter a Home Assistant pairing code and choose `Koppelen`, or paste an
-   existing DJConnect bearer token during development.
-4. Keep the app open while validating status, Ask DJ and command flows.
+2. Finish or skip onboarding. The app does not advertise mDNS while onboarding
+   is visible.
+3. Open pairing and keep the app running so the local Client API can expose the
+   Client adres and pairing code.
+4. Pair from Home Assistant through the DJConnect integration. Successful
+   pairing stores only the returned DJConnect device token and stops mDNS.
+5. Keep the app open while validating status, Ask DJ, Queue, Playlists and
+   command flows.
 
 The app sends the same pairing code as `pairing_token`, `pair_code` and
 `pairing_code` for compatibility with current Home Assistant integration
@@ -64,7 +67,19 @@ codes, Home Assistant long-lived tokens, Spotify credentials, OAuth refresh
 tokens or raw secret-bearing response bodies.
 
 Visible UI errors should stay short. Technical details belong in redacted
-diagnostics once a diagnostics surface is added.
+diagnostics. Logs, feedback bodies, crash reports and clipboard exports must use
+`DiagnosticRedactor` before they are displayed, copied, persisted or used in a
+GitHub issue URL.
+
+## Demo And Wakeword
+
+Demo Mode is session-only. Startup forces it off, starting it loads local sample
+runtime data, and stopping it clears demo state. Demo Mode must not make Home
+Assistant calls, advertise mDNS or write tokens.
+
+Wakeword state/settings are present for the UX, but the feature remains disabled
+until a real foreground listener exists. Push-to-talk and text Ask DJ should
+continue to work without wakeword.
 
 ## Checks
 
@@ -113,7 +128,10 @@ Release workflow:
 It runs on `vX.Y.Z` tags or manual dispatch, builds unsigned Windows and Mac
 Catalyst artifacts, and publishes platform releases to
 `pcvantol/djconnect-app-releases` when `PUBLIC_RELEASES_TOKEN` is configured.
-The public tags are `windows/vX.Y.Z` and `maccatalyst/vX.Y.Z`. When
+The public tags are `windows/vX.Y.Z` and `maccatalyst/vX.Y.Z`. Windows release
+artifacts are produced for both `win-x64` and `win-arm64`; the ARM64 zip is the
+native Windows-on-ARM build for Parallels Windows VMs on Apple Silicon Macs.
+When
 `WEBSITE_RELEASE_NOTES_TOKEN` is configured, the workflow also publishes English
 and Dutch What's New JSON files to `djconnect.dev` under
 `/release-notes/{windows|maccatalyst}/{en|nl}/vX.Y.Z.json`.

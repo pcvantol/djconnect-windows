@@ -15,6 +15,8 @@
 - When the maintainer asks to release/push, push `main` and the release tag,
   validate GitHub Actions, then run `./clear_old_releases.sh` first as a
   dry-run and then with `--execute` when the plan is correct.
+- CI and public unsigned release workflows use concurrency cancellation, so a
+  newer run for the same branch/tag cancels older in-progress attempts.
 - Use `./clear_old_releases.sh` without `--execute` first when pruning old
   GitHub releases, tags or workflow runs.
 - Confirm GitHub Actions workflow permissions are read/write before release

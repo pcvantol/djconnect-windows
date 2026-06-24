@@ -1,118 +1,1286 @@
-<TabbedPage x:Class="DJConnect.Windows.MainPage"
-            xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
-            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
-            Title="DJConnect"
-            BarBackgroundColor="#F6F7F9">
-    <ContentPage Title="Pairing" BackgroundColor="#F6F7F9">
-        <ScrollView>
-            <VerticalStackLayout Padding="20" Spacing="10">
-                <Label Text="DJConnect" FontSize="28" FontAttributes="Bold" />
-                <Label Text="{Binding Status}" TextColor="#596273" />
-                <Label Text="Home Assistant" FontSize="18" FontAttributes="Bold" Margin="0,12,0,0" />
-                <Label Text="URL" />
-                <Entry Text="{Binding HomeAssistantUrl}" />
-                <Label Text="DJConnect bearer token" />
-                <Entry Text="{Binding Token}" IsPassword="True" />
-                <Label Text="Pairing code uit Home Assistant" />
-                <Entry Text="{Binding PairingCode}" />
-                <HorizontalStackLayout>
-                    <Button Text="Opslaan" Command="{Binding SaveSettingsCommand}" />
-                    <Button Text="Koppelen" Command="{Binding PairCommand}" />
-                    <Button Text="Vernieuw" Command="{Binding RefreshCommand}" />
-                </HorizontalStackLayout>
-                <Label Text="Client identity" FontSize="18" FontAttributes="Bold" Margin="0,12,0,0" />
-                <Label Text="{Binding ClientType, StringFormat='client_type: {0}'}" />
-                <Label Text="{Binding DeviceId, StringFormat='device_id: {0}'}" LineBreakMode="WordWrap" />
-                <Label Text="Open punt: backend docs noemen windows nog niet als toegestaan client_type. De waarde staat centraal in DJConnectContract.cs."
-                       TextColor="#8A5B00"
-                       LineBreakMode="WordWrap"
-                       Margin="0,8,0,0" />
-            </VerticalStackLayout>
-        </ScrollView>
-    </ContentPage>
+<ContentPage x:Class="DJConnect.Windows.MainPage"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             Title="DJConnect"
+             Background="{StaticResource AppBackgroundBrush}">
+    <Grid Background="{StaticResource AppBackgroundBrush}">
+        <Grid ColumnDefinitions="290,*">
+            <Border Grid.Column="0"
+                    Margin="0,42,0,0"
+                    BackgroundColor="#101126"
+                    Stroke="{StaticResource Border}"
+                    StrokeThickness="1"
+                    StrokeShape="RoundRectangle 0,8,8,0">
+                <VerticalStackLayout Padding="20,24" Spacing="10">
+                    <Button x:Name="NowPlayingNavButton" Text="♪  Speelt Nu" Clicked="ShowNowPlaying" HorizontalOptions="Fill" />
+                    <Button x:Name="AskDJNavButton" Text="▰  Ask DJ" Clicked="ShowAskDJ" HorizontalOptions="Fill" />
+                    <Button x:Name="QueueNavButton" Text="☰  Wachtrij" Clicked="ShowQueue" HorizontalOptions="Fill" />
+                    <Button x:Name="PlaylistsNavButton" Text="▱  Afspeellijsten" Clicked="ShowPlaylists" HorizontalOptions="Fill" />
+                    <Button x:Name="GamesNavButton" Text="☍  Games" Clicked="ShowGames" HorizontalOptions="Fill" />
+                    <Button x:Name="SettingsNavButton" Text="⚙  Instellingen" Clicked="ShowSettings" HorizontalOptions="Fill" />
+                    <Button x:Name="LogsNavButton" Text="▤  Logs" Clicked="ShowLogs" HorizontalOptions="Fill" />
+                    <Button x:Name="AboutNavButton" Text="ⓘ  Over" Clicked="ShowAbout" HorizontalOptions="Fill" />
+                    <Button x:Name="LegalNavButton" Text="▧  Juridisch" Clicked="ShowLegal" HorizontalOptions="Fill" />
+                    <Button x:Name="PrivacyNavButton" Text="♧  Privacy" Clicked="ShowPrivacy" HorizontalOptions="Fill" />
+                    <Button x:Name="FeedbackNavButton" Text="▱  Feedback delen" Command="{Binding ShowFeedbackCommand}" HorizontalOptions="Fill" />
+                </VerticalStackLayout>
+            </Border>
 
-    <ContentPage Title="Ask DJ" BackgroundColor="#F6F7F9">
-        <Grid Padding="20" RowDefinitions="Auto,*,Auto,Auto" ColumnDefinitions="2*,*" ColumnSpacing="12">
-            <VerticalStackLayout Grid.ColumnSpan="2">
-                <Label Text="Ask DJ" FontSize="24" FontAttributes="Bold" />
-                <Label Text="{Binding Status}" TextColor="#596273" />
-            </VerticalStackLayout>
-            <CollectionView Grid.Row="1" ItemsSource="{Binding Messages}">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Border Padding="10" Margin="4" BackgroundColor="White" Stroke="#DDE2EA" StrokeThickness="1">
-                            <VerticalStackLayout>
-                                <Label Text="{Binding Role}" FontAttributes="Bold" TextColor="#596273" />
-                                <Label Text="{Binding Text}" LineBreakMode="WordWrap" />
-                                <Label Text="{Binding Message}" LineBreakMode="WordWrap" />
+            <Grid Grid.Column="1" Padding="38,40,34,28">
+                <ScrollView x:Name="NowPlayingPanel">
+                    <VerticalStackLayout Spacing="24" MaximumWidthRequest="1180">
+                        <Border Padding="18"
+                                Background="{StaticResource CardBrush}"
+                                Stroke="{StaticResource Border}"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 8">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="20">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                                    <HorizontalStackLayout Spacing="12">
+                                        <Image Source="djconnect_icon.png" WidthRequest="42" HeightRequest="42" />
+                                        <VerticalStackLayout Spacing="0" VerticalOptions="Center">
+                                            <Label Text="DJConnect" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                            <Label Text="{Binding ConnectionStatusText}" TextColor="{StaticResource TextSecondary}" />
+                                        </VerticalStackLayout>
+                                    </HorizontalStackLayout>
+                                    <Button Grid.Column="1" Text="↻" Command="{Binding RefreshCommand}" WidthRequest="56" />
+                                </Grid>
+
+                                <Border Grid.Row="1" IsVisible="{Binding HasNotice}" Padding="14" BackgroundColor="#2A2352" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                    <Label Text="{Binding Notice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                                </Border>
+
+                                <Grid Grid.Row="2" ColumnDefinitions="420,*" ColumnSpacing="30">
+                                    <Grid HeightRequest="390" BackgroundColor="#090613">
+                                        <Image Source="{Binding ArtworkUrl}" Aspect="AspectFill" IsVisible="{Binding HasArtwork}" />
+                                        <VerticalStackLayout IsVisible="{Binding HasNoArtwork}" HorizontalOptions="Center" VerticalOptions="Center" Spacing="14">
+                                            <Image Source="djconnect_icon.png" WidthRequest="150" HeightRequest="150" />
+                                            <Label Text="♪" FontSize="54" TextColor="{StaticResource Accent}" HorizontalTextAlignment="Center" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                    <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="12">
+                                        <Label Text="{Binding TrackTitle}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding TrackArtist}" FontSize="22" TextColor="{StaticResource TextSecondary}" LineBreakMode="TailTruncation" />
+                                        <Label Text="{Binding TrackAlbum}" FontSize="18" TextColor="{StaticResource TextSecondary}" LineBreakMode="TailTruncation" />
+                                        <Button Text="Ask DJ openen" Clicked="ShowAskDJ" WidthRequest="190" HorizontalOptions="Start" Margin="0,18,0,0" />
+                                    </VerticalStackLayout>
+                                </Grid>
+
+                                <Grid Grid.Row="3" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <Slider x:Name="PlaybackPositionSlider"
+                                            Minimum="0"
+                                            Maximum="{Binding PlaybackDurationMs}"
+                                            Value="{Binding PlaybackPositionMs, Mode=TwoWay}"
+                                            IsEnabled="{Binding CanUsePlaybackFeatures}"
+                                            DragCompleted="PlaybackSeekCompleted" />
+                                    <Label Grid.Column="1" Text="{Binding PlaybackTimeLabel}" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                                </Grid>
+
+                                <HorizontalStackLayout Grid.Row="4" HorizontalOptions="Center" Spacing="28">
+                                    <Button Text="◀" Command="{Binding PreviousCommand}" IsEnabled="{Binding CanUsePlaybackFeatures}" WidthRequest="88" />
+                                    <Button Text="{Binding PlayPauseGlyph}" Command="{Binding PlayCommand}" IsEnabled="{Binding CanStartPlayback}" WidthRequest="120" />
+                                    <Button Text="▶" Command="{Binding NextCommand}" IsEnabled="{Binding CanUsePlaybackFeatures}" WidthRequest="88" />
+                                </HorizontalStackLayout>
+
+                                <Grid Grid.Row="5" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                    <Label Text="🔈" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                                    <Slider Grid.Column="1" Value="{Binding VolumePercent, Mode=TwoWay}" Minimum="0" Maximum="100" IsEnabled="{Binding CanUsePlaybackFeatures}" />
+                                    <Label Grid.Column="2" Text="{Binding VolumeLabel}" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                                </Grid>
+                            </Grid>
+                        </Border>
+                        <Grid ColumnDefinitions="Auto,320" ColumnSpacing="14">
+                            <Label Text="Uitvoerapparaat" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                            <Picker Grid.Column="1"
+                                    Title="Geen uitvoerapparaat geselecteerd"
+                                    ItemsSource="{Binding OutputDevices}"
+                                    ItemDisplayBinding="{Binding DisplayName}"
+                                    SelectedItem="{Binding SelectedOutput, Mode=TwoWay}"
+                                    IsEnabled="{Binding CanUsePlaybackFeatures}"
+                                    TextColor="{StaticResource TextPrimary}"
+                                    BackgroundColor="{StaticResource Surface}" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <Grid x:Name="AskDJPanel" IsVisible="False" RowDefinitions="Auto,*,Auto" RowSpacing="18">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Ask DJ" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="{Binding ConnectionStatusText}" TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="⌕" WidthRequest="52" />
+                        <Button Grid.Column="2" Text="↻" Command="{Binding RefreshCommand}" WidthRequest="52" />
+                        <Button Grid.Column="3" Text="⌫" Command="{Binding ClearHistoryCommand}" WidthRequest="52" />
+                    </Grid>
+
+                    <ScrollView Grid.Row="1">
+                        <VerticalStackLayout Spacing="16">
+                            <Border IsVisible="{Binding HasAskDJNotice}" Padding="14" BackgroundColor="#2A2352" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                <Label Text="{Binding AskDJNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                            </Border>
+                            <Border Padding="18" BackgroundColor="#242A5B" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                <VerticalStackLayout Spacing="14">
+                                    <Grid ColumnDefinitions="Auto,*,Auto">
+                                        <Label Text="ϟ" FontSize="20" TextColor="{StaticResource Accent}" />
+                                        <Label Grid.Column="1" Text="Mood" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Grid.Column="2" Text="Energy  ×" TextColor="{StaticResource Accent}" FontAttributes="Bold" />
+                                    </Grid>
+                                    <Slider Value="0.67" />
+                                    <Grid ColumnDefinitions="*,*,*">
+                                        <Label Text="Chill" TextColor="{StaticResource TextSecondary}" />
+                                        <Label Grid.Column="1" Text="Groove" HorizontalTextAlignment="Center" TextColor="{StaticResource TextSecondary}" />
+                                        <Label Grid.Column="2" Text="Party" HorizontalTextAlignment="End" TextColor="{StaticResource TextSecondary}" />
+                                    </Grid>
+                                    <Label Text="Mood stuurt Ask DJ's aanbevelingen, van rustigere tracks tot energiekere keuzes." TextColor="{StaticResource TextSecondary}" />
+                                </VerticalStackLayout>
+                            </Border>
+
+                            <CollectionView ItemsSource="{Binding Messages}">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Padding="0,4">
+                                            <Border Padding="14" Margin="0,2" WidthRequest="720" HorizontalOptions="{Binding BubbleAlignment}" BackgroundColor="{Binding BubbleBackground}" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                                <VerticalStackLayout Spacing="8">
+                                                    <Label Text="{Binding RoleLabel}" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                                    <Label Text="{Binding DisplayText}" LineBreakMode="WordWrap" TextColor="{StaticResource TextPrimary}" />
+                                                    <Label Text="{Binding DeliveryLabel}" TextColor="{StaticResource TextSecondary}" FontSize="12" />
+                                                    <Button Text="Audio opnieuw afspelen" IsVisible="{Binding HasAudio}" Clicked="ReplayAudioClicked" HorizontalOptions="Start" />
+                                                    <CollectionView ItemsSource="{Binding PlaybackActions}" IsVisible="{Binding HasPlaybackActions}">
+                                                        <CollectionView.ItemsLayout>
+                                                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                                                        </CollectionView.ItemsLayout>
+                                                        <CollectionView.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Button Text="{Binding DisplayLabel}" Clicked="AskDJActionClicked" />
+                                                            </DataTemplate>
+                                                        </CollectionView.ItemTemplate>
+                                                    </CollectionView>
+                                                    <CollectionView ItemsSource="{Binding ConfirmationActions}" IsVisible="{Binding HasPlaybackActions}">
+                                                        <CollectionView.ItemsLayout>
+                                                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                                                        </CollectionView.ItemsLayout>
+                                                        <CollectionView.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Button Text="{Binding DisplayLabel}" Clicked="AskDJActionClicked" />
+                                                            </DataTemplate>
+                                                        </CollectionView.ItemTemplate>
+                                                    </CollectionView>
+                                                    <CollectionView ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}">
+                                                        <CollectionView.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Padding="10" Margin="0,3" BackgroundColor="#151936" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                                                    <Grid ColumnDefinitions="56,*" ColumnSpacing="10">
+                                                                        <Image Source="{Binding ImageUrl}" WidthRequest="56" HeightRequest="56" Aspect="AspectFill" />
+                                                                        <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                                                            <Label Text="{Binding Title}" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                                                            <Label Text="{Binding Subtitle}" TextColor="{StaticResource TextSecondary}" />
+                                                                            <Label Text="{Binding PlayedAtLabel}" TextColor="{StaticResource TextSecondary}" FontSize="12" />
+                                                                        </VerticalStackLayout>
+                                                                    </Grid>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </CollectionView.ItemTemplate>
+                                                    </CollectionView>
+                                                </VerticalStackLayout>
+                                            </Border>
+                                        </Grid>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </ScrollView>
+
+                    <Grid Grid.Row="2" RowDefinitions="Auto,Auto" RowSpacing="8">
+                        <Label IsVisible="{Binding HasVoiceStatus}" Text="{Binding VoiceStatus}" TextColor="{StaticResource TextSecondary}" />
+                        <Grid Grid.Row="1" ColumnDefinitions="*,64,64" ColumnSpacing="10">
+                            <Editor Text="{Binding AskDJText}" Placeholder="{Binding AskDJPlaceholder}" MinimumHeightRequest="58" BackgroundColor="#586091" TextColor="{StaticResource TextPrimary}" />
+                            <Button Grid.Column="1" Text="🎙" Command="{Binding TogglePushToTalkCommand}" IsEnabled="{Binding CanUseAskDJ}" />
+                            <Button Grid.Column="2" Text="➤" Command="{Binding SendAskDJCommand}" IsEnabled="{Binding CanSendAskDJ}" />
+                        </Grid>
+                    </Grid>
+                </Grid>
+
+                <Grid x:Name="QueuePanel" IsVisible="False" RowDefinitions="Auto,Auto,*" RowSpacing="16">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="{Binding QueueTitle}" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="{Binding ConnectionStatusText}" TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="↻" Command="{Binding RefreshQueueCommand}" IsEnabled="{Binding CanUsePlaybackFeatures}" WidthRequest="56" />
+                    </Grid>
+                    <VerticalStackLayout Grid.Row="1" Spacing="8">
+                        <Border IsVisible="{Binding HasQueueNotice}" Padding="14" BackgroundColor="#2A2352" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Label Text="{Binding QueueNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                        </Border>
+                        <ActivityIndicator IsRunning="{Binding IsLoadingQueue}" IsVisible="{Binding IsLoadingQueue}" Color="{StaticResource Accent}" />
+                        <Border IsVisible="{Binding HasNoQueueItems}" Padding="22" BackgroundColor="#202657" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="Geen wachtrij" FontSize="22" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="Er staat nog niets klaar om af te spelen." TextColor="{StaticResource TextSecondary}" />
                             </VerticalStackLayout>
                         </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-            <ScrollView Grid.Row="1" Grid.Column="1">
-                <VerticalStackLayout>
-                    <Label Text="Acties" FontSize="16" FontAttributes="Bold" />
-                    <CollectionView ItemsSource="{Binding Actions}">
+                    </VerticalStackLayout>
+                    <CollectionView Grid.Row="2" ItemsSource="{Binding QueueItems}">
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Border Padding="8" Margin="0,6,0,0" BackgroundColor="White" Stroke="#DDE2EA" StrokeThickness="1">
-                                    <VerticalStackLayout>
-                                        <Label Text="{Binding Kind}" TextColor="#596273" />
-                                        <Label Text="{Binding Title}" FontAttributes="Bold" LineBreakMode="WordWrap" />
-                                        <Label Text="{Binding Label}" LineBreakMode="WordWrap" />
-                                    </VerticalStackLayout>
+                                <Border Padding="14" Margin="0,0,0,14" Background="{StaticResource CardBrush}" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                    <Grid ColumnDefinitions="46,70,*,90,70" ColumnSpacing="12" HeightRequest="82">
+                                        <Label Text="{Binding PositionLabel}" TextColor="{StaticResource TextSecondary}" FontAttributes="Bold" VerticalOptions="Center" HorizontalTextAlignment="Center" />
+                                        <Grid Grid.Column="1" HeightRequest="62" WidthRequest="62" BackgroundColor="#1A1B28">
+                                            <Image Source="{Binding Artwork}" Aspect="AspectFill" IsVisible="{Binding HasArtwork}" />
+                                            <Label Text="♪" FontSize="30" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource TextSecondary}" IsVisible="{Binding HasNoArtwork}" />
+                                        </Grid>
+                                        <VerticalStackLayout Grid.Column="2" VerticalOptions="Center" Spacing="3">
+                                            <HorizontalStackLayout Spacing="8">
+                                                <Label Text="●" IsVisible="{Binding IsActive}" TextColor="{StaticResource Accent}" VerticalOptions="Center" />
+                                                <Label Text="{Binding DisplayTitleValue}" FontSize="20" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" />
+                                            </HorizontalStackLayout>
+                                            <Label Text="{Binding DisplaySubtitle}" TextColor="{StaticResource TextSecondary}" LineBreakMode="TailTruncation" />
+                                            <Label Text="{Binding DisplayAlbum}" TextColor="{StaticResource TextSecondary}" FontSize="12" LineBreakMode="TailTruncation" />
+                                        </VerticalStackLayout>
+                                        <Label Grid.Column="3" Text="{Binding DurationLabel}" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" HorizontalTextAlignment="End" />
+                                        <Button Grid.Column="4" Text="▶" IsEnabled="{Binding IsPlayable}" Clicked="QueueItemStartClicked" />
+                                    </Grid>
                                 </Border>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-                    <Label Text="Recent gespeeld" FontSize="16" FontAttributes="Bold" Margin="0,18,0,0" />
-                    <CollectionView ItemsSource="{Binding RecentItems}">
+                </Grid>
+
+                <Grid x:Name="PlaylistsPanel" IsVisible="False" RowDefinitions="Auto,Auto,*" RowSpacing="16">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="{Binding PlaylistsTitle}" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="{Binding ConnectionStatusText}" TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="↻" Command="{Binding RefreshPlaylistsCommand}" IsEnabled="{Binding CanUsePlaybackFeatures}" WidthRequest="56" />
+                    </Grid>
+
+                    <VerticalStackLayout Grid.Row="1" Spacing="8">
+                        <Grid ColumnDefinitions="*,260" ColumnSpacing="12">
+                            <Entry Placeholder="Zoek afspeellijsten" Text="{Binding PlaylistSearchText}" BackgroundColor="#071026" TextColor="{StaticResource TextPrimary}" PlaceholderColor="{StaticResource TextSecondary}" />
+                            <Label Grid.Column="1" Text="{Binding SelectedOutputText}" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                        </Grid>
+                        <Border IsVisible="{Binding HasPlaylistNotice}" Padding="14" BackgroundColor="#2A2352" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Label Text="{Binding PlaylistNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                        </Border>
+                        <ActivityIndicator IsRunning="{Binding IsLoadingPlaylists}" IsVisible="{Binding IsLoadingPlaylists}" Color="{StaticResource Accent}" />
+                        <Border IsVisible="{Binding HasNoPlaylistItems}" Padding="22" BackgroundColor="#202657" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="Geen afspeellijsten" FontSize="22" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="Home Assistant gaf nog geen afspeellijsten terug." TextColor="{StaticResource TextSecondary}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <CollectionView Grid.Row="2" ItemsSource="{Binding FilteredPlaylistItems}">
+                        <CollectionView.ItemsLayout>
+                            <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="14" VerticalItemSpacing="14" />
+                        </CollectionView.ItemsLayout>
                         <CollectionView.ItemTemplate>
                             <DataTemplate>
-                                <Border Padding="8" Margin="0,6,0,0" BackgroundColor="White" Stroke="#DDE2EA" StrokeThickness="1">
-                                    <VerticalStackLayout>
-                                        <Label Text="{Binding Title}" FontAttributes="Bold" LineBreakMode="WordWrap" />
-                                        <Label Text="{Binding Subtitle}" TextColor="#596273" LineBreakMode="WordWrap" />
-                                        <Label Text="{Binding PlayedAtLabel}" TextColor="#596273" />
-                                    </VerticalStackLayout>
+                                <Border Padding="14" Background="{StaticResource CardBrush}" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                    <Grid ColumnDefinitions="76,*,64" ColumnSpacing="12" HeightRequest="92">
+                                        <Grid HeightRequest="68" WidthRequest="68" BackgroundColor="#1A1B28">
+                                            <Image Source="{Binding Artwork}" Aspect="AspectFill" IsVisible="{Binding HasArtwork}" />
+                                            <Label Text="♬" FontSize="30" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource TextSecondary}" IsVisible="{Binding HasNoArtwork}" />
+                                        </Grid>
+                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="4">
+                                            <Label Text="{Binding DisplayTitle}" FontSize="19" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" />
+                                            <Label Text="{Binding DisplaySubtitle}" TextColor="{StaticResource TextSecondary}" LineBreakMode="TailTruncation" />
+                                        </VerticalStackLayout>
+                                        <Button Grid.Column="2" Text="▶" IsEnabled="{Binding IsPlayable}" Clicked="PlaylistStartClicked" />
+                                    </Grid>
                                 </Border>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                     </CollectionView>
-                </VerticalStackLayout>
-            </ScrollView>
-            <Editor Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding AskDJText}" AutoSize="TextChanges" MinimumHeightRequest="44" />
-            <HorizontalStackLayout Grid.Row="3" Grid.ColumnSpan="2" HorizontalOptions="End">
-                <Button Text="Wis history" Command="{Binding ClearHistoryCommand}" />
-                <Button Text="Stuur" Command="{Binding SendAskDJCommand}" />
-            </HorizontalStackLayout>
+                </Grid>
+
+                <ScrollView x:Name="GamesPanel" IsVisible="False">
+                    <VerticalStackLayout Spacing="20" MaximumWidthRequest="1040">
+                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                            <VerticalStackLayout Spacing="4">
+                                <Label Text="Mini-games" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="Lokale spelletjes voor tussendoor. Ze gebruiken Home Assistant niet." TextColor="{StaticResource TextSecondary}" />
+                            </VerticalStackLayout>
+                            <Label x:Name="GameHighSummaryLabel" Grid.Column="1" Text="Highscores lokaal" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+                            <Button x:Name="PaddleGameButton" Text="▭  Paddle Rally&#10;High 0" Clicked="SelectPaddleGame" />
+                            <Button x:Name="MeteorGameButton" Grid.Column="1" Text="☄  Meteor Run&#10;High 0" Clicked="SelectMeteorGame" />
+                            <Button x:Name="SkyGameButton" Grid.Column="2" Text="✦  Sky Dash&#10;High 0" Clicked="SelectSkyGame" />
+                            <Button x:Name="MazeGameButton" Grid.Column="3" Text="▦  Maze Chase&#10;High 0" Clicked="SelectMazeGame" />
+                        </Grid>
+
+                        <Border Padding="18" Background="{StaticResource CardBrush}" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="14">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                    <VerticalStackLayout Spacing="2">
+                                        <Label x:Name="GameTitleLabel" Text="Paddle Rally" FontSize="24" FontAttributes="Bold" TextColor="{StaticResource Accent}" />
+                                        <Label x:Name="GameHintLabel" Text="Gebruik ↑/↓ of sleep de paddle. Houd de bal in het spel." TextColor="{StaticResource TextSecondary}" />
+                                    </VerticalStackLayout>
+                                    <Label x:Name="GameScoreLabel" Grid.Column="1" Text="Score 0   High 0" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                                </Grid>
+
+                                <Border Grid.Row="1" Stroke="{StaticResource Border}" StrokeThickness="1" StrokeShape="RoundRectangle 8" BackgroundColor="#05050A">
+                                    <Grid>
+                                        <GraphicsView x:Name="MiniGameSurface"
+                                                      HeightRequest="520"
+                                                      MinimumHeightRequest="360"
+                                                      HorizontalOptions="Fill"
+                                                      VerticalOptions="Fill"
+                                                      StartInteraction="MiniGameSurfaceStartInteraction"
+                                                      DragInteraction="MiniGameSurfaceDragInteraction"
+                                                      EndInteraction="MiniGameSurfaceEndInteraction" />
+                                        <Button x:Name="GameIdleButton"
+                                                Text="▶  Tik of klik om te spelen"
+                                                WidthRequest="260"
+                                                HeightRequest="58"
+                                                HorizontalOptions="Center"
+                                                VerticalOptions="Center"
+                                                Clicked="StartMiniGameClicked" />
+                                    </Grid>
+                                </Border>
+
+                                <Grid Grid.Row="2" ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+                                    <Button Text="▶  Start" Clicked="StartMiniGameClicked" />
+                                    <Button Grid.Column="1" Text="Ⅱ  Pauze" Clicked="PauseMiniGameClicked" />
+                                    <Button Grid.Column="2" Text="↻  Opnieuw" Clicked="RestartMiniGameClicked" />
+                                    <Button Grid.Column="3" Text="Highscores wissen" Clicked="ClearGameHighscoresClicked" />
+                                </Grid>
+
+                                <Label Grid.Row="3" Text="Keyboard: pijltjes, WASD en Space wanneer het gamevlak focus heeft. Touch/muis: tik, sleep of klik binnen het speelveld." TextColor="{StaticResource TextSecondary}" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <ScrollView x:Name="SettingsPanel" IsVisible="False">
+                    <VerticalStackLayout Spacing="22" MaximumWidthRequest="1040">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="{Binding SettingsTitle}" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="Configuratie, pairing, permissions en diagnostiek. DJConnect uploadt niets automatisch." TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+
+                        <Border IsVisible="{Binding HasPermissionNotice}" Padding="14" BackgroundColor="#2A2352" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Label Text="{Binding PermissionNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                        </Border>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="VERBINDING" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+                                    <Label Text="Pairing status" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Column="1" Text="{Binding SettingsPairingStatusText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="1" Text="Home Assistant URL" TextColor="{StaticResource TextSecondary}" />
+                                    <Entry Grid.Row="1" Grid.Column="1" Text="{Binding HomeAssistantUrl}" BackgroundColor="#071026" TextColor="{StaticResource TextPrimary}" Placeholder="https://homeassistant.local:8123" />
+                                    <Label Grid.Row="2" Text="Client adres" TextColor="{StaticResource TextSecondary}" />
+                                    <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                        <Label Text="{Binding ClientAddressDisplay}" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" VerticalOptions="Center" />
+                                        <Button Grid.Column="1" Text="⧉" WidthRequest="52" Clicked="CopyClientAddressClicked" IsEnabled="{Binding CanCopyClientAddress}" />
+                                    </Grid>
+                                    <Label Grid.Row="3" Text="Runtime" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding SettingsRuntimeSummary}" TextColor="{StaticResource TextPrimary}" />
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <Button Text="Opslaan" Command="{Binding SaveSettingsCommand}" />
+                                    <Button Grid.Column="1" Text="↻  App opnieuw koppelen" Clicked="ResetPairingFromSettingsClicked" />
+                                </Grid>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="12">
+                                <Label Text="UITVOER EN PLAYBACK" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto" RowSpacing="10">
+                                    <Label Text="Geselecteerd" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Column="1" Text="{Binding SelectedOutputText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="1" Text="Uitvoerapparaat" TextColor="{StaticResource TextSecondary}" />
+                                    <Picker Grid.Row="1"
+                                            Grid.Column="1"
+                                            Title="Geen uitvoerapparaat geselecteerd"
+                                            ItemsSource="{Binding OutputDevices}"
+                                            ItemDisplayBinding="{Binding DisplayName}"
+                                            SelectedItem="{Binding SelectedOutput, Mode=TwoWay}"
+                                            IsEnabled="{Binding CanUsePlaybackFeatures}"
+                                            TextColor="{StaticResource TextPrimary}"
+                                            BackgroundColor="#2B3262" />
+                                </Grid>
+                                <Label Text="Playback-start is geblokkeerd zolang geen uitvoerapparaat is geselecteerd." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="ASK DJ" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                    <Label Text="Lokale audio replay" TextColor="{StaticResource TextSecondary}" />
+                                    <Switch Grid.Column="1" IsToggled="{Binding LocalAudioReplayEnabled}" HorizontalOptions="Start" />
+                                    <Label Grid.Row="1" Text="Mood" TextColor="{StaticResource TextSecondary}" />
+                                    <Picker Grid.Row="1" Grid.Column="1" SelectedItem="{Binding AskDJMood}" TextColor="{StaticResource TextPrimary}" BackgroundColor="#2B3262">
+                                        <Picker.Items>
+                                            <x:String>Chill</x:String>
+                                            <x:String>Groove</x:String>
+                                            <x:String>Energy</x:String>
+                                            <x:String>Party</x:String>
+                                        </Picker.Items>
+                                    </Picker>
+                                    <Label Grid.Row="2" Text="Geschiedenis" TextColor="{StaticResource TextSecondary}" />
+                                    <Button Grid.Row="2" Grid.Column="1" Text="⌫  Ask DJ geschiedenis wissen" Command="{Binding ClearHistoryCommand}" />
+                                </Grid>
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                    <Label Text="Stemactivatie" TextColor="{StaticResource TextSecondary}" />
+                                    <Switch Grid.Column="1" IsToggled="{Binding WakewordEnabled}" IsEnabled="{Binding WakewordFeatureAvailable}" HorizontalOptions="Start" />
+                                    <Label Grid.Row="1" Text="Wake phrase" TextColor="{StaticResource TextSecondary}" />
+                                    <Entry Grid.Row="1" Grid.Column="1" Text="{Binding WakePhrase}" IsEnabled="{Binding WakewordFeatureAvailable}" BackgroundColor="#071026" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="2" Text="Status" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="2" Grid.Column="1" Text="{Binding WakewordStatusText}" TextColor="{StaticResource TextPrimary}" />
+                                </Grid>
+                                <Label Text="Push-to-talk en tekstchat blijven beschikbaar zonder wakeword. Stemactivatie start geen achtergrondluisteren in deze build." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="12">
+                                <Label Text="DEMO MODE" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="Volledig lokaal voor UI-inspectie. Demo mode belt Home Assistant niet en slaat geen bearer token op." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <Button Text="▶  Demo Mode starten" Clicked="StartDemoModeClicked" />
+                                    <Button Grid.Column="1" Text="Demo Mode verlaten" Command="{Binding StopDemoModeCommand}" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="PERMISSIONS" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                                    <Label Text="Microfoon&#10;Nodig voor push-to-talk muziekverzoeken." TextColor="{StaticResource TextPrimary}" />
+                                    <Button Grid.Column="1" Text="Microfoon toestaan" Clicked="OpenMicrophoneSettingsFromSettings" />
+                                    <Label Grid.Row="1" Text="Notificaties&#10;Voor Windows toast-meldingen wanneer ondersteund." TextColor="{StaticResource TextPrimary}" />
+                                    <Button Grid.Row="1" Grid.Column="1" Text="Notificaties toestaan" Command="{Binding EnableNotificationsCommand}" />
+                                    <Label Grid.Row="2" Text="Lokaal netwerk / firewall&#10;Nodig voor pairing met Home Assistant op hetzelfde LAN." TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="2" Grid.Column="1" Text="{Binding LocalNetworkPermissionStatus}" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                                </Grid>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="12">
+                                <Label Text="DIAGNOSTIEK" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto" RowSpacing="10">
+                                    <Label Text="Logniveau" TextColor="{StaticResource TextSecondary}" />
+                                    <Picker Grid.Column="1" SelectedItem="{Binding LogLevel}" TextColor="{StaticResource TextPrimary}" BackgroundColor="#2B3262">
+                                        <Picker.Items>
+                                            <x:String>error</x:String>
+                                            <x:String>warning</x:String>
+                                            <x:String>info</x:String>
+                                            <x:String>debug</x:String>
+                                        </Picker.Items>
+                                    </Picker>
+                                    <Label Grid.Row="1" Text="Logs" TextColor="{StaticResource TextSecondary}" />
+                                    <Grid Grid.Row="1" Grid.Column="1" ColumnDefinitions="*,*" ColumnSpacing="10">
+                                        <Button Text="⧉  Logs kopiëren" Command="{Binding CopyLogsCommand}" />
+                                        <Button Grid.Column="1" Text="Logs wissen" Command="{Binding ClearLogsCommand}" />
+                                    </Grid>
+                                </Grid>
+                                <Label Text="Logs worden vóór kopiëren geredigeerd. Secrets worden nooit automatisch geüpload." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="APP-INFO" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Grid ColumnDefinitions="160,*,160,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="12">
+                                <Label Text="App versie" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Column="1" Text="{Binding AppVersion}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Column="2" Text="Protocol" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Column="3" Text="{Binding ProtocolVersion}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="1" Text="Client type" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="1" Grid.Column="1" Text="{Binding ClientType}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="1" Grid.Column="2" Text="Platform" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="1" Grid.Column="3" Text="{Binding PlatformName}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="2" Text="Taal" TextColor="{StaticResource TextSecondary}" />
+                                <HorizontalStackLayout Grid.Row="2" Grid.Column="1">
+                                    <Label Text="EN" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                                    <Switch IsToggled="{Binding IsDutch}" />
+                                    <Label Text="NL" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                                </HorizontalStackLayout>
+                            </Grid>
+                            <Label Text="Setup loopt via de Home Assistant DJConnect integration. Spotify playback vereist Spotify Premium." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                                <Button Text="↗  Start/setup" Clicked="OpenSetupLink" />
+                                <Button Grid.Column="1" Text="♧  Privacy" Clicked="OpenPrivacyFromAbout" />
+                                <Button Grid.Column="2" Text="▧  Juridisch" Clicked="OpenLegalFromAbout" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <Grid x:Name="LogsPanel" IsVisible="False" RowDefinitions="Auto,Auto,Auto,*" RowSpacing="14">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Logs" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="Lokale diagnostiek. Kopiëren en preview gebruiken redaction; er wordt niets automatisch geüpload." TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="⧉  Logs kopiëren" Command="{Binding CopyLogsCommand}" />
+                        <Button Grid.Column="2" Text="⌕" Command="{Binding ToggleLogSearchCommand}" Clicked="ToggleLogSearchClicked" WidthRequest="56" />
+                        <Button Grid.Column="3" Text="⌫  Logs wissen" Clicked="ClearLogsFromPrivacyClicked" />
+                    </Grid>
+
+                    <Border Grid.Row="1" IsVisible="{Binding HasLogNotice}" Padding="12" BackgroundColor="#143A2A" Stroke="#35E56B" StrokeShape="RoundRectangle 8">
+                        <Label Text="{Binding LogNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                    </Border>
+
+                    <Grid Grid.Row="2" IsVisible="{Binding IsLogSearchVisible}" ColumnDefinitions="*,Auto,Auto,Auto,Auto" ColumnSpacing="8">
+                        <Entry x:Name="LogSearchEntry"
+                               Placeholder="Zoek in logs"
+                               Text="{Binding LogSearchText}"
+                               BackgroundColor="#071026"
+                               TextColor="{StaticResource TextPrimary}"
+                               PlaceholderColor="{StaticResource TextSecondary}"
+                               Completed="LogSearchEntryCompleted" />
+                        <Button Grid.Column="1" Text="⌃" Command="{Binding PreviousLogSearchResultCommand}" WidthRequest="52" />
+                        <Button Grid.Column="2" Text="⌄" Command="{Binding NextLogSearchResultCommand}" WidthRequest="52" />
+                        <Label Grid.Column="3" Text="{Binding LogSearchResultLabel}" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" WidthRequest="90" HorizontalTextAlignment="Center" />
+                        <Button Grid.Column="4" Text="✕" Command="{Binding ToggleLogSearchCommand}" WidthRequest="52" />
+                    </Grid>
+
+                    <Grid Grid.Row="3">
+                        <Border IsVisible="{Binding HasNoDiagnosticLogs}" Padding="22" BackgroundColor="#202657" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <VerticalStackLayout Spacing="6">
+                                <Label Text="Geen logs" FontSize="22" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="Diagnostische gebeurtenissen verschijnen hier." TextColor="{StaticResource TextSecondary}" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <CollectionView ItemsSource="{Binding FilteredDiagnosticLogLines}" IsVisible="{Binding HasDiagnosticLogs}">
+                            <CollectionView.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Padding="8,6" Margin="0,0,0,4" BackgroundColor="{Binding RowBackground}" Stroke="{StaticResource Border}" StrokeThickness="0" StrokeShape="RoundRectangle 4">
+                                        <Grid ColumnDefinitions="48,74,54,*" ColumnSpacing="10" HeightRequest="34">
+                                            <Label Text="{Binding LineNumber}" FontFamily="Courier New" FontSize="13" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                                            <Label Grid.Column="1" Text="{Binding TimestampText}" FontFamily="Courier New" FontSize="13" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
+                                            <Label Grid.Column="2" Text="{Binding Level}" FontFamily="Courier New" FontSize="13" FontAttributes="Bold" TextColor="{Binding LevelColor}" VerticalOptions="Center" />
+                                            <Label Grid.Column="3" Text="{Binding DisplayText}" FontFamily="Courier New" FontSize="13" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" VerticalOptions="Center" />
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </CollectionView.ItemTemplate>
+                        </CollectionView>
+                    </Grid>
+                </Grid>
+
+                <ScrollView x:Name="AboutPanel" IsVisible="False">
+                    <VerticalStackLayout Spacing="24" MaximumWidthRequest="1040">
+                        <Grid ColumnDefinitions="92,*" ColumnSpacing="22">
+                            <Image Source="djconnect_icon.png" WidthRequest="84" HeightRequest="84" />
+                            <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                <Label Text="DJConnect" FontSize="34" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="{Binding Tagline}" FontSize="18" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="Windows client voor de Home Assistant DJConnect integration." TextColor="{StaticResource TextSecondary}" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                            <VerticalStackLayout Spacing="14">
+                                <Label Text="APP" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
+                                    <Label Text="App versie" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Column="1" Text="{Binding AppVersion}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="1" Text="Protocol" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="1" Grid.Column="1" Text="{Binding ProtocolVersion}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="2" Text="Build channel" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="2" Grid.Column="1" Text="{Binding BuildChannel}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="3" Text="Client type" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding ClientType}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="4" Text="Platform" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="4" Grid.Column="1" Text="{Binding PlatformName}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="5" Text="Runtime" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="5" Grid.Column="1" Text="{Binding RuntimeCompatibilityText}" TextColor="{StaticResource TextPrimary}" />
+                                </Grid>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="14">
+                                <Label Text="SETUP EN HELP" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                                    <Button Text="↗  Start/setup openen" Clicked="OpenSetupLink" />
+                                    <Button Grid.Column="1" Text="⌂  HA integration" Clicked="OpenIntegrationLink" />
+                                    <Button Grid.Row="1" Text="✦  Wat is er nieuw" Clicked="OpenWhatsNewLink" />
+                                    <Button Grid.Row="1" Grid.Column="1" Text="▱  Feedback delen" Clicked="OpenFeedbackFromAbout" />
+                                    <Button Grid.Row="2" Text="▤  Logs openen" Clicked="OpenLogsFromAbout" />
+                                    <Button Grid.Row="2" Grid.Column="1" Text="↗  Website" Clicked="OpenSetupLink" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="PROJECT" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Label Text="Home Assistant is de trusted backend voor pairing, token lifecycle, Spotify OAuth, playback commands en Ask DJ." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                            <Label Text="De Windows client bewaart alleen het DJConnect device-token na pairing. Spotify playback vereist Spotify Premium." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                            <Label Text="DJConnect vraagt niet om Spotify credentials." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                            <VerticalStackLayout Spacing="14">
+                                <Label Text="LINKS" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                                    <Button Text="♧  Privacy" Clicked="OpenPrivacyFromAbout" />
+                                    <Button Grid.Column="1" Text="▧  Juridisch" Clicked="OpenLegalFromAbout" />
+                                    <Button Grid.Row="1" Text="⚑  Security" Clicked="OpenSecurityLink" />
+                                    <Button Grid.Row="1" Grid.Column="1" Text="↗  GitHub project" Clicked="OpenProjectLink" />
+                                </Grid>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="14">
+                                <Label Text="STATUS" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                    <Label Text="Pairing" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Column="1" Text="{Binding AboutPairingStatusText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="1" Text="Backend" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="1" Grid.Column="1" Text="{Binding AboutBackendAvailabilityText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="2" Text="Demo mode" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="2" Grid.Column="1" Text="{Binding AboutDemoModeText}" TextColor="{StaticResource TextPrimary}" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="CREDITS" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Label Text="DJConnect is een MIT-licensed project voor het Home Assistant ecosystem." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                            <Label Text="Spotify is een handelsmerk van Spotify AB. DJConnect is niet gelieerd aan, goedgekeurd door of gesponsord door Spotify AB." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <ScrollView x:Name="LegalPanel" IsVisible="False">
+                    <VerticalStackLayout Spacing="24" MaximumWidthRequest="1040">
+                        <VerticalStackLayout Spacing="4">
+                            <Label Text="Juridisch" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="Licenties, privacy en projectinformatie voor DJConnect." TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                            <VerticalStackLayout Spacing="14">
+                                <Label Text="DJCONNECT LICENTIE" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                    <Label Text="Project" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Column="1" Text="DJConnect" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="1" Text="Licentie" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="1" Grid.Column="1" Text="MIT License" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="2" Text="Copyright" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="2" Grid.Column="1" Text="Copyright (c) 2026 Peter van Tol." TextColor="{StaticResource TextPrimary}" />
+                                </Grid>
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                    <Button Text="▧  Bekijk licentie" Clicked="ShowLicenseDetail" />
+                                    <Button Grid.Column="1" Text="⧉  Kopieer licentietekst" Clicked="CopyLicenseText" />
+                                </Grid>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="14">
+                                <Label Text="APP METADATA" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+                                    <Label Text="App versie" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Column="1" Text="{Binding AppVersion}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="1" Text="Protocol" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="1" Grid.Column="1" Text="{Binding ProtocolVersion}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="2" Text="Client type" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="2" Grid.Column="1" Text="{Binding ClientType}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="3" Text="Build channel" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding BuildChannel}" TextColor="{StaticResource TextPrimary}" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="PRIVACY" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Label Text="De Windows client bewaart alleen lokale appstate en het DJConnect device-token na pairing. Spotify OAuth en playback credentials blijven in Home Assistant. Diagnostics/logs worden niet automatisch geüpload." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                <Button Text="♧  Open Privacy scherm" Clicked="OpenPrivacyFromAbout" />
+                                <Button Grid.Column="1" Text="↗  Bekijk privacybeleid" Clicked="OpenPrivacyPolicyLink" />
+                            </Grid>
+                        </VerticalStackLayout>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="SPOTIFY" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="Spotify is een handelsmerk van Spotify AB. DJConnect is niet gelieerd aan, goedgekeurd door of gesponsord door Spotify AB." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="12">
+                                <Label Text="HOME ASSISTANT" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="DJConnect Windows werkt met de Home Assistant DJConnect integration. Home Assistant is het trusted backend voor pairing, token lifecycle, Spotify OAuth, playback commands en Ask DJ." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <VerticalStackLayout Spacing="14">
+                            <Label Text="THIRD-PARTY NOTICES" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Border Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                <Grid ColumnDefinitions="*,140,120" ColumnSpacing="12">
+                                    <Label Text=".NET MAUI / platform frameworks" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                                    <Label Grid.Column="1" Text="SDK/platform" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Column="2" Text="Microsoft terms" TextColor="{StaticResource TextSecondary}" />
+                                </Grid>
+                            </Border>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                                <Button Text="▧  Bekijk third-party notices" Clicked="ShowThirdPartyNotices" />
+                                <Button Grid.Column="1" Text="⧉  Kopieer notices" Clicked="CopyThirdPartyNotices" />
+                            </Grid>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="14">
+                            <Label Text="LINKS" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                                <Button Text="↗  Website/start" Clicked="OpenSetupLink" />
+                                <Button Grid.Column="1" Text="↗  Project repo" Clicked="OpenProjectLink" />
+                                <Button Grid.Column="2" Text="⚑  Security" Clicked="OpenSecurityLink" />
+                                <Button Grid.Row="1" Text="▧  Code of Conduct" Clicked="OpenCodeOfConductLink" />
+                                <Button Grid.Row="1" Grid.Column="1" Text="▧  Juridisch online" Clicked="OpenLicenseLink" />
+                            </Grid>
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <ScrollView x:Name="PrivacyPanel" IsVisible="False">
+                    <VerticalStackLayout Spacing="24" MaximumWidthRequest="1040">
+                        <Grid ColumnDefinitions="64,*" ColumnSpacing="18">
+                            <Border BackgroundColor="#3B367D" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" WidthRequest="58" HeightRequest="58">
+                                <Label Text="♧" FontSize="30" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="{StaticResource Accent}" />
+                            </Border>
+                            <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                <Label Text="{Binding PrivacyTitle}" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="DJConnect bewaart alleen wat nodig is om deze app met je Home Assistant DJConnect integration te koppelen." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                                <Label Text="Spotify-login en playback-backend credentials blijven in Home Assistant. Diagnostics/logs worden niet automatisch geüpload." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="LOKAAL BEWAARD" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Border Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Text="• DJConnect device-token na pairing" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Stabiele lokale clientidentiteit/device id" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Home Assistant URL en Client adres configuratie" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Geselecteerd uitvoerapparaat wanneer beschikbaar" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Ask DJ lokale cache voor snelle weergave" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Lokale diagnostics/logs" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Voorkeuren zoals taal, logniveau, audio replay, demo en onboarding" TextColor="{StaticResource TextPrimary}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="12">
+                                <Label Text="NIET BEWAARD" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Border Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Text="• Spotify wachtwoord" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Spotify OAuth refresh/access tokens" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Home Assistant long-lived access tokens" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Sonos/backend credentials" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• OpenAI/API keys" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• WiFi wachtwoorden" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Apple/Microsoft accountgegevens" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Raw secrets in diagnostics" TextColor="{StaticResource TextPrimary}" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="HOME ASSISTANT EN ASK DJ" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="Home Assistant is de trusted backend voor pairing, bearer-token lifecycle, Spotify OAuth, playback commands en Ask DJ." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                                <Label Text="Ask DJ berichten en geschiedenis worden via Home Assistant gesynchroniseerd. De Windows client cachet history lokaal voor performance; clear_revision vanuit Home Assistant is leidend voor volledig wissen." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                                <Label Text="Assistant-only systeemmeldingen kunnen verschijnen, bijvoorbeeld muziekcontext of history-retention. Audio responses verschijnen alleen als Home Assistant een audio_url teruggeeft." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="12">
+                                <Label Text="DIAGNOSTIEK" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="Logs blijven lokaal. Kopiëren gebruikt redaction voor bearer tokens, pairing codes, bootstrap proofs, Authorization headers, private URLs, push tokens, cookies en secrets." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                                    <Button Text="▤  Open Logs" Clicked="OpenLogsFromAbout" />
+                                    <Button Grid.Column="1" Text="⧉  Logs kopiëren" Command="{Binding CopyLogsCommand}" />
+                                    <Button Grid.Column="2" Text="⌫  Logs wissen" Clicked="ClearLogsFromPrivacyClicked" />
+                                </Grid>
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                            <VerticalStackLayout Spacing="12">
+                                <Label Text="PERMISSIONS" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto" RowSpacing="12">
+                                    <Label Text="Microfoon&#10;Alleen nodig voor Ask DJ voice/push-to-talk." TextColor="{StaticResource TextPrimary}" />
+                                    <Button Grid.Column="1" Text="🎙  Privacy settings" Clicked="OpenMicrophoneSettingsFromSettings" />
+                                    <Label Grid.Row="1" Text="Notificaties&#10;Alleen voor meldingen indien ondersteund." TextColor="{StaticResource TextPrimary}" />
+                                    <Button Grid.Row="1" Grid.Column="1" Text="🔔  Notification settings" Clicked="OpenNotificationSettingsFromPrivacy" />
+                                    <Label Grid.Row="2" Text="Lokaal netwerk/firewall&#10;Nodig voor pairing en Client API discovery." TextColor="{StaticResource TextPrimary}" />
+                                    <Button Grid.Row="2" Grid.Column="1" Text="▧  Firewall settings" Clicked="OpenFirewallSettingsFromPrivacy" />
+                                </Grid>
+                            </VerticalStackLayout>
+
+                            <VerticalStackLayout Grid.Column="1" Spacing="12">
+                                <Label Text="GEGEVENS WISSEN" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                                    <Button Text="⌫  Ask DJ geschiedenis wissen" Clicked="ClearAskDJHistoryFromPrivacyClicked" />
+                                    <Button Grid.Column="1" Text="⌫  Logs wissen" Clicked="ClearLogsFromPrivacyClicked" />
+                                    <Button Grid.Row="1" Text="↻  App opnieuw koppelen" Clicked="ResetPairingFromSettingsClicked" />
+                                    <Button Grid.Row="1" Grid.Column="1" Text="▱  Feedback delen" Command="{Binding ShowFeedbackCommand}" />
+                                </Grid>
+                                <Label Text="Opnieuw koppelen wist het lokale DJConnect device-token, roteert clientidentiteit en pairing code, en opent de pairing flow opnieuw. mDNS discovery start pas wanneer het pairing scherm zichtbaar is." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+                        </Grid>
+
+                        <VerticalStackLayout Spacing="12">
+                            <Label Text="LINKS" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
+                                <Button Text="↗  Privacybeleid" Clicked="OpenPrivacyPolicyLink" />
+                                <Button Grid.Column="1" Text="↗  Start/setup" Clicked="OpenSetupLink" />
+                                <Button Grid.Column="2" Text="▧  Licentie" Clicked="OpenLicenseLink" />
+                            </Grid>
+                            <Label Text="Spotify is een handelsmerk van Spotify AB. DJConnect is niet gelieerd aan, goedgekeurd door of gesponsord door Spotify AB." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </VerticalStackLayout>
+                </ScrollView>
+
+                <Grid IsVisible="{Binding IsUpdateRequiredScreenVisible}" BackgroundColor="#EE050717">
+                    <ScrollView>
+                        <Border Padding="28" WidthRequest="760" MaximumWidthRequest="760" BackgroundColor="#2C2540" Stroke="#F59E0B" StrokeThickness="1" StrokeShape="RoundRectangle 8" HorizontalOptions="Center" VerticalOptions="Center" Margin="24">
+                            <VerticalStackLayout Spacing="20">
+                                <Grid ColumnDefinitions="72,*" ColumnSpacing="18">
+                                    <Border BackgroundColor="#4A3219" Stroke="#F59E0B" StrokeShape="RoundRectangle 8" WidthRequest="64" HeightRequest="64">
+                                        <Label Text="⚠" FontSize="32" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="#FBBF24" />
+                                    </Border>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                        <Label Text="{Binding UpdateRequiredTitle}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="{Binding UpdateRequiredSubtitle}" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                                    </VerticalStackLayout>
+                                </Grid>
+
+                                <Border Padding="16" BackgroundColor="#3B2F4A" Stroke="#6D5E82" StrokeShape="RoundRectangle 8">
+                                    <Label Text="{Binding UpdateRequiredDetail}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" LineBreakMode="WordWrap" />
+                                </Border>
+
+                                <Grid ColumnDefinitions="220,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="16">
+                                    <Label Text="App versie/protocol" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Column="1" Text="{Binding AppProtocolText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="1" Text="Home Assistant" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="1" Grid.Column="1" Text="{Binding HomeAssistantVersionText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="2" Text="Benodigde range" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="2" Grid.Column="1" Text="{Binding RequiredProtocolText}" TextColor="{StaticResource TextPrimary}" />
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Text="Geblokkeerd" FontAttributes="Bold" TextColor="#FBBF24" />
+                                        <Label Text="Playback controls" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="Queue starten" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="Playlist starten" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="Output wijzigen" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="Ask DJ tekst, voice en acties" TextColor="{StaticResource TextPrimary}" />
+                                    </VerticalStackLayout>
+                                    <VerticalStackLayout Grid.Column="1" Spacing="8">
+                                        <Label Text="Blijft beschikbaar" FontAttributes="Bold" TextColor="#35E56B" />
+                                        <Label Text="Settings" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="Logs" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="Privacy en Juridisch" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="Feedback delen" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="Pairing reset handmatig via Settings" TextColor="{StaticResource TextPrimary}" />
+                                    </VerticalStackLayout>
+                                </Grid>
+
+                                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                                    <Button Text="↗  Open updatepagina" HeightRequest="54" Clicked="OpenSetupLink" />
+                                    <Button Grid.Column="1" Text="↻  Probeer opnieuw" HeightRequest="54" Command="{Binding RetryVersionCheckCommand}" />
+                                    <Button Grid.Column="2" Text="▤  Logs openen" HeightRequest="54" Clicked="OpenLogsFromUpdateRequired" />
+                                </Grid>
+                                <ActivityIndicator IsRunning="{Binding IsRefreshingVersionCheck}" IsVisible="{Binding IsRefreshingVersionCheck}" Color="{StaticResource Accent}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </ScrollView>
+                </Grid>
+            </Grid>
         </Grid>
-    </ContentPage>
 
-    <ContentPage Title="Now Playing" BackgroundColor="#F6F7F9">
-        <VerticalStackLayout Padding="20">
-            <Label Text="Now Playing" FontSize="24" FontAttributes="Bold" />
-            <Label Text="{Binding NowPlaying}" FontSize="22" FontAttributes="Bold" Margin="0,12,0,0" />
-            <HorizontalStackLayout Margin="0,12,0,0">
-                <Button Text="Vorige" Command="{Binding PreviousCommand}" />
-                <Button Text="Play" Command="{Binding PlayCommand}" />
-                <Button Text="Pauze" Command="{Binding PauseCommand}" />
-                <Button Text="Volgende" Command="{Binding NextCommand}" />
-            </HorizontalStackLayout>
-            <Label Text="Play Now en follow-up acties worden via /api/djconnect/command uitgevoerd; Spotify OAuth en playback blijven in Home Assistant."
-                   TextColor="#596273"
-                   LineBreakMode="WordWrap"
-                   Margin="0,16,0,0" />
-        </VerticalStackLayout>
-    </ContentPage>
+        <Grid IsVisible="{Binding IsOnboardingVisible}" BackgroundColor="#EE050717">
+            <ScrollView>
+                <Border Padding="32" WidthRequest="760" MaximumWidthRequest="760" BackgroundColor="#282270" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" HorizontalOptions="Center" VerticalOptions="Center" Margin="24">
+                    <VerticalStackLayout Spacing="24">
+                        <Border Padding="28" Background="{StaticResource CardBrush}" StrokeShape="RoundRectangle 8">
+                            <HorizontalStackLayout Spacing="24">
+                                <Image Source="djconnect_icon.png" WidthRequest="92" HeightRequest="92" />
+                                <VerticalStackLayout VerticalOptions="Center">
+                                    <Label Text="DJConnect" FontSize="40" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Text="{Binding Tagline}" FontSize="20" TextColor="{StaticResource TextSecondary}" />
+                                </VerticalStackLayout>
+                            </HorizontalStackLayout>
+                        </Border>
 
-    <ContentPage Title="About" BackgroundColor="#F6F7F9">
-        <VerticalStackLayout Padding="20">
-            <Label Text="DJConnect" FontSize="24" FontAttributes="Bold" />
-            <Label Text="Copyright (c) 2026 Peter van Tol." Margin="0,10,0,0" />
-            <Label Text="{Binding LegalNotice}" LineBreakMode="WordWrap" Margin="0,10,0,0" />
-            <Label Text="MIT licensed. Third-party dependencies keep their own licenses." LineBreakMode="WordWrap" Margin="0,10,0,0" />
-        </VerticalStackLayout>
-    </ContentPage>
-</TabbedPage>
+                        <Border Padding="22" BackgroundColor="#3A347B" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Grid ColumnDefinitions="110,*" ColumnSpacing="26">
+                                <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+                                    <Button x:Name="WelcomeStepNowPlayingButton" Text="♪" FontSize="30" WidthRequest="70" HeightRequest="70" Clicked="SelectWelcomeStepNowPlaying" />
+                                    <Button x:Name="WelcomeStepAskDjButton" Text="☵" FontSize="28" WidthRequest="70" HeightRequest="70" Clicked="SelectWelcomeStepAskDJ" />
+                                    <Button x:Name="WelcomeStepQueueButton" Text="▸☰" FontSize="22" WidthRequest="70" HeightRequest="70" Clicked="SelectWelcomeStepQueue" />
+                                    <Button x:Name="WelcomeStepMoreButton" Text="•••" FontSize="24" WidthRequest="70" HeightRequest="70" Clicked="SelectWelcomeStepMore" />
+                                    <Button x:Name="WelcomeStepGamesButton" Text="🎮" FontSize="26" WidthRequest="70" HeightRequest="70" Clicked="SelectWelcomeStepGames" />
+                                </VerticalStackLayout>
+
+                                <Border Grid.Column="1" Padding="28" BackgroundColor="#2F2B68" StrokeShape="RoundRectangle 8" VerticalOptions="Center">
+                                    <VerticalStackLayout Spacing="16" HorizontalOptions="Center">
+                                        <Grid HeightRequest="96" WidthRequest="230">
+                                            <BoxView Color="#746BFF" WidthRequest="126" HeightRequest="12" CornerRadius="6" HorizontalOptions="Center" VerticalOptions="Start" Margin="0,6,0,0" Opacity="0.42" />
+                                            <BoxView Color="#D536F6" WidthRequest="16" HeightRequest="16" CornerRadius="8" HorizontalOptions="Start" VerticalOptions="Start" Margin="28,0,0,0" />
+                                            <Label x:Name="WelcomePreviewIconLabel" Text="♪" FontSize="66" HorizontalOptions="Center" VerticalOptions="Center" TextColor="#D536F6" />
+                                        </Grid>
+                                        <Label x:Name="WelcomePreviewTitleLabel" Text="Speelt Nu" FontSize="22" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" HorizontalTextAlignment="Center" />
+                                        <BoxView Color="#D536F6" WidthRequest="96" HeightRequest="8" CornerRadius="4" HorizontalOptions="Center" Opacity="0.64" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </Grid>
+                        </Border>
+
+                        <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
+                            <Label x:Name="WelcomeTitleLabel" Text="♪  Speelt Nu" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" HorizontalTextAlignment="Center" />
+                            <Label x:Name="WelcomeBodyLabel" Text="Bedien playback, volume en het actieve uitvoerapparaat vanaf het hoofdscherm." WidthRequest="620" LineBreakMode="WordWrap" FontSize="18" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
+                            <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                                <BoxView x:Name="WelcomeProgressDot0" WidthRequest="38" HeightRequest="10" CornerRadius="5" Color="#D536F6" />
+                                <BoxView x:Name="WelcomeProgressDot1" WidthRequest="10" HeightRequest="10" CornerRadius="5" Color="#6B638E" />
+                                <BoxView x:Name="WelcomeProgressDot2" WidthRequest="10" HeightRequest="10" CornerRadius="5" Color="#6B638E" />
+                                <BoxView x:Name="WelcomeProgressDot3" WidthRequest="10" HeightRequest="10" CornerRadius="5" Color="#6B638E" />
+                                <BoxView x:Name="WelcomeProgressDot4" WidthRequest="10" HeightRequest="10" CornerRadius="5" Color="#6B638E" />
+                            </HorizontalStackLayout>
+                        </VerticalStackLayout>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Installatie loopt via Home Assistant. Spotify-weergave vereist Spotify Premium." LineBreakMode="WordWrap" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
+                            <Label Text="De Windows client vraagt niet om Spotify credentials." LineBreakMode="WordWrap" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
+                            <Label Text="https://djconnect.dev/start" TextColor="#D536F6" FontAttributes="Bold" HorizontalTextAlignment="Center">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OpenSetupLink" />
+                                </Label.GestureRecognizers>
+                            </Label>
+                        </VerticalStackLayout>
+
+                        <Button Text="Overslaan" Command="{Binding CompleteOnboardingCommand}" HeightRequest="58" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
+                            <Button x:Name="WelcomePreviousButton" Text="‹  Vorige" HeightRequest="58" Clicked="WelcomePrevious" />
+                            <Button x:Name="WelcomeNextButton" Grid.Column="1" Text="›  Volgende" HeightRequest="58" Clicked="WelcomeNext" />
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+            </ScrollView>
+        </Grid>
+
+        <Grid IsVisible="{Binding IsPairingOverlayVisible}" BackgroundColor="#AA000000">
+            <Border Padding="28" WidthRequest="720" MaximumWidthRequest="720" BackgroundColor="#292875" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" HorizontalOptions="Center" VerticalOptions="Center">
+                <VerticalStackLayout Spacing="18">
+                    <Border Padding="22" Background="{StaticResource CardBrush}" StrokeShape="RoundRectangle 8">
+                        <HorizontalStackLayout Spacing="22">
+                            <Image Source="djconnect_icon.png" WidthRequest="72" HeightRequest="72" />
+                            <VerticalStackLayout VerticalOptions="Center">
+                                <Label Text="DJConnect koppelen" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                <Label Text="Gebruik deze gegevens in Home Assistant om deze app te koppelen." TextColor="{StaticResource TextSecondary}" />
+                            </VerticalStackLayout>
+                        </HorizontalStackLayout>
+                    </Border>
+
+                    <VerticalStackLayout IsVisible="{Binding IsPairingFormVisible}" Spacing="16">
+                        <Border Padding="16" BackgroundColor="#3B367D" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="Home Assistant met de DJConnect integration is nodig. Spotify playback vereist Spotify Premium." TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                                <Label Text="De Windows client vraagt niet om Spotify login of Home Assistant long-lived tokens." TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="https://djconnect.dev/start" TextColor="{StaticResource Accent}" FontAttributes="Bold">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OpenSetupLink" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+                            </VerticalStackLayout>
+                        </Border>
+
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12" ColumnSpacing="12">
+                            <Label Text="Client adres" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Button Grid.Column="1" Text="⧉  Kopieer Client adres" IsEnabled="{Binding CanCopyClientAddress}" Clicked="CopyClientAddressClicked" />
+                            <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                <Label Text="{Binding ClientAddressDisplay}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                            </Border>
+
+                            <Label Grid.Row="2" Text="Koppelcode" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Button Grid.Row="2" Grid.Column="1" Text="⧉  Kopieer koppelcode" IsEnabled="{Binding IsPairable}" Clicked="CopyPairingCodeClicked" />
+                            <Border Grid.Row="3" Grid.ColumnSpan="2" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                <Label Text="{Binding PairingCodeDisplay}" TextColor="{StaticResource TextPrimary}" FontSize="24" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            </Border>
+                        </Grid>
+
+                        <Border Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Label Text="{Binding PairingStatusText}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                        </Border>
+
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="Hulp" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Label Text="Open Home Assistant > Integraties > DJConnect. Als discovery niet werkt, vul het Client adres handmatig in. Zorg dat Windows en Home Assistant op hetzelfde lokale netwerk zitten; firewall kan lokale pairing blokkeren." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+
+                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+                            <Button Text="Demo Mode" Clicked="StartDemoModeClicked" />
+                            <Button Grid.Column="1" Text="↗  Setup openen" Clicked="OpenSetupLink" />
+                            <Button Grid.Column="2" Text="Niet nu" Command="{Binding HidePairingCommand}" />
+                        </Grid>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout IsVisible="{Binding IsPairingSuccessVisible}" Spacing="18">
+                        <Border Padding="18" BackgroundColor="#143A2A" Stroke="#35E56B" StrokeShape="RoundRectangle 8">
+                            <VerticalStackLayout Spacing="8">
+                                <Label Text="Succesvol gekoppeld" FontSize="26" FontAttributes="Bold" TextColor="#35E56B" HorizontalTextAlignment="Center" />
+                                <Label Text="Het DJConnect device-token is app-private opgeslagen. mDNS discovery is gestopt." TextColor="{StaticResource TextPrimary}" HorizontalTextAlignment="Center" />
+                            </VerticalStackLayout>
+                        </Border>
+                        <Button Text="Aan de slag!" HeightRequest="58" Command="{Binding CompletePairingSuccessCommand}" />
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <Grid IsVisible="{Binding IsCrashReportPromptVisible}" BackgroundColor="#AA000000">
+            <Border Padding="24" WidthRequest="780" MaximumWidthRequest="780" BackgroundColor="#292875" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" HorizontalOptions="Center" VerticalOptions="Center">
+                <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16">
+                    <Grid ColumnDefinitions="64,*,Auto" ColumnSpacing="16">
+                        <Border BackgroundColor="#4A3219" Stroke="#F59E0B" StrokeShape="RoundRectangle 8" WidthRequest="56" HeightRequest="56">
+                            <Label Text="⚠" FontSize="30" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="#FBBF24" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                            <Label Text="De app is mogelijk gecrasht" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="Je kunt privacy-safe diagnostiek kopiëren of een GitHub issue voorbereiden." TextColor="{StaticResource TextSecondary}" />
+                            <Label Text="Er wordt niets automatisch geüpload." TextColor="{StaticResource TextSecondary}" FontAttributes="Bold" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="2" Text="✕" Command="{Binding DismissCrashReportCommand}" WidthRequest="52" />
+                    </Grid>
+
+                    <Border Grid.Row="1" IsVisible="{Binding HasCrashReportNotice}" Padding="12" BackgroundColor="#143A2A" Stroke="#35E56B" StrokeShape="RoundRectangle 8">
+                        <Label Text="{Binding CrashReportNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                    </Border>
+
+                    <ScrollView Grid.Row="2">
+                        <VerticalStackLayout Spacing="14">
+                            <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="8">
+                                <Label Text="App versie" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Column="1" Text="{Binding AppVersion}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="1" Text="Protocol" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="1" Grid.Column="1" Text="{Binding ProtocolVersion}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="2" Text="Client type" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="2" Grid.Column="1" Text="{Binding ClientType}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="3" Text="OS" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="3" Grid.Column="1" Text="{Binding FeedbackOsVersion}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="4" Text="Pairing" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="4" Grid.Column="1" Text="{Binding FeedbackPairingStatus}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="5" Text="Demo mode" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="5" Grid.Column="1" Text="{Binding AboutDemoModeText}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="6" Text="Runtime" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="6" Grid.Column="1" Text="{Binding RuntimeCompatibilityText}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="7" Text="Backend" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="7" Grid.Column="1" Text="{Binding AboutBackendAvailabilityText}" TextColor="{StaticResource TextPrimary}" />
+                            </Grid>
+
+                            <VerticalStackLayout IsVisible="{Binding IsCrashReportPreviewVisible}" Spacing="8">
+                                <Label Text="Preview" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Editor Text="{Binding CrashReportPreviewText}"
+                                        AutoSize="TextChanges"
+                                        MinimumHeightRequest="220"
+                                        MaximumHeightRequest="340"
+                                        BackgroundColor="#071026"
+                                        TextColor="{StaticResource TextPrimary}"
+                                        FontFamily="Courier New"
+                                        FontSize="13" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </ScrollView>
+
+                    <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
+                        <Button Text="Preview" Command="{Binding PreviewCrashReportCommand}" WidthRequest="120" />
+                        <Button Grid.Column="1" Text="⧉  Kopieer crashrapport" Command="{Binding CopyCrashReportCommand}" WidthRequest="210" />
+                        <Button Grid.Column="2" Text="↗  Open GitHub issue" Command="{Binding OpenCrashReportIssueCommand}" WidthRequest="190" />
+                        <Button Grid.Column="3" Text="Niet nu" Command="{Binding DismissCrashReportCommand}" WidthRequest="120" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid IsVisible="{Binding IsWakewordPromptVisible}" BackgroundColor="#AA000000">
+            <Border Padding="26" WidthRequest="640" MaximumWidthRequest="640" BackgroundColor="#292875" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" HorizontalOptions="Center" VerticalOptions="Center">
+                <VerticalStackLayout Spacing="18">
+                    <Grid ColumnDefinitions="72,*" ColumnSpacing="18">
+                        <Border BackgroundColor="#3B367D" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" WidthRequest="64" HeightRequest="64">
+                            <Label Text="🎙" FontSize="30" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="{StaticResource Accent}" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                            <Label Text="Stemactivatie inschakelen?" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="Start Ask DJ handsfree met “Hey DJ” terwijl DJConnect open is." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Border IsVisible="{Binding HasWakewordNotice}" Padding="12" BackgroundColor="#2A2352" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                        <Label Text="{Binding WakewordNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                    </Border>
+
+                    <Border Padding="16" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                        <VerticalStackLayout Spacing="8">
+                            <Label Text="Microfoon- en spraakherkenningstoestemming kunnen worden gevraagd." TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" LineBreakMode="WordWrap" />
+                            <Label Text="Stemactivatie werkt alleen terwijl de app open is. Push-to-talk blijft beschikbaar zonder wakeword; tekstchat blijft beschikbaar zonder microfoon." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                            <Label Text="Je kunt dit later uitschakelen in Instellingen." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Button Text="🎙  Stemactivatie inschakelen" HeightRequest="56" Command="{Binding EnableWakewordCommand}" />
+                        <Button Grid.Column="1" Text="Niet nu" HeightRequest="56" Command="{Binding DismissWakewordPromptCommand}" />
+                    </Grid>
+                    <Button Text="♧  Meer over privacy" Command="{Binding ShowPrivacyFromWakewordCommand}" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+
+        <Grid IsVisible="{Binding IsFeedbackOverlayVisible}" BackgroundColor="#AA000000">
+            <Border Padding="24" WidthRequest="860" MaximumWidthRequest="860" BackgroundColor="#292875" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" HorizontalOptions="Center" VerticalOptions="Center">
+                <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16">
+                    <Grid ColumnDefinitions="64,*,Auto" ColumnSpacing="16">
+                        <Border BackgroundColor="#3B367D" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" WidthRequest="56" HeightRequest="56">
+                            <Label Text="✎" FontSize="28" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="{StaticResource Accent}" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="3" VerticalOptions="Center">
+                            <Label Text="Feedback delen" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="Vertel wat beter kan of kopieer een privacy-safe bugreport." TextColor="{StaticResource TextSecondary}" />
+                            <Label Text="DJConnect uploadt niets automatisch." TextColor="{StaticResource TextSecondary}" FontAttributes="Bold" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="2" Text="✕" Command="{Binding HideFeedbackCommand}" WidthRequest="52" />
+                    </Grid>
+
+                    <Border Grid.Row="1" IsVisible="{Binding HasFeedbackNotice}" Padding="12" BackgroundColor="#143A2A" Stroke="#35E56B" StrokeShape="RoundRectangle 8">
+                        <Label Text="{Binding FeedbackNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                    </Border>
+
+                    <ScrollView Grid.Row="2">
+                        <VerticalStackLayout Spacing="16">
+                            <VerticalStackLayout Spacing="8" RadioButtonGroup.GroupName="FeedbackType" RadioButtonGroup.SelectedValue="{Binding SelectedFeedbackType, Mode=TwoWay}">
+                                <Label Text="Type" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <HorizontalStackLayout Spacing="18">
+                                    <RadioButton Content="Bug" Value="Bug" TextColor="{StaticResource TextPrimary}" />
+                                    <RadioButton Content="Idee" Value="Idee" TextColor="{StaticResource TextPrimary}" />
+                                    <RadioButton Content="Vraag" Value="Vraag" TextColor="{StaticResource TextPrimary}" />
+                                    <RadioButton Content="App Store feedback" Value="App Store feedback" TextColor="{StaticResource TextPrimary}" />
+                                </HorizontalStackLayout>
+                            </VerticalStackLayout>
+
+                            <Grid ColumnDefinitions="*,300" ColumnSpacing="18">
+                                <VerticalStackLayout Spacing="8">
+                                    <Label Text="Bericht" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                    <Editor Text="{Binding FeedbackText}"
+                                            Placeholder="Wat gebeurde er? Wat verwachtte je?"
+                                            AutoSize="TextChanges"
+                                            MinimumHeightRequest="150"
+                                            MaximumHeightRequest="260"
+                                            BackgroundColor="#586091"
+                                            TextColor="{StaticResource TextPrimary}"
+                                            PlaceholderColor="{StaticResource TextSecondary}" />
+                                </VerticalStackLayout>
+
+                                <VerticalStackLayout Grid.Column="1" Spacing="10">
+                                    <Label Text="Context" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                    <Border Padding="12" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                        <Label Text="{Binding FeedbackContextSummary}" FontFamily="Courier New" FontSize="13" TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                                    </Border>
+                                    <HorizontalStackLayout Spacing="10">
+                                        <CheckBox IsChecked="{Binding IncludePrivacySafeLogs}" Color="{StaticResource Accent}" VerticalOptions="Center" />
+                                        <Label Text="Privacy-safe logs toevoegen" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
+                                    </HorizontalStackLayout>
+                                    <Label Text="Opt-in. Tokens, pairing codes en private waarden worden vóór preview, kopiëren en openen geredigeerd." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                                </VerticalStackLayout>
+                            </Grid>
+
+                            <VerticalStackLayout IsVisible="{Binding IsFeedbackPreviewVisible}" Spacing="8">
+                                <Label Text="Preview" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                                <Editor Text="{Binding FeedbackPreviewText}"
+                                        AutoSize="TextChanges"
+                                        MinimumHeightRequest="220"
+                                        MaximumHeightRequest="360"
+                                        BackgroundColor="#071026"
+                                        TextColor="{StaticResource TextPrimary}"
+                                        FontFamily="Courier New"
+                                        FontSize="13" />
+                            </VerticalStackLayout>
+                        </VerticalStackLayout>
+                    </ScrollView>
+
+                    <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="12">
+                        <Button Text="Preview" Command="{Binding PreviewFeedbackCommand}" WidthRequest="120" />
+                        <Button Grid.Column="1" Text="⧉  Kopieer feedback" Command="{Binding CopyFeedbackCommand}" WidthRequest="190" />
+                        <Button Grid.Column="2" Text="↗  Open GitHub issue" Command="{Binding OpenFeedbackIssueCommand}" WidthRequest="190" />
+                        <Button Grid.Column="3" Text="Annuleren" Command="{Binding HideFeedbackCommand}" WidthRequest="120" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid IsVisible="{Binding IsWhatsNewVisible}" BackgroundColor="#CC050717">
+            <Border Padding="28" WidthRequest="720" MaximumWidthRequest="720" BackgroundColor="#292875" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" HorizontalOptions="Center" VerticalOptions="Center">
+                <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="18">
+                    <Grid ColumnDefinitions="72,*" ColumnSpacing="18">
+                        <Border BackgroundColor="#3B367D" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" WidthRequest="64" HeightRequest="64">
+                            <Label Text="✦" FontSize="30" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="{StaticResource Accent}" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                            <Label Text="{Binding WhatsNewTitle}" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="{Binding WhatsNewSubtitle}" TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <ActivityIndicator Grid.Row="1" IsRunning="{Binding IsLoadingWhatsNew}" IsVisible="{Binding IsLoadingWhatsNew}" Color="{StaticResource Accent}" />
+
+                    <ScrollView Grid.Row="2" HeightRequest="360">
+                        <Label Text="{Binding WhatsNewBody}" TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" FontSize="16" />
+                    </ScrollView>
+
+                    <Label Grid.Row="3" Text="https://djconnect.dev" TextColor="{StaticResource TextSecondary}" />
+
+                    <Grid Grid.Row="4" ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Button Text="Doorgaan" HeightRequest="56" Command="{Binding DismissWhatsNewCommand}" />
+                        <Button Grid.Column="1" Text="↗  Bekijk online" HeightRequest="56" Clicked="OpenWhatsNewOnline" />
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid IsVisible="{Binding IsPermissionExplanationVisible}" BackgroundColor="#CC050717">
+            <Border Padding="28" WidthRequest="620" BackgroundColor="#292875" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" HorizontalOptions="Center" VerticalOptions="Center">
+                <VerticalStackLayout Spacing="18">
+                    <Grid ColumnDefinitions="72,*" ColumnSpacing="18">
+                        <Border BackgroundColor="#3B367D" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" WidthRequest="64" HeightRequest="64">
+                            <Label Text="{Binding PermissionIcon}" FontSize="30" HorizontalTextAlignment="Center" VerticalTextAlignment="Center" TextColor="{StaticResource Accent}" />
+                        </Border>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                            <Label Text="{Binding PermissionTitle}" FontSize="30" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="{Binding PermissionIntro}" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Border Padding="18" BackgroundColor="#3B367D" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                        <VerticalStackLayout Spacing="10">
+                            <Label Text="{Binding PermissionBodyPrimary}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" LineBreakMode="WordWrap" />
+                            <Label Text="{Binding PermissionBodySecondary}" TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                            <Label IsVisible="{Binding HasPermissionBodyTertiary}" Text="{Binding PermissionBodyTertiary}" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border IsVisible="{Binding IsLocalNetworkPermission}" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                        <Label Text="{Binding ClientAddress, StringFormat='Client adres: {0}'}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                        <Button Text="{Binding PermissionContinueText}" HeightRequest="56" Clicked="ContinuePermissionExplanationClicked" />
+                        <Button Grid.Column="1" Text="Niet nu" HeightRequest="56" Command="{Binding HidePermissionExplanationCommand}" />
+                    </Grid>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding IsLocalNetworkPermission}">
+                        <Button Text="Kopieer Client adres" HeightRequest="52" IsEnabled="{Binding CanCopyClientAddress}" Clicked="CopyClientAddressClicked" />
+                        <Button Grid.Column="1" Text="Open firewall instellingen" HeightRequest="52" Clicked="OpenPermissionSettingsClicked" />
+                    </Grid>
+
+                    <Button IsVisible="{Binding IsPermissionSettingsMode}" Text="{Binding PermissionSettingsText}" HeightRequest="52" Clicked="OpenPermissionSettingsClicked" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </Grid>
+</ContentPage>

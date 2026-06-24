@@ -26,7 +26,7 @@ Lees eerst:
 Belangrijke huidige status:
 - Repo: `pcvantol/djconnect-windows`.
 - Remote: `git@github.com:pcvantol/djconnect-windows.git`.
-- Huidige lokale release/tag: `v3.1.1`.
+- Huidige lokale release/tag: `v3.1.2`.
 - App stack: .NET MAUI single-project desktop app.
 - Targets:
   - `net10.0-windows10.0.19041.0`
@@ -45,17 +45,58 @@ Belangrijke huidige status:
     `WEBSITE_RELEASE_NOTES_TOKEN`.
 - Automatische tests staan in `tests/DJConnect.Tests` en draaien via
   `./run_tests.sh`.
-- Lokale protocol/core checks waren groen: 6 tests passed.
+- Laatste lokale package-free checks waren groen: 23 tests passed.
 - Lokale Mac Catalyst debug build is groen met Xcode 26.4.1 wanneer zowel
   `MD_APPLE_SDK_ROOT` als `DEVELOPER_DIR` naar
-  `/Applications/Xcode_26.4.1.app` wijzen. Een latere lokale no-restore build
-  bleef hangen in tooling/bundling en is afgebroken; laat GitHub Actions de
-  platformbuilds opnieuw valideren na push.
+  `/Applications/Xcode_26.4.1.app` wijzen. Een lokale no-restore compile komt
+  tot `DJConnect.dll`, maar kan daarna blijven hangen in MAUI tooling/bundling;
+  breek die lokale hang af en laat GitHub Actions de platformbuilds valideren
+  na push.
 - Release cleanup helper heet `clear_old_releases.sh`; dry-run is default.
+- Werkboom bevat lokale Unreleased UI/runtime uitbreidingen:
+  - permissions-uitleg voor microfoon, notificaties en lokale netwerk/firewall;
+  - vernieuwde pairing-flow met Client adres, koppelcode, strikte mDNS gating
+    en success-state;
+  - Update Required, What's New, About, Legal en Mini-games schermen;
+  - Settings, Playlists, Privacy, Logs/Diagnostiek, Feedback, Crash report,
+    Wakeword-prompt state en session-only Demo Mode.
+- Ask DJ ondersteunt het nieuwe server-side exchange contract:
+  - `response.messages[]` is canoniek wanneer aanwezig;
+  - messages kunnen `client_message_id`, `exchange_id`, `exchange_order` en
+    `history_revision` hebben;
+  - dedupe gebruikt primair `message.id`, daarna `client_message_id + role`;
+  - `exchange_id + exchange_order` is alleen ordeningssignaal;
+  - user-vragen blijven visueel boven assistant-antwoorden binnen dezelfde
+    exchange, ook bij optimistic UI, HTTP response, push en history sync.
+- Update Required blokkeert runtime controls bij HTTP 426, `version_mismatch`
+  of HA major/minor buiten de compatibele app-reeks, maar reset geen
+  pairing/token/mDNS state. Settings, logs, privacy, legal en feedback blijven
+  bereikbaar.
+- Pairing mDNS mag alleen adverteren wanneer `IsPairable` waar is en de lokale
+  Client API draait; pairing success stopt mDNS en toont `Aan de slag!` voordat
+  runtime UI wordt vrijgegeven.
+- What's New gebruikt lokale `LastSeenAppVersion`: fresh install/onboarding zet
+  de huidige versie als gezien, app-updates tonen release notes eenmalig,
+  demo/monkey/UI-test mode slaat over. Release notes worden privacy-safe vanaf
+  `djconnect.dev/release-notes/windows/...` geladen met korte timeout en
+  fallbacktekst.
+- Mini-games zijn volledig local-only: geen Home Assistant/API/playback/Ask
+  DJ/token/mDNS gebruik. Highscores staan in Preferences onder
+  `djconnect.windows.game.paddle.high`, `djconnect.windows.game.meteor.high`,
+  `djconnect.windows.game.sky.high` en `djconnect.windows.game.maze.high`.
+- About en Legal tonen alleen privacy-safe metadata; geen device id, private
+  Home Assistant URL, token, pairingcode, credentials, raw errors of diagnostics.
+- Feedback, Crash reports, Logs en Diagnostics gebruiken gedeelde redaction via
+  `DiagnosticRedactor`. Preview/copy/open-issue gebeurt pas na redaction en er
+  is geen automatische upload.
+- Demo Mode is session-only en wordt bij startup uitgezet. Demo flows gebruiken
+  geen Home Assistant calls, mDNS of token writes.
+- Wakeword state/settings bestaan, maar `WakewordFeatureAvailable` is bewust
+  `false` zolang er geen echte foreground wakeword engine is.
 
 Belangrijke regels:
 - Dit is een .NET MAUI desktop app voor Windows en macOS.
-- Huidige desktop app release: `3.1.1`.
+- Huidige desktop app release: `3.1.2`.
 - Home Assistant blijft eigenaar van pairing, Spotify OAuth/backend playback,
   Ask DJ history, DJ Memory, Assist/TTS en command execution.
 - De app bewaart geen Spotify credentials, OAuth tokens, DJ Memory of Ask DJ
@@ -73,8 +114,15 @@ Belangrijke regels:
   - `GET /api/djconnect/ask_dj/history`
   - `POST /api/djconnect/ask_dj/history/clear`
   - `POST /api/djconnect/command`
+- Ask DJ rendering moet compatibel blijven met oude servers zonder
+  `messages[]`; gebruik dan legacy `user_message`/`assistant_message` fallback
+  en behoud server/created-at order waar geen exchange metadata bestaat.
 - History sync gebruikt `history_revision`, `clear_revision`, trim metadata en
   maximaal 1000 berichten per HA user.
+- Permissions-uitleg flags:
+  `DJConnectPermissionExplanation.microphone.seen`,
+  `DJConnectPermissionExplanation.notifications.seen` en
+  `DJConnectPermissionExplanation.localNetwork.seen`.
 - Spotify trademark/non-affiliation notice moet zichtbaar blijven waar relevant:
   `Spotify is a trademark of Spotify AB. DJConnect is not affiliated with,
   endorsed by, or sponsored by Spotify AB.`
@@ -83,6 +131,9 @@ Belangrijke regels:
 - Geen secrets/tokens/wachtwoorden loggen of committen.
 - Gebruik `rg` voor zoeken en `apply_patch` voor handmatige edits.
 - Draai minimaal `./run_tests.sh` na protocol/model wijzigingen.
+- Draai na UI/ViewModel wijzigingen ook `git diff --check`; voor platform
+  compilechecks kan de Mac Catalyst no-restore build met de Xcode 26.4.1 env
+  gebruikt worden, rekening houdend met de bekende bundling-hang na compile.
 - Draai `dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj
   --verify-no-changes --no-restore` na testwijzigingen.
 - Als `dotnet format` lokaal faalt op een Roslyn named-pipe permissie in de

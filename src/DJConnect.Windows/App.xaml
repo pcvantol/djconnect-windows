@@ -2,16 +2,64 @@
              xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
     <Application.Resources>
+        <Color x:Key="PageBackground">#071026</Color>
+        <Color x:Key="Surface">#12142A</Color>
+        <Color x:Key="SurfaceRaised">#202657</Color>
+        <Color x:Key="Panel">#170B2D</Color>
+        <Color x:Key="TextPrimary">#F7F4FF</Color>
+        <Color x:Key="TextSecondary">#AAA2BE</Color>
+        <Color x:Key="Accent">#D536F6</Color>
+        <Color x:Key="AccentBlue">#3498FF</Color>
+        <Color x:Key="Border">#3B3762</Color>
+        <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0,1" EndPoint="1,0">
+            <GradientStop Color="#250636" Offset="0" />
+            <GradientStop Color="#071026" Offset="0.38" />
+            <GradientStop Color="#213B80" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="AccentBrush" StartPoint="0,0" EndPoint="1,0">
+            <GradientStop Color="#34A4FF" Offset="0" />
+            <GradientStop Color="#D92EED" Offset="1" />
+        </LinearGradientBrush>
+        <LinearGradientBrush x:Key="CardBrush" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#080412" Offset="0" />
+            <GradientStop Color="#271044" Offset="0.54" />
+            <GradientStop Color="#142B65" Offset="1" />
+        </LinearGradientBrush>
+
+        <Style TargetType="ContentPage">
+            <Setter Property="BackgroundColor" Value="{StaticResource PageBackground}" />
+        </Style>
+        <Style TargetType="TabbedPage">
+            <Setter Property="BackgroundColor" Value="{StaticResource PageBackground}" />
+            <Setter Property="BarBackgroundColor" Value="{StaticResource Surface}" />
+            <Setter Property="BarTextColor" Value="{StaticResource TextPrimary}" />
+            <Setter Property="SelectedTabColor" Value="{StaticResource Accent}" />
+            <Setter Property="UnselectedTabColor" Value="{StaticResource TextSecondary}" />
+        </Style>
+        <Style TargetType="Label">
+            <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+        </Style>
         <Style TargetType="Button">
-            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Padding" Value="14,9" />
             <Setter Property="Margin" Value="4" />
-            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="CornerRadius" Value="8" />
+            <Setter Property="Background" Value="{StaticResource AccentBrush}" />
+            <Setter Property="TextColor" Value="#FFFFFF" />
+            <Setter Property="BorderColor" Value="Transparent" />
+            <Setter Property="BorderWidth" Value="0" />
+            <Setter Property="FontAttributes" Value="Bold" />
         </Style>
         <Style TargetType="Entry">
             <Setter Property="Margin" Value="4" />
+            <Setter Property="BackgroundColor" Value="{StaticResource Surface}" />
+            <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+            <Setter Property="PlaceholderColor" Value="{StaticResource TextSecondary}" />
         </Style>
         <Style TargetType="Editor">
             <Setter Property="Margin" Value="4" />
+            <Setter Property="BackgroundColor" Value="{StaticResource Surface}" />
+            <Setter Property="TextColor" Value="{StaticResource TextPrimary}" />
+            <Setter Property="PlaceholderColor" Value="{StaticResource TextSecondary}" />
         </Style>
     </Application.Resources>
 </Application>

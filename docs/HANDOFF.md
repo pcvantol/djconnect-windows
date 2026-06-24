@@ -2,15 +2,20 @@
 
 ## Current Status
 
-DJConnect desktop `3.1.1` has been scaffolded as a .NET MAUI app targeting
+DJConnect desktop `3.1.2` has been scaffolded as a .NET MAUI app targeting
 Windows and macOS. It includes:
 
-- Home Assistant URL/token/pairing UI;
+- onboarding-gated local pairing API and pairable `_djconnect._tcp` mDNS;
 - stable `windows` client identity constants;
 - typed API client for pairing, status, Ask DJ history/message/clear and
   command actions;
 - Ask DJ timeline, action and recent-played rendering;
-- basic playback command buttons;
+- Now Playing, Queue and Playlists rendering with generic playback/start
+  commands;
+- Settings, Privacy, Logs/Diagnostics, Feedback, Crash report, Wakeword prompt
+  state, Demo Mode, About, Legal, What's New and Mini-games screens;
+- shared `DiagnosticRedactor` used before log storage/export, feedback preview,
+  crash report preview, clipboard copy and GitHub issue URL construction;
 - Windows Credential Manager and macOS Keychain token storage;
 - automatic protocol/core tests through `./run_tests.sh`;
 - GitHub Actions CI for protocol tests and Windows/macOS MAUI builds;
@@ -24,16 +29,18 @@ Windows and macOS. It includes:
   `MD_APPLE_SDK_ROOT=/Applications/Xcode_26.4.1.app` and
   `DEVELOPER_DIR=/Applications/Xcode_26.4.1.app/Contents/Developer` are set.
 - The backend contract does not yet document `client_type: "windows"`.
-- GitHub Actions workflow definitions exist but still need a remote run after
-  the repo is pushed.
+- GitHub Actions workflow definitions exist but still need validation on the
+  remote repository after the maintainer pushes.
 - Public unsigned release automation exists; signed Windows installers,
   Windows signing and Mac Catalyst notarization are not implemented.
+- Wakeword UI state exists, but the real wakeword listener remains disabled
+  behind `WakewordFeatureAvailable`.
 
 ## Next Best Steps
 
 1. Push `main` and tags when the maintainer asks, then validate GitHub Actions
    CI and public unsigned release publication.
 2. Add backend/doc support for `windows` client type in the Home Assistant repo.
-3. Extend tests to command execution defaults and stale-pairing handling.
+3. Extend tests for stale-pairing handling and any future real wakeword engine.
 4. Validate live pairing and Ask DJ against Home Assistant.
 5. Add signed Windows packaging and signed/notarized Mac Catalyst distribution.

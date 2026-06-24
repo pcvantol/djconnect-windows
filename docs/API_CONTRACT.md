@@ -90,3 +90,36 @@ specific command.
 Recent-played informational responses render returned `items[]` as compact
 lists. The app must not invent Play Now buttons unless `playback_actions[]` is
 present.
+
+## Queue And Playlists
+
+Queue state may appear as `queue`, `items`, `queue_items` or inside collection
+envelopes. Playlist state may appear as `playlists`, `playlist_items` or inside
+collection envelopes. The app normalizes aliases such as `title`, `name`,
+`display_title`, `subtitle`, `description`, `owner`, `source`, artwork URL
+fields and URI/context fields before rendering.
+
+The client caps rendered queue and playlist rows at 100 and deduplicates by
+stable ids or deterministic signatures. Starting backend-owned media uses
+generic commands only:
+
+```json
+{
+  "command": "playlist_start",
+  "playlist_uri": "<backend-provided-uri>",
+  "output_id": "<selected-output-id>"
+}
+```
+
+Queue item start follows the same pattern with `queue_item_play` or a
+backend-returned action. Removed Spotify override fields such as
+`spotify_source` and `liked_proxy_playlist_uri` must not be emitted.
+
+## Diagnostics And User-Prepared Reports
+
+Feedback, logs and crash reports are local client-generated Markdown/text
+exports. They are not sent to Home Assistant and are not uploaded by API. The
+client redacts bearer tokens, Authorization headers, pairing codes, bootstrap
+proofs, Home Assistant long-lived tokens, push tokens, cookies, secrets,
+password/API-key patterns and private URLs before preview, copy or GitHub issue
+URL construction.
