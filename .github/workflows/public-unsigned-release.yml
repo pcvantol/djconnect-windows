@@ -154,8 +154,8 @@ jobs:
       - name: Restore app dependencies
         shell: pwsh
         run: |
-          dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM -r win-x64
-          dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM -r win-arm64
+          dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM -p:RuntimeIdentifier=win-x64 -r win-x64
+          dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM -p:RuntimeIdentifier=win-arm64 -r win-arm64
 
       - name: Publish unsigned Windows app
         shell: pwsh
@@ -171,6 +171,7 @@ jobs:
               -f $env:WINDOWS_TFM `
               -r $rid `
               --no-restore `
+              -p:RuntimeIdentifier=$rid `
               -p:PublishReadyToRun=false `
               -p:WindowsPackageType=None `
               -o $outputDir

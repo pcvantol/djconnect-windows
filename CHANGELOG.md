@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 3.1.3 - 2026-06-24
+
+- Re-ran the 3.1.2 desktop feature release with explicit Windows runtime
+  restore/publish properties for `win-x64` and `win-arm64` unsigned release
+  artifacts.
+- Includes the 3.1.2 desktop UX, privacy, diagnostics, Demo Mode, Wakeword-gated
+  UI and non-functional requirement coverage.
+
 ## 3.1.2 - 2026-06-24
 
 - Added client-side local pairing API and `_djconnect._tcp` mDNS discovery flow
