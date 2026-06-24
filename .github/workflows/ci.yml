@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  protocol-tests:
+    name: Protocol/core tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Run automatic tests
+        run: ./run_tests.sh
+
+      - name: Check test project formatting
+        run: dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj --verify-no-changes --no-restore
+
+  maui-macos-build:
+    name: MAUI macOS build
+    runs-on: macos-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui
+
+      - name: Restore app dependencies
+        run: dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-maccatalyst
+
+      - name: Build Mac Catalyst app
+        run: dotnet build src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-maccatalyst --no-restore
+
+  maui-windows-build:
+    name: MAUI Windows build
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install MAUI workload
+        run: dotnet workload install maui
+
+      - name: Restore app dependencies
+        run: dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-windows10.0.19041.0
+
+      - name: Build Windows app
+        run: dotnet build src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-windows10.0.19041.0 --no-restore

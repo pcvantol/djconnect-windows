@@ -1,0 +1,118 @@
+<TabbedPage x:Class="DJConnect.Windows.MainPage"
+            xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+            xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+            Title="DJConnect"
+            BarBackgroundColor="#F6F7F9">
+    <ContentPage Title="Pairing" BackgroundColor="#F6F7F9">
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="10">
+                <Label Text="DJConnect" FontSize="28" FontAttributes="Bold" />
+                <Label Text="{Binding Status}" TextColor="#596273" />
+                <Label Text="Home Assistant" FontSize="18" FontAttributes="Bold" Margin="0,12,0,0" />
+                <Label Text="URL" />
+                <Entry Text="{Binding HomeAssistantUrl}" />
+                <Label Text="DJConnect bearer token" />
+                <Entry Text="{Binding Token}" IsPassword="True" />
+                <Label Text="Pairing code uit Home Assistant" />
+                <Entry Text="{Binding PairingCode}" />
+                <HorizontalStackLayout>
+                    <Button Text="Opslaan" Command="{Binding SaveSettingsCommand}" />
+                    <Button Text="Koppelen" Command="{Binding PairCommand}" />
+                    <Button Text="Vernieuw" Command="{Binding RefreshCommand}" />
+                </HorizontalStackLayout>
+                <Label Text="Client identity" FontSize="18" FontAttributes="Bold" Margin="0,12,0,0" />
+                <Label Text="{Binding ClientType, StringFormat='client_type: {0}'}" />
+                <Label Text="{Binding DeviceId, StringFormat='device_id: {0}'}" LineBreakMode="WordWrap" />
+                <Label Text="Open punt: backend docs noemen windows nog niet als toegestaan client_type. De waarde staat centraal in DJConnectContract.cs."
+                       TextColor="#8A5B00"
+                       LineBreakMode="WordWrap"
+                       Margin="0,8,0,0" />
+            </VerticalStackLayout>
+        </ScrollView>
+    </ContentPage>
+
+    <ContentPage Title="Ask DJ" BackgroundColor="#F6F7F9">
+        <Grid Padding="20" RowDefinitions="Auto,*,Auto,Auto" ColumnDefinitions="2*,*" ColumnSpacing="12">
+            <VerticalStackLayout Grid.ColumnSpan="2">
+                <Label Text="Ask DJ" FontSize="24" FontAttributes="Bold" />
+                <Label Text="{Binding Status}" TextColor="#596273" />
+            </VerticalStackLayout>
+            <CollectionView Grid.Row="1" ItemsSource="{Binding Messages}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="10" Margin="4" BackgroundColor="White" Stroke="#DDE2EA" StrokeThickness="1">
+                            <VerticalStackLayout>
+                                <Label Text="{Binding Role}" FontAttributes="Bold" TextColor="#596273" />
+                                <Label Text="{Binding Text}" LineBreakMode="WordWrap" />
+                                <Label Text="{Binding Message}" LineBreakMode="WordWrap" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <ScrollView Grid.Row="1" Grid.Column="1">
+                <VerticalStackLayout>
+                    <Label Text="Acties" FontSize="16" FontAttributes="Bold" />
+                    <CollectionView ItemsSource="{Binding Actions}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="8" Margin="0,6,0,0" BackgroundColor="White" Stroke="#DDE2EA" StrokeThickness="1">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Kind}" TextColor="#596273" />
+                                        <Label Text="{Binding Title}" FontAttributes="Bold" LineBreakMode="WordWrap" />
+                                        <Label Text="{Binding Label}" LineBreakMode="WordWrap" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                    <Label Text="Recent gespeeld" FontSize="16" FontAttributes="Bold" Margin="0,18,0,0" />
+                    <CollectionView ItemsSource="{Binding RecentItems}">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="8" Margin="0,6,0,0" BackgroundColor="White" Stroke="#DDE2EA" StrokeThickness="1">
+                                    <VerticalStackLayout>
+                                        <Label Text="{Binding Title}" FontAttributes="Bold" LineBreakMode="WordWrap" />
+                                        <Label Text="{Binding Subtitle}" TextColor="#596273" LineBreakMode="WordWrap" />
+                                        <Label Text="{Binding PlayedAtLabel}" TextColor="#596273" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+            </ScrollView>
+            <Editor Grid.Row="2" Grid.ColumnSpan="2" Text="{Binding AskDJText}" AutoSize="TextChanges" MinimumHeightRequest="44" />
+            <HorizontalStackLayout Grid.Row="3" Grid.ColumnSpan="2" HorizontalOptions="End">
+                <Button Text="Wis history" Command="{Binding ClearHistoryCommand}" />
+                <Button Text="Stuur" Command="{Binding SendAskDJCommand}" />
+            </HorizontalStackLayout>
+        </Grid>
+    </ContentPage>
+
+    <ContentPage Title="Now Playing" BackgroundColor="#F6F7F9">
+        <VerticalStackLayout Padding="20">
+            <Label Text="Now Playing" FontSize="24" FontAttributes="Bold" />
+            <Label Text="{Binding NowPlaying}" FontSize="22" FontAttributes="Bold" Margin="0,12,0,0" />
+            <HorizontalStackLayout Margin="0,12,0,0">
+                <Button Text="Vorige" Command="{Binding PreviousCommand}" />
+                <Button Text="Play" Command="{Binding PlayCommand}" />
+                <Button Text="Pauze" Command="{Binding PauseCommand}" />
+                <Button Text="Volgende" Command="{Binding NextCommand}" />
+            </HorizontalStackLayout>
+            <Label Text="Play Now en follow-up acties worden via /api/djconnect/command uitgevoerd; Spotify OAuth en playback blijven in Home Assistant."
+                   TextColor="#596273"
+                   LineBreakMode="WordWrap"
+                   Margin="0,16,0,0" />
+        </VerticalStackLayout>
+    </ContentPage>
+
+    <ContentPage Title="About" BackgroundColor="#F6F7F9">
+        <VerticalStackLayout Padding="20">
+            <Label Text="DJConnect" FontSize="24" FontAttributes="Bold" />
+            <Label Text="Copyright (c) 2026 Peter van Tol." Margin="0,10,0,0" />
+            <Label Text="{Binding LegalNotice}" LineBreakMode="WordWrap" Margin="0,10,0,0" />
+            <Label Text="MIT licensed. Third-party dependencies keep their own licenses." LineBreakMode="WordWrap" Margin="0,10,0,0" />
+        </VerticalStackLayout>
+    </ContentPage>
+</TabbedPage>

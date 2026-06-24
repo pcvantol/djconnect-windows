@@ -1,0 +1,17 @@
+<Application x:Class="DJConnect.Windows.App"
+             xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+    <Application.Resources>
+        <Style TargetType="Button">
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="CornerRadius" Value="6" />
+        </Style>
+        <Style TargetType="Entry">
+            <Setter Property="Margin" Value="4" />
+        </Style>
+        <Style TargetType="Editor">
+            <Setter Property="Margin" Value="4" />
+        </Style>
+    </Application.Resources>
+</Application>
