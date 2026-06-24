@@ -26,7 +26,7 @@ Lees eerst:
 Belangrijke huidige status:
 - Repo: `pcvantol/djconnect-windows`.
 - Remote: `git@github.com:pcvantol/djconnect-windows.git`.
-- Huidige lokale release/tag: `v3.1.6`.
+- Huidige lokale release/tag: `v3.1.7`.
 - App stack: .NET MAUI single-project desktop app.
 - Targets:
   - `net10.0-windows10.0.19041.0`
@@ -96,7 +96,7 @@ Belangrijke huidige status:
 
 Belangrijke regels:
 - Dit is een .NET MAUI desktop app voor Windows en macOS.
-- Huidige desktop app release: `3.1.6`.
+- Huidige desktop app release: `3.1.7`.
 - Home Assistant blijft eigenaar van pairing, Spotify OAuth/backend playback,
   Ask DJ history, DJ Memory, Assist/TTS en command execution.
 - De app bewaart geen Spotify credentials, OAuth tokens, DJ Memory of Ask DJ
