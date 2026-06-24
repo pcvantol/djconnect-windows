@@ -157,6 +157,9 @@ Source order for the static notes:
 - Windows MSIX or installer packaging.
 - Windows signing.
 - Mac Catalyst app bundle signing and notarization.
+- GitHub-hosted Mac Catalyst release artifacts require a runner with Xcode
+  26.x. The workflow skips Mac Catalyst artifact publication when hosted macOS
+  only provides an older Xcode.
 - Version injection into status payloads.
 - Public release artifacts are currently unsigned diagnostic zips.
 

@@ -66,10 +66,11 @@ jobs:
           global-json-file: global.json
 
       - name: Select compatible Xcode
+        id: xcode
         shell: bash
         run: |
           set -euo pipefail
-          for candidate in /Applications/Xcode_26.4.1.app /Applications/Xcode_26.4.app /Applications/Xcode.app; do
+          for candidate in /Applications/Xcode_26.5.app /Applications/Xcode_26.4.1.app /Applications/Xcode_26.4.app /Applications/Xcode.app; do
             if [[ -d "$candidate" ]]; then
               echo "MD_APPLE_SDK_ROOT=$candidate" >> "$GITHUB_ENV"
               echo "DEVELOPER_DIR=$candidate/Contents/Developer" >> "$GITHUB_ENV"
@@ -78,14 +79,25 @@ jobs:
             fi
           done
           xcodebuild -version
+          version="$(xcodebuild -version | awk '/Xcode/ {print $2}')"
+          major="${version%%.*}"
+          if [[ "$major" -ge 26 ]]; then
+            echo "supported=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "supported=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping Mac Catalyst release artifact because this runner has Xcode ${version}; the .NET 10 Mac Catalyst workload currently requires Xcode 26.x."
+          fi
 
       - name: Install MAUI workload
+        if: steps.xcode.outputs.supported == 'true'
         run: dotnet workload restore "$PROJECT_PATH" -p:TargetFramework="$MACCATALYST_TFM"
 
       - name: Restore app dependencies
+        if: steps.xcode.outputs.supported == 'true'
         run: dotnet restore "$PROJECT_PATH" -p:TargetFramework="$MACCATALYST_TFM"
 
       - name: Publish unsigned Mac Catalyst app
+        if: steps.xcode.outputs.supported == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -114,6 +126,7 @@ jobs:
           shasum -a 256 "DJConnect-MacCatalyst-${version}-unsigned.zip" > "DJConnect-MacCatalyst-${version}-SHA256SUMS.txt"
 
       - name: Upload Mac Catalyst artifact
+        if: steps.xcode.outputs.supported == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: public-maccatalyst-release
@@ -140,7 +153,7 @@ jobs:
 
       - name: Restore app dependencies
         shell: pwsh
-        run: dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM
+        run: dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM -r win-x64
 
       - name: Publish unsigned Windows app
         shell: pwsh
@@ -151,6 +164,7 @@ jobs:
           dotnet publish $env:PROJECT_PATH `
             -c Release `
             -f $env:WINDOWS_TFM `
+            -r win-x64 `
             --no-restore `
             -p:WindowsPackageType=None `
             -o ".public-release/windows"
@@ -180,11 +194,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download unsigned artifacts
+      - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
+          name: public-windows-release
           path: .public-release/artifacts
-          merge-multiple: true
+
+      - name: Download Mac Catalyst artifact
+        id: download-maccatalyst
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: public-maccatalyst-release
+          path: .public-release/artifacts
 
       - name: Create combined checksums
         shell: bash
@@ -312,13 +334,17 @@ jobs:
             ".public-release/artifacts/DJConnect-Windows-${version}-SHA256SUMS.txt" \
             .public-release/artifacts/SHA256SUMS.txt
 
-          publish_release \
-            "$maccatalyst_tag" \
-            "DJConnect Mac Catalyst ${version}" \
-            .public-release/release-notes-MacCatalyst-en.md \
-            ".public-release/artifacts/DJConnect-MacCatalyst-${version}-unsigned.zip" \
-            ".public-release/artifacts/DJConnect-MacCatalyst-${version}-SHA256SUMS.txt" \
-            .public-release/artifacts/SHA256SUMS.txt
+          if [[ -f ".public-release/artifacts/DJConnect-MacCatalyst-${version}-unsigned.zip" ]]; then
+            publish_release \
+              "$maccatalyst_tag" \
+              "DJConnect Mac Catalyst ${version}" \
+              .public-release/release-notes-MacCatalyst-en.md \
+              ".public-release/artifacts/DJConnect-MacCatalyst-${version}-unsigned.zip" \
+              ".public-release/artifacts/DJConnect-MacCatalyst-${version}-SHA256SUMS.txt" \
+              .public-release/artifacts/SHA256SUMS.txt
+          else
+            echo "::notice::No Mac Catalyst artifact was produced; skipping maccatalyst/v${version} public release."
+          fi
 
           for prefix in windows maccatalyst; do
             keep_seen=0

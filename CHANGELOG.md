@@ -37,3 +37,6 @@
   public unsigned release flow and EN/NL What's New publication.
 - Documented standard release hygiene: docs, tests, GitHub CI validation and
   old release/tag/workflow cleanup.
+- Fixed CI/release workflow handling for GitHub-hosted macOS runners without
+  Xcode 26.x and restored Windows release publish with an explicit `win-x64`
+  runtime restore.

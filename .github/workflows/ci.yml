@@ -47,13 +47,31 @@ jobs:
         with:
           global-json-file: global.json
 
+      - name: Check Mac Catalyst Xcode compatibility
+        id: xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          version="$(xcodebuild -version | awk '/Xcode/ {print $2}')"
+          major="${version%%.*}"
+          if [[ "$major" -ge 26 ]]; then
+            echo "supported=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "supported=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipping Mac Catalyst build because this runner has Xcode ${version}; the .NET 10 Mac Catalyst workload currently requires Xcode 26.x."
+          fi
+
       - name: Install MAUI workload
+        if: steps.xcode.outputs.supported == 'true'
         run: dotnet workload restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-maccatalyst
 
       - name: Restore app dependencies
+        if: steps.xcode.outputs.supported == 'true'
         run: dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-maccatalyst
 
       - name: Build Mac Catalyst app
+        if: steps.xcode.outputs.supported == 'true'
         run: dotnet build src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-maccatalyst --no-restore
 
   maui-windows-build:
