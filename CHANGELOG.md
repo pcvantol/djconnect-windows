@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added non-destructive Demo Mode monkey-test support for CI/UI stress runs.
+  `DJCONNECT_DEMO_MONKEY_TEST=1` starts the app directly in Demo Mode, suppresses
+  persistence, pairing/token writes, mDNS/local Client API startup, clipboard
+  writes, external browser launches, permission settings and destructive clear
+  or reset actions.
+
 ## 3.1.8 - 2026-06-24
 
 - Re-ran the 3.1.x desktop feature release with Windows unsigned artifacts

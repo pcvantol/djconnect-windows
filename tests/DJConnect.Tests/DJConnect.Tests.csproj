@@ -15,6 +15,7 @@
     <Compile Include="..\..\src\DJConnect.Windows\Services\DJConnectApiClient.cs" Link="Services\DJConnectApiClient.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\DiagnosticRedactor.cs" Link="Services\DiagnosticRedactor.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\MdnsAdvertiser.cs" Link="Services\MdnsAdvertiser.cs" />
+    <Compile Include="..\..\src\DJConnect.Windows\Services\MonkeyTestMode.cs" Link="Services\MonkeyTestMode.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\PairingCodeGenerator.cs" Link="Services\PairingCodeGenerator.cs" />
   </ItemGroup>
 </Project>

@@ -36,6 +36,11 @@ Required lifecycle:
 - Pairing reset: token/runtime state cleared, identity and pairing code rotated,
   pairing screen shown, mDNS starts only after the screen is visible.
 - Demo Mode: no mDNS, no Home Assistant calls, no token writes, session-only.
+- Demo monkey-test mode: when `DJCONNECT_DEMO_MONKEY_TEST` or a supported legacy
+  monkey/UI-test env var is truthy, the app starts directly in Demo Mode and
+  must suppress persistence, credential writes, local Client API/mDNS startup,
+  clipboard writes, external browser launches, permission settings, pairing
+  reset, log/history clear and demo exit actions.
 
 ## Runtime And Errors
 
@@ -60,6 +65,8 @@ Required lifecycle:
   dedupe.
 - Slider/network commands should be debounced or coalesced where appropriate.
 - Demo Mode and mini-games must not create unbounded timers or busy loops.
+- Monkey-test mode must remain bounded and local-only so CI can random-click the
+  UI without mutating user data or contacting Home Assistant.
 
 ## Accessibility And Input
 
@@ -89,6 +96,7 @@ The local test suite guards the highest-risk NFRs:
 - fresh install/onboarding defaults;
 - crash and wakeword defaults;
 - Demo Mode defaults to session-off;
+- monkey-test mode is explicit and environment driven;
 - mDNS TXT secret hygiene and pairable-only lifecycle snapshots.
 
 Before release, run:

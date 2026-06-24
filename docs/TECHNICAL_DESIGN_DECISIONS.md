@@ -72,6 +72,14 @@ Demo Mode is session-only and forced off during startup. It is a local product
 tour/runtime substitute, not a persisted connection mode: no mDNS, no Home
 Assistant calls and no token writes occur while demo data is active.
 
+Monkey-test mode is an explicit CI/UI-stress extension of Demo Mode. It is
+enabled through `DJCONNECT_DEMO_MONKEY_TEST=1` or legacy monkey/UI-test
+environment variables. When enabled, the ViewModel starts directly in Demo Mode
+and routes settings writes through a no-op save helper. Destructive or external
+actions such as pairing reset, token writes, local Client API startup, mDNS,
+clipboard copy, browser launch, permission settings, log/history clear and demo
+exit are suppressed.
+
 ## Serialization
 
 Use `System.Text.Json` and explicit `JsonPropertyName` attributes for
@@ -109,5 +117,6 @@ the contract, model and privacy helper source files directly and cover:
   proofs, HA tokens, push tokens, secrets and private URLs;
 - protocol compatibility checks;
 - queue and playlist normalization limits/dedupe;
-- onboarding, What's New, crash, wakeword, demo, diagnostic preference,
+- onboarding, What's New, crash, wakeword, demo, monkey-test env detection,
+  diagnostic preference,
   permission flag and mDNS lifecycle defaults.

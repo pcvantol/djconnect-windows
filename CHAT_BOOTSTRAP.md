@@ -45,7 +45,7 @@ Belangrijke huidige status:
     `WEBSITE_RELEASE_NOTES_TOKEN`.
 - Automatische tests staan in `tests/DJConnect.Tests` en draaien via
   `./run_tests.sh`.
-- Laatste lokale package-free checks waren groen: 23 tests passed.
+- Laatste lokale package-free checks waren groen: 24 tests passed.
 - Lokale Mac Catalyst debug build is groen met Xcode 26.4.1 wanneer zowel
   `MD_APPLE_SDK_ROOT` als `DEVELOPER_DIR` naar
   `/Applications/Xcode_26.4.1.app` wijzen. Een lokale no-restore compile komt
@@ -91,6 +91,10 @@ Belangrijke huidige status:
   is geen automatische upload.
 - Demo Mode is session-only en wordt bij startup uitgezet. Demo flows gebruiken
   geen Home Assistant calls, mDNS of token writes.
+- Non-destructive monkeytest mode voor CI: `DJCONNECT_DEMO_MONKEY_TEST=1`
+  start direct in Demo Mode en onderdrukt settings persistence, pairing/token
+  writes, mDNS/local Client API, clipboard, browser, permission settings en
+  destructieve reset/clear acties.
 - Wakeword state/settings bestaan, maar `WakewordFeatureAvailable` is bewust
   `false` zolang er geen echte foreground wakeword engine is.
 

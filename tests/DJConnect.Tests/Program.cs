@@ -24,6 +24,7 @@ var tests = new (string Name, Action Run)[]
     ("Crash report flags default to clean first launch", CrashReportFlagsDefaultToCleanFirstLaunch),
     ("Wakeword defaults to disabled and not dismissed", WakewordDefaultsToDisabledAndNotDismissed),
     ("Demo mode defaults to session off", DemoModeDefaultsToSessionOff),
+    ("Monkey test mode is explicit and environment driven", MonkeyTestModeIsExplicitAndEnvironmentDriven),
     ("Diagnostic log preferences are bounded by default", DiagnosticLogPreferencesAreBoundedByDefault),
     ("Permission explanation flags default to unseen", PermissionExplanationFlagsDefaultToUnseen),
     ("mDNS TXT includes pair code only while pairable", MdnsTxtIncludesPairCodeOnlyWhilePairable),
@@ -379,6 +380,44 @@ static void DemoModeDefaultsToSessionOff()
     var settings = new AppSettings();
 
     AssertTrue(!settings.IsDemoMode, "demo mode must be off by default and treated as session-only");
+}
+
+static void MonkeyTestModeIsExplicitAndEnvironmentDriven()
+{
+    var names = new[]
+    {
+        "DJCONNECT_DEMO_MONKEY_TEST",
+        "DJCONNECT_MONKEY_TEST",
+        "DJCONNECT_UI_TEST",
+        "MONKEY_TEST",
+        "UITEST"
+    };
+
+    foreach (var name in names)
+    {
+        Environment.SetEnvironmentVariable(name, null);
+    }
+
+    try
+    {
+        AssertTrue(!MonkeyTestMode.IsEnabled, "monkey test mode must be opt-in");
+
+        Environment.SetEnvironmentVariable("DJCONNECT_DEMO_MONKEY_TEST", "true");
+        AssertTrue(MonkeyTestMode.IsEnabled, "DJCONNECT_DEMO_MONKEY_TEST should enable monkey mode");
+
+        Environment.SetEnvironmentVariable("DJCONNECT_DEMO_MONKEY_TEST", "0");
+        AssertTrue(!MonkeyTestMode.IsEnabled, "falsey values must not enable monkey mode");
+
+        Environment.SetEnvironmentVariable("MONKEY_TEST", "yes");
+        AssertTrue(MonkeyTestMode.IsEnabled, "legacy monkey env should remain supported");
+    }
+    finally
+    {
+        foreach (var name in names)
+        {
+            Environment.SetEnvironmentVariable(name, null);
+        }
+    }
 }
 
 static void DiagnosticLogPreferencesAreBoundedByDefault()

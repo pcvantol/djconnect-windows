@@ -77,6 +77,19 @@ Demo Mode is session-only. Startup forces it off, starting it loads local sample
 runtime data, and stopping it clears demo state. Demo Mode must not make Home
 Assistant calls, advertise mDNS or write tokens.
 
+For CI or UI stress testing, set:
+
+```sh
+DJCONNECT_DEMO_MONKEY_TEST=1
+```
+
+This starts directly in Demo Mode and makes random interaction non-destructive:
+settings are not persisted, pairing/token writes are rejected, mDNS/local Client
+API startup is suppressed, clipboard and browser actions are no-ops, and clear
+or reset actions do not delete local state. Legacy env names
+`DJCONNECT_MONKEY_TEST`, `DJCONNECT_UI_TEST`, `MONKEY_TEST` and `UITEST` are also
+recognized.
+
 Wakeword state/settings are present for the UX, but the feature remains disabled
 until a real foreground listener exists. Push-to-talk and text Ask DJ should
 continue to work without wakeword.

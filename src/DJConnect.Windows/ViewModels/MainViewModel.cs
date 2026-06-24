@@ -593,7 +593,7 @@ public sealed class MainViewModel : ObservableObject
             {
                 _settings.Language = normalized;
                 RaiseLocalizedProperties();
-                _ = _settingsStore.SaveAsync(_settings);
+                _ = SaveSettingsIfMutableAsync();
             }
         }
     }
@@ -616,7 +616,7 @@ public sealed class MainViewModel : ObservableObject
             if (SetProperty(ref _logLevel, value))
             {
                 _settings.LogLevel = value;
-                _ = _settingsStore.SaveAsync(_settings);
+                _ = SaveSettingsIfMutableAsync();
             }
         }
     }
@@ -643,7 +643,7 @@ public sealed class MainViewModel : ObservableObject
             if (SetProperty(ref _wakewordEnabled, WakewordFeatureAvailable && value))
             {
                 _settings.WakewordEnabled = _wakewordEnabled;
-                _ = _settingsStore.SaveAsync(_settings);
+                _ = SaveSettingsIfMutableAsync();
                 UpdateWakewordListening();
                 RaiseWakewordProperties();
             }
@@ -659,7 +659,7 @@ public sealed class MainViewModel : ObservableObject
             if (SetProperty(ref _wakePhrase, phrase))
             {
                 _settings.WakePhrase = phrase;
-                _ = _settingsStore.SaveAsync(_settings);
+                _ = SaveSettingsIfMutableAsync();
                 UpdateWakewordListening();
             }
         }
@@ -771,6 +771,7 @@ public sealed class MainViewModel : ObservableObject
     public bool CanSendAskDJ => CanUseAskDJ && !string.IsNullOrWhiteSpace(AskDJText);
     public string AskDJPlaceholder => L("Vraag Ask DJ iets...", "Ask DJ anything...");
     public bool ShouldAdvertiseMdns => IsPairable && (_localClientApi?.IsRunning == true);
+    public bool IsMonkeyTestMode => MonkeyTestMode.IsEnabled;
 
     public bool IsPaired
     {
@@ -1140,7 +1141,24 @@ public sealed class MainViewModel : ObservableObject
             ShowPermissionExplanation(PermissionExplanationKind.LocalNetwork);
         }
 
-        await _settingsStore.SaveAsync(_settings);
+        if (IsMonkeyTestMode)
+        {
+            Token = "";
+            IsPaired = false;
+            IsOnboardingVisible = false;
+            IsPairingOverlayVisible = false;
+            IsPairingSuccessVisible = false;
+            IsFeedbackOverlayVisible = false;
+            _isCrashReportPending = false;
+            _settings.CrashPromptPending = false;
+            IsCrashReportPreviewVisible = false;
+            IsWhatsNewVisible = false;
+            await StartDemoModeAsync();
+            AddDiagnostic("INF Monkey test mode started in non-destructive Demo Mode.");
+            return;
+        }
+
+        await SaveSettingsIfMutableAsync();
         ConfigureClient();
         OnPropertyChanged(nameof(DeviceId));
         OnPropertyChanged(nameof(ClientType));
@@ -1157,6 +1175,13 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task SaveSettingsAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            Status = L("Monkeytest: instellingen niet opgeslagen", "Monkey test: settings not saved");
+            AddDiagnostic("INF Monkey test suppressed settings save.");
+            return;
+        }
+
         _settings.HomeAssistantUrl = HomeAssistantUrl;
         _settings.InstallId = _identity.InstallId;
         _settings.DeviceName = _identity.DeviceName;
@@ -1166,7 +1191,7 @@ public sealed class MainViewModel : ObservableObject
         _settings.DJConnectWelcomeSeen = !IsOnboardingVisible;
         _settings.HasCompletedOnboarding = !IsOnboardingVisible;
         _settings.PairingCode = PairingCode;
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
         if (!string.IsNullOrWhiteSpace(Token))
         {
             _credentialStore.SaveToken(Token.Trim());
@@ -1182,6 +1207,13 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task PairAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            Status = L("Monkeytest: pairing onderdrukt", "Monkey test: pairing suppressed");
+            AddDiagnostic("INF Monkey test suppressed pairing.");
+            return;
+        }
+
         ConfigureClient();
         var payload = new PairingPayload(
             _identity.DeviceId,
@@ -1390,7 +1422,7 @@ public sealed class MainViewModel : ObservableObject
         var assistantMessage = responseMessages.LastOrDefault(message => message.IsAssistant);
         ReplaceActions(assistantMessage?.PlaybackActions ?? response.PlaybackActions, assistantMessage?.ConfirmationActions ?? response.ConfirmationActions);
         ReplaceRecentItems(assistantMessage?.Items ?? response.Items);
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
         AskDJNotice = "";
         Status = L("Ask DJ bijgewerkt", "Ask DJ updated");
         AddDiagnostic("INF Ask DJ history updated through Home Assistant.");
@@ -1421,7 +1453,7 @@ public sealed class MainViewModel : ObservableObject
         RecentItems.Clear();
         _settings.HistoryRevision = response.HistoryRevision;
         _settings.ClearRevision = response.ClearRevision;
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
         AskDJNotice = "";
         Status = L("Ask DJ history gewist", "Ask DJ history cleared");
         AddDiagnostic("INF Ask DJ history clear requested.");
@@ -1489,7 +1521,7 @@ public sealed class MainViewModel : ObservableObject
 
         _settings.HistoryRevision = response.HistoryRevision;
         _settings.ClearRevision = response.ClearRevision;
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
     }
 
     private async Task RunCommandAsync(string command)
@@ -1830,6 +1862,13 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task StopDemoModeAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            Status = L("Monkeytest: Demo Mode blijft actief", "Monkey test: Demo Mode stays active");
+            AddDiagnostic("INF Monkey test suppressed stopping Demo Mode.");
+            return;
+        }
+
         IsDemoMode = false;
         ClearDemoState();
         ClearRuntimePlaybackState();
@@ -1843,7 +1882,7 @@ public sealed class MainViewModel : ObservableObject
             IsPairingOverlayVisible = true;
             Status = L("Niet gekoppeld", "Not paired");
             ShowPermissionExplanation(PermissionExplanationKind.LocalNetwork);
-            await _settingsStore.SaveAsync(_settings);
+            await SaveSettingsIfMutableAsync();
         }
         else
         {
@@ -1872,7 +1911,7 @@ public sealed class MainViewModel : ObservableObject
             await EnsureLocalClientApiAsync();
         }
 
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
         await UpdateMdnsAdvertisingAsync();
         AddDiagnostic("INF Onboarding completed; local pairing screen can advertise discovery.");
     }
@@ -1882,14 +1921,14 @@ public sealed class MainViewModel : ObservableObject
         if (IsDemoMode)
         {
             _settings.LastSeenAppVersion = AppVersion;
-            await _settingsStore.SaveAsync(_settings);
+            await SaveSettingsIfMutableAsync();
             return;
         }
 
         if (!_settings.DJConnectWelcomeSeen && !_settings.HasCompletedOnboarding)
         {
             _settings.LastSeenAppVersion = AppVersion;
-            await _settingsStore.SaveAsync(_settings);
+            await SaveSettingsIfMutableAsync();
             return;
         }
 
@@ -1950,7 +1989,7 @@ public sealed class MainViewModel : ObservableObject
     {
         _settings.LastSeenAppVersion = AppVersion;
         IsWhatsNewVisible = false;
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
     }
 
     private Task ShowPairingAsync()
@@ -1979,6 +2018,13 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task ResetPairingAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            Status = L("Monkeytest: opnieuw koppelen onderdrukt", "Monkey test: pairing reset suppressed");
+            AddDiagnostic("INF Monkey test suppressed pairing reset.");
+            return;
+        }
+
         _credentialStore.DeleteToken();
         Token = "";
         IsPaired = false;
@@ -2012,7 +2058,7 @@ public sealed class MainViewModel : ObservableObject
         _settings.HasCompletedOnboarding = true;
         IsPairingOverlayVisible = true;
         ShowPermissionExplanation(PermissionExplanationKind.LocalNetwork);
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
         OnPropertyChanged(nameof(DeviceId));
         OnPropertyChanged(nameof(ClientType));
         RaisePlaybackStateProperties();
@@ -2024,6 +2070,13 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task CopyLogsAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            LogNotice = L("Monkeytest: klembord niet gewijzigd", "Monkey test: clipboard unchanged");
+            AddDiagnostic("INF Monkey test suppressed log copy.");
+            return;
+        }
+
         await Clipboard.Default.SetTextAsync(RedactedDiagnosticExport());
         PermissionNotice = L("Logs gekopieerd met redactie.", "Logs copied with redaction.");
         LogNotice = L("Logs gekopieerd naar klembord", "Logs copied to clipboard");
@@ -2032,10 +2085,17 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task ClearLogsAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            LogNotice = L("Monkeytest: logs niet gewist", "Monkey test: logs not cleared");
+            AddDiagnostic("INF Monkey test suppressed log clear.");
+            return;
+        }
+
         DiagnosticLogLines.Clear();
         FilteredDiagnosticLogLines.Clear();
         _settings.DiagnosticLogLines.Clear();
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
         OnPropertyChanged(nameof(HasDiagnosticLogs));
         OnPropertyChanged(nameof(HasNoDiagnosticLogs));
         OnPropertyChanged(nameof(LogSearchResultCount));
@@ -2094,7 +2154,7 @@ public sealed class MainViewModel : ObservableObject
         IsWakewordPromptVisible = false;
         WakewordNotice = L("Stemactivatie ingeschakeld.", "Voice activation enabled.");
         AddDiagnostic("INF Wakeword foreground listener enabled.");
-        return _settingsStore.SaveAsync(_settings);
+        return SaveSettingsIfMutableAsync();
     }
 
     private Task DismissWakewordPromptAsync()
@@ -2103,7 +2163,7 @@ public sealed class MainViewModel : ObservableObject
         IsWakewordPromptVisible = false;
         WakewordNotice = "";
         AddDiagnostic("INF Wakeword prompt dismissed.");
-        return _settingsStore.SaveAsync(_settings);
+        return SaveSettingsIfMutableAsync();
     }
 
     private Task ShowPrivacyFromWakewordAsync()
@@ -2142,6 +2202,13 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task CopyFeedbackAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            FeedbackNotice = "Monkeytest: klembord niet gewijzigd";
+            AddDiagnostic("INF Monkey test suppressed feedback copy.");
+            return;
+        }
+
         var body = CurrentFeedbackBody();
         await Clipboard.Default.SetTextAsync(body);
         FeedbackNotice = "Feedback gekopieerd";
@@ -2150,6 +2217,13 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task OpenFeedbackIssueAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            FeedbackNotice = "Monkeytest: browser niet geopend";
+            AddDiagnostic("INF Monkey test suppressed feedback issue launch.");
+            return;
+        }
+
         var body = CurrentFeedbackBody();
         var title = $"DJConnect Windows feedback: {SelectedFeedbackType}";
         var url = "https://github.com/pcvantol/djconnect-windows/issues/new"
@@ -2234,6 +2308,13 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task CopyCrashReportAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            CrashReportNotice = "Monkeytest: klembord niet gewijzigd";
+            AddDiagnostic("INF Monkey test suppressed crash report copy.");
+            return;
+        }
+
         var body = CurrentCrashReportBody();
         await Clipboard.Default.SetTextAsync(body);
         CrashReportNotice = "Crashrapport gekopieerd";
@@ -2243,6 +2324,13 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task OpenCrashReportIssueAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            CrashReportNotice = "Monkeytest: browser niet geopend";
+            AddDiagnostic("INF Monkey test suppressed crash report issue launch.");
+            return;
+        }
+
         var body = CurrentCrashReportBody();
         var url = "https://github.com/pcvantol/djconnect-windows/issues/new"
             + $"?title={Uri.EscapeDataString("DJConnect Windows crash report")}"
@@ -2260,14 +2348,14 @@ public sealed class MainViewModel : ObservableObject
         IsCrashReportPreviewVisible = false;
         CrashReportNotice = "";
         OnPropertyChanged(nameof(IsCrashReportPromptVisible));
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
     }
 
     public async Task MarkCleanShutdownAsync()
     {
         _settings.CleanShutdown = true;
         _settings.CrashPromptPending = false;
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
     }
 
     private string CurrentCrashReportBody()
@@ -2319,6 +2407,12 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task EnsureLocalClientApiAsync()
     {
+        if (IsMonkeyTestMode)
+        {
+            AddDiagnostic("INF Monkey test suppressed local Client API start.");
+            return;
+        }
+
         if (_localClientApi is null)
         {
             _localClientApi = new LocalClientApiService(CreateLocalPairingSnapshot, HandleLocalPairAsync, AddDiagnostic);
@@ -2346,6 +2440,12 @@ public sealed class MainViewModel : ObservableObject
 
     private async Task<LocalPairResponse> HandleLocalPairAsync(LocalPairRequest request)
     {
+        if (IsMonkeyTestMode)
+        {
+            AddDiagnostic("INF Monkey test rejected local pair request.");
+            return new LocalPairResponse(false, "monkey_test_mode", "Pairing is disabled during monkey tests.");
+        }
+
         if (request.DeviceId != _identity.DeviceId)
         {
             AddDiagnostic("WRN Local pair rejected: wrong device_id.");
@@ -2396,7 +2496,7 @@ public sealed class MainViewModel : ObservableObject
         _settings.PairingCode = "";
         _settings.DJConnectWelcomeSeen = true;
         _settings.HasCompletedOnboarding = true;
-        await _settingsStore.SaveAsync(_settings);
+        await SaveSettingsIfMutableAsync();
         ConfigureClient();
         await UpdateMdnsAdvertisingAsync();
         Status = L("Gekoppeld met Home Assistant", "Paired with Home Assistant");
@@ -2407,6 +2507,12 @@ public sealed class MainViewModel : ObservableObject
     private async Task UpdateMdnsAdvertisingAsync()
     {
         OnPropertyChanged(nameof(ShouldAdvertiseMdns));
+        if (IsMonkeyTestMode)
+        {
+            await _mdnsAdvertiser.StopAsync();
+            return;
+        }
+
         if (ShouldAdvertiseMdns)
         {
             await _mdnsAdvertiser.StartOrUpdateAsync(CreateLocalPairingSnapshot());
@@ -2647,6 +2753,13 @@ public sealed class MainViewModel : ObservableObject
 
     private void ShowPermissionExplanation(PermissionExplanationKind permission, PermissionExplanationMode mode = PermissionExplanationMode.Request)
     {
+        if (IsMonkeyTestMode)
+        {
+            PermissionNotice = L("Monkeytest: permissieprompt onderdrukt", "Monkey test: permission prompt suppressed");
+            AddDiagnostic("INF Monkey test suppressed permission explanation: " + permission);
+            return;
+        }
+
         if (permission == PermissionExplanationKind.LocalNetwork
             && _settings.PermissionExplanationLocalNetworkSeen
             && mode == PermissionExplanationMode.Request)
@@ -2677,7 +2790,7 @@ public sealed class MainViewModel : ObservableObject
                 break;
         }
 
-        _ = _settingsStore.SaveAsync(_settings);
+        _ = SaveSettingsIfMutableAsync();
         RaisePermissionStatusProperties();
     }
 
@@ -3360,18 +3473,12 @@ public sealed class MainViewModel : ObservableObject
             return true;
         }
 
-        return IsTruthyEnvironment("DJCONNECT_MONKEY_TEST")
-            || IsTruthyEnvironment("DJCONNECT_UI_TEST")
-            || IsTruthyEnvironment("MONKEY_TEST")
-            || IsTruthyEnvironment("UITEST");
+        return MonkeyTestMode.IsEnabled;
     }
 
     private static bool IsTruthyEnvironment(string name)
     {
-        var value = Environment.GetEnvironmentVariable(name);
-        return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
+        return MonkeyTestMode.IsTruthyEnvironment(name);
     }
 
     private void LoadPersistedDiagnosticLogs()
@@ -3388,11 +3495,23 @@ public sealed class MainViewModel : ObservableObject
 
     private void PersistDiagnosticLogs()
     {
+        if (IsMonkeyTestMode)
+        {
+            return;
+        }
+
         _settings.DiagnosticLogLines = DiagnosticLogLines
             .TakeLast(500)
             .Select(line => line.ExportText)
             .ToList();
-        _ = _settingsStore.SaveAsync(_settings);
+        _ = SaveSettingsIfMutableAsync();
+    }
+
+    private Task SaveSettingsIfMutableAsync()
+    {
+        return IsMonkeyTestMode
+            ? Task.CompletedTask
+            : _settingsStore.SaveAsync(_settings);
     }
 
     private bool ShouldLogLevel(string level)

@@ -112,6 +112,9 @@ Key screens and flows mirrored from macOS and extended for desktop:
   Spotify notice, project/security links and deletion/reset actions.
 - Demo Mode: session-only local demo runtime with sample Now Playing, Ask DJ,
   Queue and Playlists; no Home Assistant calls, mDNS or token writes.
+- Monkey-test mode: `DJCONNECT_DEMO_MONKEY_TEST=1` starts Demo Mode for CI/UI
+  stress runs and suppresses persistence, pairing/token writes, local discovery,
+  clipboard, browser and destructive reset/clear actions.
 - Wakeword prompt: state and settings are present, but the foreground wakeword
   listener is feature-gated off until a real engine exists.
 
