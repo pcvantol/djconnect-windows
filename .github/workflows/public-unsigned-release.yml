@@ -166,8 +166,12 @@ jobs:
             -f $env:WINDOWS_TFM `
             -r win-x64 `
             --no-restore `
+            -p:PublishReadyToRun=false `
             -p:WindowsPackageType=None `
             -o ".public-release/windows"
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
 
           $zipPath = ".public-release/artifacts/DJConnect-Windows-$version-unsigned.zip"
           Compress-Archive -Path ".public-release/windows/*" -DestinationPath $zipPath -Force

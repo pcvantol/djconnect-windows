@@ -40,3 +40,5 @@
 - Fixed CI/release workflow handling for GitHub-hosted macOS runners without
   Xcode 26.x and restored Windows release publish with an explicit `win-x64`
   runtime restore.
+- Disabled ReadyToRun for unsigned Windows diagnostic publish artifacts so
+  GitHub release builds do not require an unavailable optimization runtime pack.
