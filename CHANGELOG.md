@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 3.1.4 - 2026-06-24
+
+- Re-ran the 3.1.x desktop feature release with explicit Windows runtime
+  identifiers in the app project for `win-x64` and `win-arm64` unsigned release
+  artifacts.
+- Includes the 3.1.2 desktop UX, privacy, diagnostics, Demo Mode, Wakeword-gated
+  UI and non-functional requirement coverage.
+
 ## 3.1.3 - 2026-06-24
 
 - Re-ran the 3.1.2 desktop feature release with explicit Windows runtime
