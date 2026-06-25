@@ -19,7 +19,7 @@ Windows and macOS. It includes:
 - Windows Credential Manager and macOS Keychain token storage;
 - automatic protocol/core tests through `./run_tests.sh`;
 - GitHub Actions CI for protocol tests and Windows/macOS MAUI builds;
-- public unsigned release workflow for Windows and Mac Catalyst artifacts;
+- public unsigned Windows release workflow validated for `v3.1.9`;
 - EN/NL What's New release-note publication to `djconnect.dev`;
 - MIT license and Spotify legal notice.
 
@@ -29,8 +29,9 @@ Windows and macOS. It includes:
   `MD_APPLE_SDK_ROOT=/Applications/Xcode_26.4.1.app` and
   `DEVELOPER_DIR=/Applications/Xcode_26.4.1.app/Contents/Developer` are set.
 - The backend contract does not yet document `client_type: "windows"`.
-- GitHub Actions workflow definitions exist but still need validation on the
-  remote repository after the maintainer pushes.
+- GitHub Actions CI and public unsigned Windows publication passed for
+  `v3.1.9`. Mac Catalyst release artifacts continue to skip on hosted runners
+  without the required Xcode 26.4.x toolchain.
 - Public unsigned release automation exists; signed Windows installers,
   Windows signing and Mac Catalyst notarization are not implemented.
 - Wakeword UI state exists, but the real wakeword listener remains disabled
@@ -38,9 +39,7 @@ Windows and macOS. It includes:
 
 ## Next Best Steps
 
-1. Push `main` and tags when the maintainer asks, then validate GitHub Actions
-   CI and public unsigned release publication.
-2. Add backend/doc support for `windows` client type in the Home Assistant repo.
-3. Extend tests for stale-pairing handling and any future real wakeword engine.
-4. Validate live pairing and Ask DJ against Home Assistant.
-5. Add signed Windows packaging and signed/notarized Mac Catalyst distribution.
+1. Add backend/doc support for `windows` client type in the Home Assistant repo.
+2. Extend tests for stale-pairing handling and any future real wakeword engine.
+3. Validate live pairing and Ask DJ against Home Assistant.
+4. Add signed Windows packaging and signed/notarized Mac Catalyst distribution.

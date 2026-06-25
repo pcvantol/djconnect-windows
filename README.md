@@ -65,8 +65,11 @@ API contracts rather than copying SwiftUI or Apple-specific code.
 Release cleanup helper:
 
 ```sh
-./clear_old_releases.sh --keep 1 --keep-workflow-runs 1
+./clear_old_releases.sh --keep 1 --keep-workflow-runs 2
 ```
+
+This keeps both the new CI run and the new public unsigned release run
+available for audit.
 
 Release and cleanup automation requires GitHub Actions read/write workflow
 permissions plus workflow `contents: write` and `actions: write`; see

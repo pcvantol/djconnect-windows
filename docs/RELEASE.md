@@ -68,8 +68,8 @@ for a different flow:
 6. Run cleanup:
 
    ```sh
-   ./clear_old_releases.sh --keep 1 --keep-workflow-runs 1
-   ./clear_old_releases.sh --keep 1 --keep-workflow-runs 1 --execute
+   ./clear_old_releases.sh --keep 1 --keep-workflow-runs 2
+   ./clear_old_releases.sh --keep 1 --keep-workflow-runs 2 --execute
    ```
 
 7. Re-check `gh run list` and document any remaining failed/pending workflows.
@@ -175,17 +175,20 @@ Old semantic-version GitHub releases, tags and workflow runs can be inspected
 with:
 
 ```sh
-./clear_old_releases.sh --keep 1 --keep-workflow-runs 1
+./clear_old_releases.sh --keep 1 --keep-workflow-runs 2
 ```
 
 When the dry-run output is correct, execute the cleanup:
 
 ```sh
-./clear_old_releases.sh --keep 1 --keep-workflow-runs 1 --execute
+./clear_old_releases.sh --keep 1 --keep-workflow-runs 2 --execute
 ```
 
 The script only deletes remote releases/tags, local tags and workflow runs when
 `--execute` is passed.
+
+`--keep-workflow-runs 2` is the default release-hygiene choice for this repo so
+the latest CI run and the latest public unsigned release run are both retained.
 
 ## GitHub Repository Permissions
 

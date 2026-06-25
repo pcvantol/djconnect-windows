@@ -1,9 +1,9 @@
 # TODO
 
-- Push `main`/release tags when requested and validate GitHub Actions CI on the
-  remote repository.
-- Validate public unsigned release publication to `pcvantol/djconnect-app-releases`
-  and EN/NL What's New publication to `djconnect.dev`.
+- Monitor the next release after `v3.1.9`; current `v3.1.9` CI and public
+  unsigned Windows publication completed successfully.
+- Validate EN/NL What's New publication on `djconnect.dev` during the next
+  website release-note smoke test.
 - Extend tests for stale-pairing handling and any future real wakeword engine.
 - Validate feedback, crash-report and logs redaction with manual UI smoke tests
   on Windows.

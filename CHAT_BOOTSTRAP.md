@@ -146,6 +146,6 @@ Belangrijke regels:
 - Push niet tenzij de gebruiker expliciet vraagt om pushen.
 - Als de gebruiker expliciet vraagt om release/push: push `main` en de release
   tag, valideer GitHub Actions met `gh run list`, voer daarna
-  `./clear_old_releases.sh --keep 1 --keep-workflow-runs 1` uit als dry-run en
+  `./clear_old_releases.sh --keep 1 --keep-workflow-runs 2` uit als dry-run en
   vervolgens met `--execute` als het plan klopt. Rapporteer CI/release status.
 ```
