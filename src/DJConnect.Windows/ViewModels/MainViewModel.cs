@@ -106,6 +106,9 @@ public sealed class MainViewModel : ObservableObject
         PauseCommand = new AsyncCommand(TogglePlaybackAsync, () => CanStartPlayback);
         NextCommand = new AsyncCommand(() => RunPlaybackCommandAsync("next_track"), () => CanUsePlaybackFeatures);
         PreviousCommand = new AsyncCommand(() => RunPlaybackCommandAsync("previous_track"), () => CanUsePlaybackFeatures);
+        SeekBackwardCommand = new AsyncCommand(() => SeekRelativeAsync(-15_000), () => CanUsePlaybackFeatures);
+        SeekForwardCommand = new AsyncCommand(() => SeekRelativeAsync(15_000), () => CanUsePlaybackFeatures);
+        SaveCurrentTrackCommand = new AsyncCommand(SaveCurrentTrackAsync, () => CanUsePlaybackFeatures);
         StartDemoModeCommand = new AsyncCommand(StartDemoModeAsync);
         StopDemoModeCommand = new AsyncCommand(StopDemoModeAsync, () => IsDemoMode);
         CompleteOnboardingCommand = new AsyncCommand(CompleteOnboardingAsync);
@@ -160,7 +163,13 @@ public sealed class MainViewModel : ObservableObject
     public string Token
     {
         get => _token;
-        set => SetProperty(ref _token, value);
+        set
+        {
+            if (SetProperty(ref _token, value))
+            {
+                RaiseNowPlayingStatusProperties();
+            }
+        }
     }
 
     public string PairingCode
@@ -762,6 +771,34 @@ public sealed class MainViewModel : ObservableObject
         : !_backendAvailable ? L("Offline", "Offline")
         : !_runtimeCompatible ? L("Update vereist", "Update required")
         : L("Gekoppeld", "Paired");
+    public string NowPlayingPairingStatusText => IsDemoMode
+        ? L("Demo modus", "Demo Mode")
+        : IsUpdateRequired ? L("Update vereist", "Update required")
+        : IsPaired ? L("Gekoppeld", "Paired")
+        : IsPairingOverlayVisible ? L("Koppelen", "Pairing")
+        : !string.IsNullOrWhiteSpace(Token) ? L("Verlopen", "Stale")
+        : L("Niet gekoppeld", "Unpaired");
+    public string NowPlayingPairingStatusIcon => IsDemoMode
+        ? "▶"
+        : IsPaired ? "✓"
+        : IsPairingOverlayVisible ? "⛓"
+        : !string.IsNullOrWhiteSpace(Token) ? "!"
+        : "○";
+    public string NowPlayingPairingStatusColor => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible)
+        ? "#35E56B"
+        : IsPairingOverlayVisible ? "#D93AF2"
+        : IsUpdateRequired || !string.IsNullOrWhiteSpace(Token) ? "#F59E0B"
+        : "#AAA2BE";
+    public string NowPlayingMusicBackendStatusText => IsDemoMode
+        ? L("Demo muziek", "Demo music")
+        : !IsPaired ? L("Muziek niet gekoppeld", "Music not paired")
+        : !_runtimeCompatible ? L("Update vereist", "Update required")
+        : !_localNetworkAvailable ? L("Lokaal netwerk offline", "Local network offline")
+        : !_backendAvailable ? L("Muziek offline", "Music offline")
+        : L("Muziek beschikbaar", "Music available");
+    public string NowPlayingMusicBackendStatusColor => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && _localNetworkAvailable)
+        ? "#35E56B"
+        : "#EF4444";
     public string RuntimeCompatibilityText => _runtimeCompatible ? L("Compatible", "Compatible") : L("Update vereist", "Update required");
     public string AboutPairingStatusText => IsPaired ? "paired" : IsPairingOverlayVisible ? "pairing" : "unpaired";
     public string AboutBackendAvailabilityText => _backendAvailable ? "available" : "unavailable";
@@ -770,7 +807,7 @@ public sealed class MainViewModel : ObservableObject
     public bool CanStartPlayback => CanUsePlaybackFeatures && SelectedOutput is not null;
     public bool CanUseAskDJ => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && _localNetworkAvailable);
     public bool CanSendAskDJ => CanUseAskDJ && !string.IsNullOrWhiteSpace(AskDJText);
-    public string AskDJPlaceholder => L("Vraag Ask DJ iets...", "Ask DJ anything...");
+    public string AskDJPlaceholder => L("Vraag Ask DJ iets, bv. zet huidig nummer in favorieten...", "Ask DJ anything, e.g. save this track to liked songs...");
     public bool ShouldAdvertiseMdns => IsPairable && (_localClientApi?.IsRunning == true);
     public bool IsMonkeyTestMode => MonkeyTestMode.IsEnabled;
 
@@ -785,6 +822,7 @@ public sealed class MainViewModel : ObservableObject
                 OnPropertyChanged(nameof(PairingStatusText));
                 OnPropertyChanged(nameof(PlaybackAvailabilityText));
                 OnPropertyChanged(nameof(AboutPairingStatusText));
+                RaiseNowPlayingStatusProperties();
                 RaiseFeedbackContextProperties();
                 EvaluateWakewordPrompt();
                 RaisePairingProperties();
@@ -806,6 +844,8 @@ public sealed class MainViewModel : ObservableObject
                 OnPropertyChanged(nameof(PairingStatusText));
                 OnPropertyChanged(nameof(PlaybackAvailabilityText));
                 OnPropertyChanged(nameof(AboutDemoModeText));
+                OnPropertyChanged(nameof(IsNotDemoMode));
+                RaiseNowPlayingStatusProperties();
                 RaiseFeedbackContextProperties();
                 EvaluateWakewordPrompt();
                 RaisePairingProperties();
@@ -813,6 +853,8 @@ public sealed class MainViewModel : ObservableObject
             }
         }
     }
+
+    public bool IsNotDemoMode => !IsDemoMode;
 
     public bool IsOnboardingVisible
     {
@@ -843,6 +885,7 @@ public sealed class MainViewModel : ObservableObject
                 RaiseFeedbackContextProperties();
                 _ = UpdateMdnsAdvertisingAsync();
                 RaisePairingProperties();
+                RaiseNowPlayingStatusProperties();
             }
         }
     }
@@ -1079,6 +1122,9 @@ public sealed class MainViewModel : ObservableObject
     public AsyncCommand PauseCommand { get; }
     public AsyncCommand NextCommand { get; }
     public AsyncCommand PreviousCommand { get; }
+    public AsyncCommand SeekBackwardCommand { get; }
+    public AsyncCommand SeekForwardCommand { get; }
+    public AsyncCommand SaveCurrentTrackCommand { get; }
     public AsyncCommand StartDemoModeCommand { get; }
     public AsyncCommand StopDemoModeCommand { get; }
     public AsyncCommand CompleteOnboardingCommand { get; }
@@ -1641,6 +1687,12 @@ public sealed class MainViewModel : ObservableObject
         await RunPlaybackCommandAsync("seek", new { position_ms = (int)Math.Round(PlaybackPositionMs) });
     }
 
+    private async Task SeekRelativeAsync(int offsetMs)
+    {
+        var target = Math.Clamp(PlaybackPositionMs + offsetMs, 0, Math.Max(PlaybackDurationMs, 1));
+        await SeekAsync(target);
+    }
+
     private async Task RunPlaybackCommandAsync(string command, object? args = null)
     {
         if (!CanUsePlaybackFeatures)
@@ -1688,6 +1740,128 @@ public sealed class MainViewModel : ObservableObject
         Status = response.DjText ?? response.Message ?? L("Command uitgevoerd", "Command executed");
         AddDiagnostic("INF Playback command executed: " + command);
         await RefreshAsync();
+    }
+
+    private async Task SaveCurrentTrackAsync()
+    {
+        await RunSaveCurrentTrackAsync(fromAskDJ: false);
+    }
+
+    private async Task<CommandResponse?> RunSaveCurrentTrackAsync(bool fromAskDJ)
+    {
+        if (!CanUsePlaybackFeatures)
+        {
+            SetSaveCurrentTrackFailureNotice(fromAskDJ);
+            return null;
+        }
+
+        if (IsDemoMode)
+        {
+            var message = L("Nummer opgeslagen in favorieten.", "Track saved to favorites.");
+            if (fromAskDJ)
+            {
+                AskDJNotice = message;
+            }
+            else
+            {
+                Notice = message;
+            }
+
+            AddDiagnostic("INF Demo save current track executed.");
+            return new CommandResponse(true, message, message, null);
+        }
+
+        ConfigureClient();
+        CommandResponse response;
+        try
+        {
+            response = await _apiClient.RunCommandAsync(_identity, "save_current_track", CancellationToken.None);
+        }
+        catch (Exception ex) when (ApplyVersionMismatch(ex))
+        {
+            if (fromAskDJ)
+            {
+                AskDJNotice = L("Update vereist", "Update required");
+            }
+            else
+            {
+                Notice = L("Update vereist", "Update required");
+            }
+
+            AddDiagnostic("WRN Save current track blocked by version mismatch.");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                if (fromAskDJ)
+                {
+                    AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                }
+                else
+                {
+                    Notice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                }
+
+                return null;
+            }
+
+            SetSaveCurrentTrackFailureNotice(fromAskDJ);
+            AddDiagnostic("WRN Save current track failed: " + ex.GetType().Name);
+            return null;
+        }
+
+        ApplyVersionCompatibility(response);
+        if (!_runtimeCompatible)
+        {
+            if (fromAskDJ)
+            {
+                AskDJNotice = L("Update vereist", "Update required");
+            }
+            else
+            {
+                Notice = L("Update vereist", "Update required");
+            }
+
+            AddDiagnostic("WRN Save current track blocked by incompatible runtime.");
+            return null;
+        }
+
+        if (!response.Success)
+        {
+            SetSaveCurrentTrackFailureNotice(fromAskDJ);
+            AddDiagnostic("WRN Save current track failed.");
+            return response;
+        }
+
+        var success = response.DjText ?? response.Message ?? L("Nummer opgeslagen in favorieten.", "Track saved to favorites.");
+        if (fromAskDJ)
+        {
+            AskDJNotice = success;
+        }
+        else
+        {
+            Notice = success;
+        }
+
+        Status = success;
+        AddDiagnostic("INF Save current track executed.");
+        await RefreshAsync();
+        return response;
+    }
+
+    private void SetSaveCurrentTrackFailureNotice(bool fromAskDJ)
+    {
+        var message = L("Nummer kon niet worden opgeslagen.", "The track could not be saved.");
+        if (fromAskDJ)
+        {
+            AskDJNotice = message;
+        }
+        else
+        {
+            Notice = message;
+        }
     }
 
     private async Task RefreshQueueAsync()
@@ -1932,7 +2106,6 @@ public sealed class MainViewModel : ObservableObject
             _settings.HasCompletedOnboarding = true;
             IsPairingOverlayVisible = true;
             Status = L("Niet gekoppeld", "Not paired");
-            ShowPermissionExplanation(PermissionExplanationKind.LocalNetwork);
             await SaveSettingsIfMutableAsync();
         }
         else
@@ -2134,7 +2307,7 @@ public sealed class MainViewModel : ObservableObject
         AddDiagnostic("INF Diagnostic logs copied with redaction.");
     }
 
-    private async Task ClearLogsAsync()
+    public async Task ClearLogsAsync()
     {
         if (IsMonkeyTestMode)
         {
@@ -2143,10 +2316,13 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
+        LogSearchText = "";
+        _selectedLogSearchResultIndex = 0;
         DiagnosticLogLines.Clear();
         FilteredDiagnosticLogLines.Clear();
         _settings.DiagnosticLogLines.Clear();
         await SaveSettingsIfMutableAsync();
+        ApplyLogFilter();
         OnPropertyChanged(nameof(HasDiagnosticLogs));
         OnPropertyChanged(nameof(HasNoDiagnosticLogs));
         OnPropertyChanged(nameof(LogSearchResultCount));
@@ -2729,6 +2905,12 @@ public sealed class MainViewModel : ObservableObject
 
     public async Task ExecutePlaybackActionAsync(PlaybackAction action)
     {
+        if (action.IsSaveCurrentTrackControl)
+        {
+            await RunSaveCurrentTrackAsync(fromAskDJ: true);
+            return;
+        }
+
         if (!CanUseAskDJ)
         {
             AskDJNotice = !_runtimeCompatible ? L("Update vereist", "Update required") : L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
@@ -3454,6 +3636,7 @@ public sealed class MainViewModel : ObservableObject
     private void RaisePlaybackStateProperties()
     {
         OnPropertyChanged(nameof(ConnectionStatusText));
+        RaiseNowPlayingStatusProperties();
         OnPropertyChanged(nameof(CanUsePlaybackFeatures));
         OnPropertyChanged(nameof(CanStartPlayback));
         OnPropertyChanged(nameof(CanUseAskDJ));
@@ -3466,6 +3649,15 @@ public sealed class MainViewModel : ObservableObject
         RaiseFeedbackContextProperties();
         EvaluateWakewordPrompt();
         RaiseCommandStates();
+    }
+
+    private void RaiseNowPlayingStatusProperties()
+    {
+        OnPropertyChanged(nameof(NowPlayingPairingStatusText));
+        OnPropertyChanged(nameof(NowPlayingPairingStatusIcon));
+        OnPropertyChanged(nameof(NowPlayingPairingStatusColor));
+        OnPropertyChanged(nameof(NowPlayingMusicBackendStatusText));
+        OnPropertyChanged(nameof(NowPlayingMusicBackendStatusColor));
     }
 
     private void EvaluateWakewordPrompt()
@@ -3737,6 +3929,9 @@ public sealed class MainViewModel : ObservableObject
         PauseCommand.RaiseCanExecuteChanged();
         NextCommand.RaiseCanExecuteChanged();
         PreviousCommand.RaiseCanExecuteChanged();
+        SeekBackwardCommand.RaiseCanExecuteChanged();
+        SeekForwardCommand.RaiseCanExecuteChanged();
+        SaveCurrentTrackCommand.RaiseCanExecuteChanged();
         RetryVersionCheckCommand.RaiseCanExecuteChanged();
     }
 
@@ -3755,6 +3950,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(AskDJPlaceholder));
         OnPropertyChanged(nameof(PairingStatusText));
         OnPropertyChanged(nameof(PlaybackAvailabilityText));
+        RaiseNowPlayingStatusProperties();
         OnPropertyChanged(nameof(RuntimeCompatibilityText));
         OnPropertyChanged(nameof(UpdateRequiredTitle));
         OnPropertyChanged(nameof(UpdateRequiredSubtitle));

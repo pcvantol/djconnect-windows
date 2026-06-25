@@ -15,7 +15,9 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ history deserializes revisions trim metadata and recent items", AskDJHistoryDeserializesRevisionsTrimMetadataAndRecentItems),
     ("Playback action deserializes confirmation command", PlaybackActionDeserializesConfirmationCommand),
     ("Playback action detects backend play now recommendations", PlaybackActionDetectsBackendPlayNowRecommendations),
+    ("Playback action detects save current track control", PlaybackActionDetectsSaveCurrentTrackControl),
     ("Playback command payload stays generic", PlaybackCommandPayloadStaysGeneric),
+    ("Save current track command payload uses backend contract", SaveCurrentTrackCommandPayloadUsesBackendContract),
     ("Diagnostic redaction removes secrets", DiagnosticRedactionRemovesSecrets),
     ("Version compatibility enforces app protocol minor", VersionCompatibilityEnforcesAppProtocolMinor),
     ("Queue normalization deduplicates and limits items", QueueNormalizationDeduplicatesAndLimitsItems),
@@ -269,6 +271,26 @@ static void PlaybackActionDetectsBackendPlayNowRecommendations()
     AssertTrue(!action.IsConfirmation, "play_now action must not be treated as a follow-up confirmation");
 }
 
+static void PlaybackActionDetectsSaveCurrentTrackControl()
+{
+    const string json = """
+    {
+      "id": "save-current",
+      "kind": "control",
+      "command": "save_current_track",
+      "button_label": "Zet in favorieten"
+    }
+    """;
+
+    var action = JsonSerializer.Deserialize<PlaybackAction>(json, JsonOptions());
+
+    AssertNotNull(action);
+    AssertTrue(action!.IsSaveCurrentTrackControl, "save_current_track control actions must use the direct command path");
+    AssertTrue(!action.IsPlayNowRecommendation, "save_current_track must not be routed as ask_dj_play_recommendation");
+    AssertEqual("Zet in favorieten", action.DisplayLabel);
+    AssertTrue(!action.HasImage, "control actions must not imply album art");
+}
+
 static void PlaybackCommandPayloadStaysGeneric()
 {
     var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
@@ -283,6 +305,19 @@ static void PlaybackCommandPayloadStaysGeneric()
     AssertTrue(!json.Contains("spotify_source", StringComparison.OrdinalIgnoreCase), "payload must not include Spotify source overrides");
     AssertTrue(!json.Contains("liked_proxy_playlist_uri", StringComparison.OrdinalIgnoreCase), "payload must not include removed playlist override fields");
     AssertTrue(!json.Contains("refresh_token", StringComparison.OrdinalIgnoreCase), "payload must not include Spotify credentials");
+}
+
+static void SaveCurrentTrackCommandPayloadUsesBackendContract()
+{
+    var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
+    var payload = DJConnectApiClient.BuildCommandPayload(identity, "save_current_track", null, "save-1");
+    var json = JsonSerializer.Serialize(payload, JsonOptions());
+
+    AssertTrue(json.Contains("\"command\":\"save_current_track\""), "payload must request save_current_track");
+    AssertTrue(json.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\""), "payload must include device_id");
+    AssertTrue(json.Contains("\"client_type\":\"windows\""), "payload must include Windows client type");
+    AssertTrue(!json.Contains("\"args\""), "save_current_track payload must not require args");
+    AssertTrue(!json.Contains("ask_dj_play_recommendation", StringComparison.OrdinalIgnoreCase), "save_current_track must not use recommendation routing");
 }
 
 static void DiagnosticRedactionRemovesSecrets()

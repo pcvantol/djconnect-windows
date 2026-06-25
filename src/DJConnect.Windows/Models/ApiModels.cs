@@ -197,6 +197,8 @@ public sealed record PlaybackAction(
             || string.Equals(Kind, "playback", StringComparison.OrdinalIgnoreCase));
     public bool IsYesConfirmation => IsConfirmation && string.Equals(ResponseValue ?? Value?.ToString(), "yes", StringComparison.OrdinalIgnoreCase);
     public bool IsNoConfirmation => IsConfirmation && string.Equals(ResponseValue ?? Value?.ToString(), "no", StringComparison.OrdinalIgnoreCase);
+    public bool IsSaveCurrentTrackControl => string.Equals(Kind, "control", StringComparison.OrdinalIgnoreCase)
+        && string.Equals(Command, "save_current_track", StringComparison.OrdinalIgnoreCase);
     public bool HasImage => !string.IsNullOrWhiteSpace(ImageUrl);
     public bool HasExternalLink => !string.IsNullOrWhiteSpace(SourceUrl ?? Uri);
 }

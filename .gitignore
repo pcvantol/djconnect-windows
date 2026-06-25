@@ -9,6 +9,7 @@ obj/
 *.sln.docstates
 TestResults/
 artifacts/
+.public-release/
 publish/
 *.nupkg
 *.snupkg

@@ -179,6 +179,12 @@ the current source-of-truth notices.
         }
     }
 
+    private async void ExitAppClicked(object sender, EventArgs e)
+    {
+        await MarkCleanShutdownAsync();
+        Application.Current?.Quit();
+    }
+
     private async void ReplayAudioClicked(object sender, EventArgs e)
     {
         if (sender is Button { BindingContext: AskDJMessage { AudioUrl.Length: > 0 } message })
@@ -273,6 +279,16 @@ the current source-of-truth notices.
         StartMiniGame();
     }
 
+    private void MiniGameLeftClicked(object sender, EventArgs e) => MoveMiniGame(MiniGameDirection.Left);
+
+    private void MiniGameUpClicked(object sender, EventArgs e) => MoveMiniGame(MiniGameDirection.Up);
+
+    private void MiniGameDownClicked(object sender, EventArgs e) => MoveMiniGame(MiniGameDirection.Down);
+
+    private void MiniGameRightClicked(object sender, EventArgs e) => MoveMiniGame(MiniGameDirection.Right);
+
+    private void MiniGameActionClicked(object sender, EventArgs e) => FireMiniGameAction();
+
     private async void ClearGameHighscoresClicked(object sender, EventArgs e)
     {
         var clear = await DisplayAlertAsync("Highscores wissen", "Alle lokale mini-game highscores wissen?", "Wissen", "Niet nu");
@@ -290,7 +306,7 @@ the current source-of-truth notices.
 
     private void MiniGameSurfaceStartInteraction(object sender, TouchEventArgs e)
     {
-        UpdateMiniGamePointer(e.Touches.FirstOrDefault());
+        UpdateMiniGamePointer(e.Touches.FirstOrDefault(), isDrag: false);
         if (_gameState is MiniGameRunState.Idle or MiniGameRunState.GameOver)
         {
             StartMiniGame();
@@ -299,12 +315,15 @@ the current source-of-truth notices.
 
     private void MiniGameSurfaceDragInteraction(object sender, TouchEventArgs e)
     {
-        UpdateMiniGamePointer(e.Touches.FirstOrDefault());
+        UpdateMiniGamePointer(e.Touches.FirstOrDefault(), isDrag: true);
     }
 
     private void MiniGameSurfaceEndInteraction(object sender, TouchEventArgs e)
     {
-        _inputActive = false;
+        if (_selectedGame is MiniGameKind.Paddle or MiniGameKind.Meteor)
+        {
+            _inputActive = false;
+        }
     }
 
     private void SelectMiniGame(MiniGameKind game)
@@ -323,6 +342,105 @@ the current source-of-truth notices.
         EnsureGameTimer().Start();
         MiniGameSurface.Focus();
         UpdateMiniGameUi();
+    }
+
+    private void MoveMiniGame(MiniGameDirection direction)
+    {
+        EnsureMiniGameRunning();
+
+        switch (_selectedGame)
+        {
+            case MiniGameKind.Paddle:
+                if (direction == MiniGameDirection.Up)
+                {
+                    _paddleY = Math.Clamp(_paddleY - 0.12f, 0.12f, 0.88f);
+                }
+                else if (direction == MiniGameDirection.Down)
+                {
+                    _paddleY = Math.Clamp(_paddleY + 0.12f, 0.12f, 0.88f);
+                }
+
+                _inputActive = false;
+                break;
+            case MiniGameKind.Meteor:
+                if (direction == MiniGameDirection.Left)
+                {
+                    _meteorPlayerX = Math.Clamp(_meteorPlayerX - 0.12f, 0.08f, 0.92f);
+                }
+                else if (direction == MiniGameDirection.Right)
+                {
+                    _meteorPlayerX = Math.Clamp(_meteorPlayerX + 0.12f, 0.08f, 0.92f);
+                }
+
+                _inputActive = false;
+                break;
+            case MiniGameKind.Sky:
+                if (direction == MiniGameDirection.Up || direction == MiniGameDirection.Down)
+                {
+                    _skyVelocity = direction == MiniGameDirection.Up ? -0.52f : 0.32f;
+                }
+                break;
+            case MiniGameKind.Maze:
+                QueueMazeMove(direction);
+                break;
+        }
+
+        UpdateMiniGameUi();
+    }
+
+    private void FireMiniGameAction()
+    {
+        EnsureMiniGameRunning();
+        if (_selectedGame == MiniGameKind.Sky)
+        {
+            _skyVelocity = -0.52f;
+        }
+        else if (_selectedGame == MiniGameKind.Maze)
+        {
+            QueueMazeMove(MiniGameDirection.Right);
+        }
+
+        UpdateMiniGameUi();
+    }
+
+    private void EnsureMiniGameRunning()
+    {
+        if (_gameState is MiniGameRunState.Idle or MiniGameRunState.GameOver)
+        {
+            StartMiniGame();
+        }
+        else if (_gameState == MiniGameRunState.Paused)
+        {
+            _gameState = MiniGameRunState.Running;
+            _lastGameTick = DateTimeOffset.Now;
+            EnsureGameTimer().Start();
+            GameIdleButton.IsVisible = false;
+        }
+    }
+
+    private void QueueMazeMove(MiniGameDirection direction)
+    {
+        var next = direction switch
+        {
+            MiniGameDirection.Left => new Point(_mazePlayer.X - 1, _mazePlayer.Y),
+            MiniGameDirection.Right => new Point(_mazePlayer.X + 1, _mazePlayer.Y),
+            MiniGameDirection.Up => new Point(_mazePlayer.X, _mazePlayer.Y - 1),
+            MiniGameDirection.Down => new Point(_mazePlayer.X, _mazePlayer.Y + 1),
+            _ => _mazePlayer
+        };
+
+        if (IsMazeOpen(next))
+        {
+            _mazePlayer = next;
+            if (_mazeCollectibles.Remove(next))
+            {
+                _gameScore++;
+                if (_mazeCollectibles.Count == 0)
+                {
+                    _mazeCollectibles.Add(new Point(1 + _gameRandom.Next(6), 1 + _gameRandom.Next(4)));
+                }
+            }
+        }
     }
 
     private void ResetSelectedGameToIdle()
@@ -507,41 +625,6 @@ the current source-of-truth notices.
     private void TickMaze(float delta)
     {
         _gameScore = Math.Max(_gameScore, 0);
-        if (_inputActive)
-        {
-            var next = _mazePlayer;
-            if (_inputX < 0.35f)
-            {
-                next = new Point(_mazePlayer.X - 1, _mazePlayer.Y);
-            }
-            else if (_inputX > 0.65f)
-            {
-                next = new Point(_mazePlayer.X + 1, _mazePlayer.Y);
-            }
-            else if (_inputY < 0.35f)
-            {
-                next = new Point(_mazePlayer.X, _mazePlayer.Y - 1);
-            }
-            else if (_inputY > 0.65f)
-            {
-                next = new Point(_mazePlayer.X, _mazePlayer.Y + 1);
-            }
-
-            _inputActive = false;
-            if (IsMazeOpen(next))
-            {
-                _mazePlayer = next;
-                if (_mazeCollectibles.Remove(next))
-                {
-                    _gameScore++;
-                    if (_mazeCollectibles.Count == 0)
-                    {
-                        _mazeCollectibles.Add(new Point(1 + _gameRandom.Next(6), 1 + _gameRandom.Next(4)));
-                    }
-                }
-            }
-        }
-
         if (_gameScore % 2 == 1)
         {
             var dx = Math.Sign(_mazePlayer.X - _mazeChaser.X);
@@ -582,13 +665,33 @@ the current source-of-truth notices.
         }
     }
 
-    private void UpdateMiniGamePointer(PointF point)
+    private void UpdateMiniGamePointer(PointF point, bool isDrag)
     {
         var width = Math.Max(1, MiniGameSurface.Width);
         var height = Math.Max(1, MiniGameSurface.Height);
         _inputX = Math.Clamp((float)(point.X / width), 0, 1);
         _inputY = Math.Clamp((float)(point.Y / height), 0, 1);
-        _inputActive = true;
+        switch (_selectedGame)
+        {
+            case MiniGameKind.Paddle:
+            case MiniGameKind.Meteor:
+                _inputActive = true;
+                break;
+            case MiniGameKind.Sky:
+                if (!isDrag)
+                {
+                    _skyVelocity = -0.52f;
+                }
+
+                break;
+            case MiniGameKind.Maze:
+                var dx = _inputX - ((_mazePlayer.X + 0.5f) / 8f);
+                var dy = _inputY - ((_mazePlayer.Y + 0.5f) / 6f);
+                QueueMazeMove(Math.Abs(dx) > Math.Abs(dy)
+                    ? dx < 0 ? MiniGameDirection.Left : MiniGameDirection.Right
+                    : dy < 0 ? MiniGameDirection.Up : MiniGameDirection.Down);
+                break;
+        }
     }
 
     private string SelectedHighScoreKey() => _selectedGame switch
@@ -781,9 +884,9 @@ the current source-of-truth notices.
             "Logs wissen",
             "Annuleren");
 
-        if (confirmed && _viewModel.ClearLogsCommand.CanExecute(null))
+        if (confirmed)
         {
-            _viewModel.ClearLogsCommand.Execute(null);
+            await _viewModel.ClearLogsAsync();
         }
     }
 
@@ -942,6 +1045,14 @@ internal enum MiniGameRunState
     Running,
     Paused,
     GameOver
+}
+
+internal enum MiniGameDirection
+{
+    Left,
+    Up,
+    Down,
+    Right
 }
 
 internal sealed record MiniGameRenderState(
