@@ -57,6 +57,14 @@ Text requests:
 POST /api/djconnect/ask_dj/message
 ```
 
+Voice / push-to-talk requests, once the platform capture backend is available:
+
+```http
+POST /api/djconnect/voice
+Content-Type: multipart/form-data
+audio: audio/wav
+```
+
 History sync:
 
 ```http
@@ -69,9 +77,16 @@ Clear:
 POST /api/djconnect/ask_dj/history/clear
 ```
 
-The app persists `history_revision` and `clear_revision` as sync cursors.
+Text and voice requests include `client_type`, `device_id`, `device_name`,
+`client_id` and `client_message_id`. The app persists `history_revision` and
+`clear_revision` as sync cursors.
 History is Home Assistant user scoped and limited by the backend to 1000
 messages per HA user.
+
+If `messages[]` is present, it is canonical. The client uses
+`exchange_id`/`exchange_order` only to preserve the server-provided user then
+assistant order. It does not reconstruct intents, follow-up context, playback
+actions, memory or history locally.
 
 ## Actions
 
@@ -83,13 +98,23 @@ POST /api/djconnect/command
 ```
 
 Confirmation actions default to `command: "ask_dj_followup_response"`.
-Recommendation Play Now actions default to
+Recommendation actions with `action_style: "play_now"` for track, album,
+artist, playlist or track-mix actions default to
 `command: "ask_dj_play_recommendation"` unless the backend provides a more
-specific command.
+specific command. `command: "ask_dj_message"` sends `value.text`/`value.prompt`
+back as a new Ask DJ backend message, or forwards the backend action to the
+command endpoint.
 
 Recent-played informational responses render returned `items[]` as compact
 lists. The app must not invent Play Now buttons unless `playback_actions[]` is
 present.
+
+Response `text`, `dj_text` or `message` is rendered as the main answer.
+`images[]`, `sources[]`, `items[]`, `playback_actions[]` and
+`confirmation_actions[]` are rendered only when they are explicitly present on
+the response or message. The client must not reuse previous album art/media,
+show a TTS replay button without `audio_url`, expose raw Spotify URIs/backend
+IDs in visible text or infer actions from answer text.
 
 ## Queue And Playlists
 

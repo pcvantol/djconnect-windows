@@ -75,11 +75,14 @@ connection flow rather than in a mobile-style tab bar.
    normalized, deduplicated by stable id/signature and capped at 100 rendered
    rows. Starting a queue item sends only a generic `queue_item_play` command or
    a backend-returned playback action.
-11. Ask DJ uses server-side history and message endpoints. The Windows client
-   merges server messages by stable id, preserves pending local user bubbles,
-   honors `clear_revision`, prunes from trim metadata and renders system
-   messages, optional audio replay and backend-returned actions without
-   client-side intent interpretation.
+11. Ask DJ uses server-side history and message endpoints. Text chat always
+    goes to `POST /api/djconnect/ask_dj/message`; voice/PTT capture is reserved
+    for `POST /api/djconnect/voice` with `audio/wav` once a platform capture
+    backend exists. The Windows client merges server messages by stable id,
+    preserves pending local user bubbles, honors `clear_revision`, prunes from
+    trim metadata and renders system messages, optional audio replay,
+    response-owned images/sources/items and backend-returned actions without
+    client-side intent, memory, follow-up or playback reconstruction.
 12. Playback actions and follow-up buttons are sent through
    `POST /api/djconnect/command`.
 13. Playlists render backend-provided playlist shapes (`playlists`,
@@ -165,13 +168,19 @@ These artifacts are not signed Windows installers and not notarized Mac apps.
 
 Ask DJ is backend-owned. The app sends user text to
 `POST /api/djconnect/ask_dj/message`, renders returned `user_message`,
-`assistant_message`, `playback_actions`, `confirmation_actions` and `items`,
-and syncs history through `GET /api/djconnect/ask_dj/history`.
+`assistant_message`, `messages[]`, `text`/`dj_text`/`message`, `images`,
+`sources`, `playback_actions`, `confirmation_actions` and `items`, and syncs
+history through `GET /api/djconnect/ask_dj/history`.
 
 `history_revision` and `clear_revision` are persisted as local sync cursors.
 If the server clear revision advances, local cached display messages are
 cleared. Server trim metadata must be honored without parsing the text of
 retention system messages.
+
+The client never adds Play Now buttons, album art, TTS replay buttons, sources
+or action behavior by inspecting answer text. Playback/follow-up buttons exist
+only when `playback_actions[]` or `confirmation_actions[]` is present. Raw
+Spotify URIs and backend IDs are kept out of visible answer text.
 
 ## Client Type Open Point
 

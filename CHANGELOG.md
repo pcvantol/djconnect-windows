@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 3.1.9 - 2026-06-25
+
+- Tightened the Ask DJ client contract so text and future voice/PTT requests
+  stay backend-owned, response-owned images/sources render per bubble, commands
+  include client identity/message ids and stale pairing clears the local
+  Ask DJ cache before re-pairing.
 - Added non-destructive Demo Mode monkey-test support for CI/UI stress runs.
   `DJCONNECT_DEMO_MONKEY_TEST=1` starts the app directly in Demo Mode, suppresses
   persistence, pairing/token writes, mDNS/local Client API startup, clipboard

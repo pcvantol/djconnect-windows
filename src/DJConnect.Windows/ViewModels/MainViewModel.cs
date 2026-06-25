@@ -4,6 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using DJConnect.Windows.Contracts;
 using DJConnect.Windows.Models;
 using DJConnect.Windows.Services;
@@ -702,7 +703,7 @@ public sealed class MainViewModel : ObservableObject
 
     public string DeviceId => _identity.DeviceId;
     public string ClientType => _identity.ClientType;
-    public string AppVersion => "3.1.1";
+    public string AppVersion => "3.1.9";
     public string ProtocolVersion => $"{DJConnectContract.ProtocolLine}.x";
     public string BuildChannel => "debug";
     public string PlatformName => "Windows";
@@ -1273,6 +1274,14 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                Notice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                Status = Notice;
+                RaisePlaybackStateProperties();
+                return;
+            }
+
             if (ApplyVersionMismatch(ex))
             {
                 Notice = L("Update vereist", "Update required");
@@ -1291,6 +1300,14 @@ public sealed class MainViewModel : ObservableObject
 
         if (!response.Success)
         {
+            if (await ApplyStalePairingAsync(response.Error))
+            {
+                Notice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                Status = Notice;
+                RaisePlaybackStateProperties();
+                return;
+            }
+
             if (string.Equals(response.Error, "version_mismatch", StringComparison.OrdinalIgnoreCase))
             {
                 ApplyVersionCompatibility(response);
@@ -1339,7 +1356,7 @@ public sealed class MainViewModel : ObservableObject
 
         var clientMessageId = Guid.NewGuid().ToString("N");
         AskDJText = "";
-        var localUserMessage = new AskDJMessage(clientMessageId, "user", text, null, DateTimeOffset.Now, "user", null, null, null, ClientMessageId: clientMessageId, IsPending: true);
+        var localUserMessage = new AskDJMessage(clientMessageId, "user", text, null, DateTimeOffset.Now, "user", null, null, null, null, null, ClientMessageId: clientMessageId, IsPending: true);
         MergeMessage(localUserMessage);
 
         if (IsDemoMode)
@@ -1348,7 +1365,7 @@ public sealed class MainViewModel : ObservableObject
                 "Demo: Ask DJ geeft echte antwoorden zodra Home Assistant gekoppeld is. Ik zou nu muziekcontext, aanbevelingen en acties via je DJConnect-integratie ophalen.",
                 "Demo: Ask DJ gives real answers once Home Assistant is paired. I would fetch music context, recommendations and actions through your DJConnect integration.");
             MarkMessageSent(clientMessageId);
-            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", answer, null, DateTimeOffset.Now, "assistant", DemoPlaybackActions(), null, null));
+            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", answer, null, DateTimeOffset.Now, "assistant", DemoPlaybackActions(), null, null, null, null));
             AskDJNotice = "";
             AddDiagnostic("INF Demo Ask DJ message added.");
             return;
@@ -1371,6 +1388,13 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                MarkMessageFailed(clientMessageId);
+                AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                return;
+            }
+
             if (ApplyVersionMismatch(ex))
             {
                 MarkMessageFailed(clientMessageId);
@@ -1387,6 +1411,13 @@ public sealed class MainViewModel : ObservableObject
 
         if (!response.Success)
         {
+            if (await ApplyStalePairingAsync(response.Error))
+            {
+                MarkMessageFailed(clientMessageId);
+                AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                return;
+            }
+
             MarkMessageFailed(clientMessageId);
             AskDJNotice = L("Home Assistant gaf geen antwoord", "Home Assistant did not answer");
             AddDiagnostic("WRN Ask DJ request failed.");
@@ -1414,9 +1445,9 @@ public sealed class MainViewModel : ObservableObject
             MergeMessage(message);
         }
 
-        if (responseMessages.Count == 0 && !string.IsNullOrWhiteSpace(response.Text ?? response.Message))
+        if (responseMessages.Count == 0 && !string.IsNullOrWhiteSpace(response.Text ?? response.DjText ?? response.Message))
         {
-            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", SafeDisplayText(response.Text ?? response.Message), null, DateTimeOffset.Now, "assistant", response.PlaybackActions, response.ConfirmationActions, response.Items, response.AudioUrl, ClientMessageId: clientMessageId));
+            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", SafeDisplayText(response.Text ?? response.DjText ?? response.Message), null, DateTimeOffset.Now, "assistant", response.PlaybackActions, response.ConfirmationActions, response.Items, response.Images, response.Sources, response.AudioUrl, ClientMessageId: clientMessageId));
         }
 
         var assistantMessage = responseMessages.LastOrDefault(message => message.IsAssistant);
@@ -1474,6 +1505,16 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                if (showStatus)
+                {
+                    AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                }
+
+                return;
+            }
+
             if (ApplyVersionMismatch(ex))
             {
                 if (showStatus)
@@ -1496,6 +1537,16 @@ public sealed class MainViewModel : ObservableObject
 
         if (!response.Success)
         {
+            if (await ApplyStalePairingAsync(response.Error))
+            {
+                if (showStatus)
+                {
+                    AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                }
+
+                return;
+            }
+
             if (showStatus)
             {
                 AskDJNotice = L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
@@ -2590,6 +2641,60 @@ public sealed class MainViewModel : ObservableObject
         return true;
     }
 
+    private async Task<bool> ApplyStalePairingAsync(Exception ex)
+    {
+        return await ApplyStalePairingAsync(ex.Message);
+    }
+
+    private async Task<bool> ApplyStalePairingAsync(string? error)
+    {
+        if (!IsStalePairingError(error))
+        {
+            return false;
+        }
+
+        if (!IsMonkeyTestMode)
+        {
+            _credentialStore.DeleteToken();
+        }
+
+        Token = "";
+        IsPaired = false;
+        IsDemoMode = false;
+        _settings.HistoryRevision = 0;
+        _settings.ClearRevision = 0;
+        _backendAvailable = false;
+        Messages.Clear();
+        Actions.Clear();
+        RecentItems.Clear();
+        IsPairingSuccessVisible = false;
+        IsPairingOverlayVisible = !IsOnboardingVisible;
+        await SaveSettingsIfMutableAsync();
+        await UpdateMdnsAdvertisingAsync();
+        RaisePlaybackStateProperties();
+        RaiseSettingsStatusProperties();
+        Status = L("Opnieuw koppelen vereist", "Pair again to continue");
+        AddDiagnostic("WRN Stale pairing cleared local token and Ask DJ cache.");
+        return true;
+    }
+
+    private static bool IsStalePairingError(string? error)
+    {
+        if (string.IsNullOrWhiteSpace(error))
+        {
+            return false;
+        }
+
+        return error.Contains("stale", StringComparison.OrdinalIgnoreCase)
+            || error.Contains("not_configured", StringComparison.OrdinalIgnoreCase)
+            || error.Contains("not configured", StringComparison.OrdinalIgnoreCase)
+            || error.Contains("401", StringComparison.OrdinalIgnoreCase)
+            || error.Contains("403", StringComparison.OrdinalIgnoreCase)
+            || error.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase)
+            || error.Contains("Forbidden", StringComparison.OrdinalIgnoreCase)
+            || error.Contains("token is no longer accepted", StringComparison.OrdinalIgnoreCase);
+    }
+
     private async Task RetryVersionCheckAsync()
     {
         IsRefreshingVersionCheck = true;
@@ -2632,15 +2737,45 @@ public sealed class MainViewModel : ObservableObject
 
         if (IsDemoMode)
         {
-            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", $"{action.DisplayLabel}: demo actie uitgevoerd.", null, DateTimeOffset.Now, "assistant", null, null, null));
+            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", $"{action.DisplayLabel}: demo actie uitgevoerd.", null, DateTimeOffset.Now, "assistant", null, null, null, null, null));
             AddDiagnostic("INF Demo Ask DJ action executed.");
             return;
         }
 
         ConfigureClient();
-        var response = await _apiClient.RunPlaybackActionAsync(_identity, action, CancellationToken.None);
+        CommandResponse response;
+        try
+        {
+            response = string.Equals(action.Command, "ask_dj_message", StringComparison.OrdinalIgnoreCase)
+                ? await _apiClient.RunAskDJMessageActionAsync(_identity, action, CancellationToken.None)
+                : await _apiClient.RunPlaybackActionAsync(_identity, action, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                return;
+            }
+
+            if (ApplyVersionMismatch(ex))
+            {
+                AskDJNotice = L("Update vereist", "Update required");
+                return;
+            }
+
+            AskDJNotice = L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
+            AddDiagnostic("WRN Ask DJ action failed: " + ex.GetType().Name);
+            return;
+        }
         if (!response.Success)
         {
+            if (await ApplyStalePairingAsync(response.Error))
+            {
+                AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                return;
+            }
+
             AskDJNotice = L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
             AddDiagnostic("WRN Ask DJ action failed.");
             return;
@@ -2656,7 +2791,7 @@ public sealed class MainViewModel : ObservableObject
         if (IsDemoMode)
         {
             VoiceStatus = L("Demo: microfoon niet gebruikt. Ask DJ zou nu luisteren via Home Assistant.", "Demo: microphone not used. Ask DJ would listen through Home Assistant.");
-            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", "Demo Mode: voice requests work after pairing Home Assistant.", null, DateTimeOffset.Now, "assistant", DemoPlaybackActions(), null, null));
+            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", "Demo Mode: voice requests work after pairing Home Assistant.", null, DateTimeOffset.Now, "assistant", DemoPlaybackActions(), null, null, null, null));
             AddDiagnostic("INF Demo push-to-talk simulated locally.");
             return Task.CompletedTask;
         }
@@ -2995,7 +3130,10 @@ public sealed class MainViewModel : ObservableObject
             return "Home Assistant gaf geen antwoord";
         }
 
-        return text.Replace("<", "").Replace(">", "");
+        var withoutMarkup = text.Replace("<", "").Replace(">", "");
+        var withoutSpotifyUris = Regex.Replace(withoutMarkup, @"\bspotify:(track|album|artist|playlist|show|episode|user):[A-Za-z0-9:_-]+", "[verborgen Spotify-id]", RegexOptions.IgnoreCase);
+        var withoutOpenUrls = Regex.Replace(withoutSpotifyUris, @"https?://open\.spotify\.com/[^\s)\]]+", "[verborgen Spotify-link]", RegexOptions.IgnoreCase);
+        return Regex.Replace(withoutOpenUrls, @"\b(uri|context_uri|track_uri|playlist_uri|spotify_id|backend_id|device_id)\s*[:=]\s*[""']?[A-Za-z0-9:._/-]+", "$1: [verborgen]", RegexOptions.IgnoreCase);
     }
 
     private static string NormalizeReleaseMarkdown(string? text)
@@ -3061,8 +3199,8 @@ public sealed class MainViewModel : ObservableObject
 
     private void LoadDemoAskDJMessages()
     {
-        MergeMessage(new AskDJMessage("demo-system", "assistant", "Demo mode is lokaal. Koppel Home Assistant voor echte Ask DJ antwoorden, audio en acties.", null, DateTimeOffset.Now.AddSeconds(-2), "system", null, null, null, Origin: "history_retention"));
-        MergeMessage(new AskDJMessage("demo-assistant", "assistant", "Vraag om muziek, context of een gesproken antwoord. Ik toon hier hoe acties en antwoorden eruitzien.", null, DateTimeOffset.Now.AddSeconds(-1), "assistant", DemoPlaybackActions(), null, null));
+        MergeMessage(new AskDJMessage("demo-system", "assistant", "Demo mode is lokaal. Koppel Home Assistant voor echte Ask DJ antwoorden, audio en acties.", null, DateTimeOffset.Now.AddSeconds(-2), "system", null, null, null, null, null, Origin: "history_retention"));
+        MergeMessage(new AskDJMessage("demo-assistant", "assistant", "Vraag om muziek, context of een gesproken antwoord. Ik toon hier hoe acties en antwoorden eruitzien.", null, DateTimeOffset.Now.AddSeconds(-1), "assistant", DemoPlaybackActions(), null, null, null, null));
     }
 
     private void ReplaceRecentItems(IReadOnlyList<RecentItem>? items)

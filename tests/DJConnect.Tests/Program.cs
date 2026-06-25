@@ -10,9 +10,11 @@ var tests = new (string Name, Action Run)[]
     ("Pairing payload serializes HA compatibility fields", PairingPayloadSerializesCompatibilityFields),
     ("Ask DJ request serializes server-side message contract", AskDJRequestSerializesServerSideContract),
     ("Ask DJ response deserializes exchange messages", AskDJResponseDeserializesExchangeMessages),
+    ("Ask DJ response deserializes media sources and dj text", AskDJResponseDeserializesMediaSourcesAndDjText),
     ("Ask DJ message presentation supports system audio and confirmations", AskDJMessagePresentationSupportsSystemAudioAndConfirmations),
     ("Ask DJ history deserializes revisions trim metadata and recent items", AskDJHistoryDeserializesRevisionsTrimMetadataAndRecentItems),
     ("Playback action deserializes confirmation command", PlaybackActionDeserializesConfirmationCommand),
+    ("Playback action detects backend play now recommendations", PlaybackActionDetectsBackendPlayNowRecommendations),
     ("Playback command payload stays generic", PlaybackCommandPayloadStaysGeneric),
     ("Diagnostic redaction removes secrets", DiagnosticRedactionRemovesSecrets),
     ("Version compatibility enforces app protocol minor", VersionCompatibilityEnforcesAppProtocolMinor),
@@ -161,8 +163,8 @@ static void AskDJResponseDeserializesExchangeMessages()
 
 static void AskDJMessagePresentationSupportsSystemAudioAndConfirmations()
 {
-    var system = new AskDJMessage("sys-1", "assistant", "History trimmed", null, DateTimeOffset.Now, "system", null, null, null, Origin: "history_retention");
-    var audio = new AskDJMessage("a-1", "assistant", "Luister nog eens.", null, DateTimeOffset.Now, "assistant", null, null, null, "http://127.0.0.1/audio.wav");
+    var system = new AskDJMessage("sys-1", "assistant", "History trimmed", null, DateTimeOffset.Now, "system", null, null, null, null, null, Origin: "history_retention");
+    var audio = new AskDJMessage("a-1", "assistant", "Luister nog eens.", null, DateTimeOffset.Now, "assistant", null, null, null, null, null, "http://127.0.0.1/audio.wav");
     var yes = new PlaybackAction("yes", "confirmation", "ask_dj_followup_response", null, null, null, null, null, null, null, "yes", "confirmation", "yes");
     var no = yes with { Id = "no", Value = "no", ResponseValue = "no" };
 
@@ -171,6 +173,29 @@ static void AskDJMessagePresentationSupportsSystemAudioAndConfirmations()
     AssertTrue(audio.HasAudio, "assistant messages with audio_url must show replay UI");
     AssertEqual("Ja", yes.DisplayLabel);
     AssertEqual("Nee", no.DisplayLabel);
+}
+
+static void AskDJResponseDeserializesMediaSourcesAndDjText()
+{
+    const string json = """
+    {
+      "success": true,
+      "dj_text": "Dit komt uit DJConnect Memory.",
+      "images": [
+        { "image_url": "https://example.invalid/cover.jpg", "title": "Cover" }
+      ],
+      "sources": [
+        { "id": "djconnect_memory", "label": "djconnect_memory" }
+      ]
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<AskDJMessageResponse>(json, JsonOptions());
+
+    AssertNotNull(response);
+    AssertEqual("Dit komt uit DJConnect Memory.", response!.DjText);
+    AssertEqual("https://example.invalid/cover.jpg", response.Images![0].DisplayUrl);
+    AssertEqual("djconnect_memory", response.Sources![0].DisplayLabel);
 }
 
 static void AskDJHistoryDeserializesRevisionsTrimMetadataAndRecentItems()
@@ -236,14 +261,25 @@ static void PlaybackActionDeserializesConfirmationCommand()
     AssertEqual("Ja graag", action.Label);
 }
 
+static void PlaybackActionDetectsBackendPlayNowRecommendations()
+{
+    var action = new PlaybackAction("track-1", "track", null, "Play Now", "Play Now", "Zombie", "The Cranberries", "spotify:track:secret", null, null, null, "play_now");
+
+    AssertTrue(action.IsPlayNowRecommendation, "track play_now action must use the backend recommendation command contract");
+    AssertTrue(!action.IsConfirmation, "play_now action must not be treated as a follow-up confirmation");
+}
+
 static void PlaybackCommandPayloadStaysGeneric()
 {
     var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
-    var payload = DJConnectApiClient.BuildCommandPayload(identity, "volume", new { volume_percent = 42 });
+    var payload = DJConnectApiClient.BuildCommandPayload(identity, "volume", new { volume_percent = 42 }, "cmd-1");
     var json = JsonSerializer.Serialize(payload, JsonOptions());
 
     AssertTrue(json.Contains("\"command\":\"volume\""), "payload must include the generic command");
+    AssertTrue(json.Contains("\"client_message_id\":\"cmd-1\""), "payload must include a client message id");
+    AssertTrue(json.Contains("\"client_id\":\"djconnect-windows-ABC123DEF456\""), "payload must include the stable client id");
     AssertTrue(json.Contains("\"client_type\":\"windows\""), "payload must include the Windows client type");
+    AssertTrue(json.Contains("\"args\":{"), "generic command payloads must preserve args");
     AssertTrue(!json.Contains("spotify_source", StringComparison.OrdinalIgnoreCase), "payload must not include Spotify source overrides");
     AssertTrue(!json.Contains("liked_proxy_playlist_uri", StringComparison.OrdinalIgnoreCase), "payload must not include removed playlist override fields");
     AssertTrue(!json.Contains("refresh_token", StringComparison.OrdinalIgnoreCase), "payload must not include Spotify credentials");

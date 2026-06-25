@@ -146,6 +146,33 @@
                                                     <Label Text="{Binding DisplayText}" LineBreakMode="WordWrap" TextColor="{StaticResource TextPrimary}" />
                                                     <Label Text="{Binding DeliveryLabel}" TextColor="{StaticResource TextSecondary}" FontSize="12" />
                                                     <Button Text="Audio opnieuw afspelen" IsVisible="{Binding HasAudio}" Clicked="ReplayAudioClicked" HorizontalOptions="Start" />
+                                                    <CollectionView ItemsSource="{Binding Images}" IsVisible="{Binding HasImages}">
+                                                        <CollectionView.ItemsLayout>
+                                                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                                                        </CollectionView.ItemsLayout>
+                                                        <CollectionView.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Padding="8" BackgroundColor="#151936" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                                                    <VerticalStackLayout Spacing="6" WidthRequest="150">
+                                                                        <Image Source="{Binding DisplayUrl}" WidthRequest="134" HeightRequest="96" Aspect="AspectFill" />
+                                                                        <Label Text="{Binding DisplayLabel}" TextColor="{StaticResource TextSecondary}" FontSize="12" LineBreakMode="TailTruncation" />
+                                                                    </VerticalStackLayout>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </CollectionView.ItemTemplate>
+                                                    </CollectionView>
+                                                    <CollectionView ItemsSource="{Binding Sources}" IsVisible="{Binding HasSources}">
+                                                        <CollectionView.ItemsLayout>
+                                                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                                                        </CollectionView.ItemsLayout>
+                                                        <CollectionView.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <Border Padding="8,4" BackgroundColor="#151936" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                                                    <Label Text="{Binding DisplayLabel}" TextColor="{StaticResource TextSecondary}" FontSize="12" />
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </CollectionView.ItemTemplate>
+                                                    </CollectionView>
                                                     <CollectionView ItemsSource="{Binding PlaybackActions}" IsVisible="{Binding HasPlaybackActions}">
                                                         <CollectionView.ItemsLayout>
                                                             <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />

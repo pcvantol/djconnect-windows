@@ -48,6 +48,8 @@ public sealed record AskDJMessage(
     [property: JsonPropertyName("playback_actions")] IReadOnlyList<PlaybackAction>? PlaybackActions,
     [property: JsonPropertyName("confirmation_actions")] IReadOnlyList<PlaybackAction>? ConfirmationActions,
     [property: JsonPropertyName("items")] IReadOnlyList<RecentItem>? Items,
+    [property: JsonPropertyName("images")] IReadOnlyList<AskDJImage>? Images,
+    [property: JsonPropertyName("sources")] IReadOnlyList<AskDJSource>? Sources,
     [property: JsonPropertyName("audio_url")] string? AudioUrl = null,
     [property: JsonPropertyName("origin")] string? Origin = null,
     [property: JsonPropertyName("client_message_id")] string? ClientMessageId = null,
@@ -66,6 +68,8 @@ public sealed record AskDJMessage(
     public bool HasAudio => !string.IsNullOrWhiteSpace(AudioUrl);
     public bool HasPlaybackActions => (PlaybackActions?.Count ?? 0) > 0 || (ConfirmationActions?.Count ?? 0) > 0;
     public bool HasItems => (Items?.Count ?? 0) > 0;
+    public bool HasImages => (Images?.Count ?? 0) > 0;
+    public bool HasSources => (Sources?.Count ?? 0) > 0;
     public string BubbleAlignment => IsUser ? "End" : "Start";
     public string BubbleBackground => IsSystem ? "#24304D" : IsUser ? "#5539D7" : "#222852";
     public string RoleLabel => IsSystem ? (Origin ?? "system") : IsUser ? "Jij" : "Ask DJ";
@@ -105,10 +109,47 @@ public sealed record AskDJMessageResponse(
     [property: JsonPropertyName("playback_actions")] IReadOnlyList<PlaybackAction>? PlaybackActions,
     [property: JsonPropertyName("confirmation_actions")] IReadOnlyList<PlaybackAction>? ConfirmationActions,
     [property: JsonPropertyName("items")] IReadOnlyList<RecentItem>? Items,
+    [property: JsonPropertyName("images")] IReadOnlyList<AskDJImage>? Images,
+    [property: JsonPropertyName("sources")] IReadOnlyList<AskDJSource>? Sources,
     [property: JsonPropertyName("text")] string? Text,
+    [property: JsonPropertyName("dj_text")] string? DjText,
     [property: JsonPropertyName("message")] string? Message,
     [property: JsonPropertyName("audio_url")] string? AudioUrl,
     [property: JsonPropertyName("error")] string? Error);
+
+public sealed record AskDJVoiceRequest(
+    string ClientMessageId,
+    string AudioResponse = "auto");
+
+public sealed record AskDJImage(
+    [property: JsonPropertyName("url")] string? Url,
+    [property: JsonPropertyName("image_url")] string? ImageUrl,
+    [property: JsonPropertyName("alt")] string? Alt,
+    [property: JsonPropertyName("title")] string? Title)
+{
+    public string DisplayUrl => FirstNonEmpty(Url, ImageUrl);
+    public string DisplayLabel => FirstNonEmpty(Title, Alt);
+    public bool HasImage => !string.IsNullOrWhiteSpace(DisplayUrl);
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    }
+}
+
+public sealed record AskDJSource(
+    [property: JsonPropertyName("id")] string? Id,
+    [property: JsonPropertyName("name")] string? Name,
+    [property: JsonPropertyName("label")] string? Label,
+    [property: JsonPropertyName("kind")] string? Kind)
+{
+    public string DisplayLabel => FirstNonEmpty(Label, Name, Id, Kind);
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    }
+}
 
 public sealed record PlaybackAction(
     [property: JsonPropertyName("id")] string? Id,
@@ -147,6 +188,13 @@ public sealed record PlaybackAction(
 
     public bool IsConfirmation => string.Equals(Kind, "confirmation", StringComparison.OrdinalIgnoreCase)
         || string.Equals(ActionStyle, "confirmation", StringComparison.OrdinalIgnoreCase);
+    public bool IsPlayNowRecommendation => string.Equals(ActionStyle, "play_now", StringComparison.OrdinalIgnoreCase)
+        && (string.Equals(Kind, "track", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Kind, "album", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Kind, "artist", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Kind, "playlist", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Kind, "track_mix", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Kind, "playback", StringComparison.OrdinalIgnoreCase));
     public bool IsYesConfirmation => IsConfirmation && string.Equals(ResponseValue ?? Value?.ToString(), "yes", StringComparison.OrdinalIgnoreCase);
     public bool IsNoConfirmation => IsConfirmation && string.Equals(ResponseValue ?? Value?.ToString(), "no", StringComparison.OrdinalIgnoreCase);
     public bool HasImage => !string.IsNullOrWhiteSpace(ImageUrl);
