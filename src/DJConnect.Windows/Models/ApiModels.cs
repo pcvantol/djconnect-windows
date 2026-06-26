@@ -144,9 +144,27 @@ public sealed record AskDJTrackAnalysis(
     [property: JsonPropertyName("timeline")] IReadOnlyList<AskDJAnalysisTimelineEntry>? Timeline,
     [property: JsonPropertyName("dj_tips")] IReadOnlyList<AskDJAnalysisTip>? DjTips,
     [property: JsonPropertyName("providers")] IReadOnlyList<TrackAnalysisProviderStatus>? Providers,
+    [property: JsonPropertyName("metadata")] TrackAnalysisMetadata? Metadata,
     [property: JsonPropertyName("limitations")] IReadOnlyList<AskDJAnalysisLimitation>? Limitations,
     [property: JsonPropertyName("measured")] AskDJMeasuredAnalysis? Measured = null,
     [property: JsonPropertyName("inferred")] AskDJMeasuredAnalysis? Inferred = null);
+
+public sealed record TrackAnalysisMetadata(
+    [property: JsonPropertyName("musicbrainz_recording_id")] string? MusicBrainzRecordingId,
+    [property: JsonPropertyName("match_score")] int? MatchScore,
+    [property: JsonPropertyName("recording_title")] string? RecordingTitle,
+    [property: JsonPropertyName("artist")] string? Artist,
+    [property: JsonPropertyName("first_release_date")] string? FirstReleaseDate,
+    [property: JsonPropertyName("release")] TrackAnalysisMetadataRelease? Release,
+    [property: JsonPropertyName("genres")] IReadOnlyList<string>? Genres,
+    [property: JsonPropertyName("tags")] IReadOnlyList<string>? Tags,
+    [property: JsonPropertyName("listenbrainz_listen_count")] int? ListenBrainzListenCount);
+
+public sealed record TrackAnalysisMetadataRelease(
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("date")] string? Date,
+    [property: JsonPropertyName("country")] string? Country,
+    [property: JsonPropertyName("status")] string? Status);
 
 public sealed record TrackAnalysisProviderStatus(
     [property: JsonPropertyName("provider_id")] string? ProviderId,
@@ -219,17 +237,19 @@ public sealed record TechnicalTrackAnalysisPresentation(
     string Header,
     string MetaLabel,
     IReadOnlyList<TechnicalAnalysisRow> Sections,
+    IReadOnlyList<TechnicalAnalysisRow> Context,
     IReadOnlyList<TechnicalAnalysisRow> Timeline,
     IReadOnlyList<TechnicalAnalysisRow> Tips,
     IReadOnlyList<TechnicalAnalysisRow> Limitations,
     IReadOnlyList<TechnicalAnalysisRow> ProviderDiagnostics)
 {
     public bool HasSections => Sections.Count > 0;
+    public bool HasContext => Context.Count > 0;
     public bool HasTimeline => Timeline.Count > 0;
     public bool HasTips => Tips.Count > 0;
     public bool HasLimitations => Limitations.Count > 0;
     public bool HasProviderDiagnostics => ProviderDiagnostics.Count > 0;
-    public bool HasContent => HasSections || HasTimeline || HasTips || HasLimitations || HasProviderDiagnostics;
+    public bool HasContent => HasSections || HasContext || HasTimeline || HasTips || HasLimitations || HasProviderDiagnostics;
     public bool IsUnavailable => Header.Contains("niet beschikbaar", StringComparison.OrdinalIgnoreCase);
 
     public static TechnicalTrackAnalysisPresentation? From(AskDJMessage message)
@@ -246,6 +266,7 @@ public sealed record TechnicalTrackAnalysisPresentation(
             LabelWithPrefix("confidence", analysis.Confidence));
 
         var sections = new List<TechnicalAnalysisRow>();
+        var context = new List<TechnicalAnalysisRow>();
         var timeline = new List<TechnicalAnalysisRow>();
         var tips = new List<TechnicalAnalysisRow>();
         var limitations = new List<TechnicalAnalysisRow>();
@@ -253,7 +274,8 @@ public sealed record TechnicalTrackAnalysisPresentation(
 
         if ((analysis.Sections?.Count ?? 0) > 0 || (analysis.Timeline?.Count ?? 0) > 0 || (analysis.DjTips?.Count ?? 0) > 0)
         {
-            sections.AddRange((analysis.Sections ?? []).Select(SectionRow));
+            sections.AddRange((analysis.Sections ?? []).Where(section => !IsMetadataContextSection(section)).Select(SectionRow));
+            context.AddRange((analysis.Sections ?? []).Where(IsMetadataContextSection).Select(MetadataContextSectionRow));
             timeline.AddRange((analysis.Timeline ?? []).Select(TimelineRow));
             tips.AddRange((analysis.DjTips ?? []).Select(TipRow));
             limitations.AddRange((analysis.Limitations ?? []).Select(LimitationRow));
@@ -265,13 +287,18 @@ public sealed record TechnicalTrackAnalysisPresentation(
             limitations.AddRange((analysis.Limitations ?? []).Select(LimitationRow));
         }
 
+        if (analysis.Metadata is not null)
+        {
+            context.AddRange(MetadataRows(analysis.Metadata, analysis.Source, analysis.Confidence));
+        }
+
         var header = string.Equals(analysis.Mode, "unavailable", StringComparison.OrdinalIgnoreCase)
             ? "Technische analyse niet beschikbaar"
             : "Technische analyse";
 
         providerDiagnostics.AddRange((analysis.Providers ?? []).Select(ProviderRow));
 
-        return new TechnicalTrackAnalysisPresentation(header, meta, sections, timeline, tips, limitations, providerDiagnostics);
+        return new TechnicalTrackAnalysisPresentation(header, meta, sections, context, timeline, tips, limitations, providerDiagnostics);
     }
 
     private static IEnumerable<TechnicalAnalysisRow> MeasuredRows(string group, AskDJMeasuredAnalysis? measured)
@@ -314,6 +341,75 @@ public sealed record TechnicalTrackAnalysisPresentation(
             FirstNonEmpty(Humanize(section.Kind), section.Id),
             detail,
             SourceConfidenceLabel(section.Source, section.Confidence));
+    }
+
+    private static bool IsMetadataContextSection(AskDJAnalysisSection section)
+    {
+        return string.Equals(section.Id, "metadata_context", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(section.Source, "metabrainz_metadata", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static TechnicalAnalysisRow MetadataContextSectionRow(AskDJAnalysisSection section)
+    {
+        var detail = FirstNonEmpty(section.Summary, section.Text, DisplayJson(section.Value));
+        if (string.IsNullOrWhiteSpace(detail) && (section.Items?.Count ?? 0) > 0)
+        {
+            detail = string.Join(" · ", section.Items!.Select(item => $"{FirstNonEmpty(item.Label, item.Title, Humanize(item.Id), Humanize(item.Kind))}: {DisplayJson(item.Value)} {item.Unit}".Trim()).Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        return new TechnicalAnalysisRow(
+            FirstNonEmpty(section.Title, section.Label, "MusicBrainz / ListenBrainz"),
+            "Open metadata",
+            detail,
+            SourceConfidenceLabel(section.Source, section.Confidence));
+    }
+
+    private static IEnumerable<TechnicalAnalysisRow> MetadataRows(TrackAnalysisMetadata metadata, string? fallbackSource, string? fallbackConfidence)
+    {
+        var meta = SourceConfidenceLabel("metabrainz_metadata", fallbackConfidence);
+        var identity = JoinNonEmpty(metadata.RecordingTitle, metadata.Artist);
+        if (!string.IsNullOrWhiteSpace(identity))
+        {
+            yield return new TechnicalAnalysisRow("MusicBrainz / ListenBrainz", "Context", identity, meta);
+        }
+
+        if (!string.IsNullOrWhiteSpace(metadata.MusicBrainzRecordingId))
+        {
+            yield return new TechnicalAnalysisRow("Recording ID", "MusicBrainz", metadata.MusicBrainzRecordingId, meta);
+        }
+
+        var releaseDetail = JoinNonEmpty(metadata.Release?.Title, metadata.Release?.Date, metadata.Release?.Country, metadata.Release?.Status);
+        if (!string.IsNullOrWhiteSpace(releaseDetail))
+        {
+            yield return new TechnicalAnalysisRow("Release", "Open metadata", releaseDetail, meta);
+        }
+
+        if (!string.IsNullOrWhiteSpace(metadata.FirstReleaseDate))
+        {
+            yield return new TechnicalAnalysisRow("First release", "Open metadata", metadata.FirstReleaseDate, meta);
+        }
+
+        var genres = JoinNonEmpty(metadata.Genres?.ToArray() ?? []);
+        if (!string.IsNullOrWhiteSpace(genres))
+        {
+            yield return new TechnicalAnalysisRow("Genres", "Open metadata", genres, meta);
+        }
+
+        var tags = JoinNonEmpty(metadata.Tags?.ToArray() ?? []);
+        if (!string.IsNullOrWhiteSpace(tags))
+        {
+            yield return new TechnicalAnalysisRow("Tags", "Open metadata", tags, meta);
+        }
+
+        if (metadata.ListenBrainzListenCount.HasValue)
+        {
+            yield return new TechnicalAnalysisRow("ListenBrainz", "Public listens", metadata.ListenBrainzListenCount.Value.ToString(), meta);
+        }
+
+        if (metadata.MatchScore.HasValue)
+        {
+            yield return new TechnicalAnalysisRow("Match score", "Open metadata", metadata.MatchScore.Value.ToString(), meta);
+        }
     }
 
     private static TechnicalAnalysisRow MetricRow(string group, AskDJAnalysisMetric metric, string? fallbackSource, string? fallbackConfidence)
@@ -444,11 +540,12 @@ public sealed record AskDJImage(
 
 public sealed record AskDJSource(
     [property: JsonPropertyName("id")] string? Id,
+    [property: JsonPropertyName("source")] string? Source,
     [property: JsonPropertyName("name")] string? Name,
     [property: JsonPropertyName("label")] string? Label,
     [property: JsonPropertyName("kind")] string? Kind)
 {
-    public string DisplayLabel => FirstNonEmpty(Label, Name, Id, Kind);
+    public string DisplayLabel => FirstNonEmpty(Label, Name, Source, Id, Kind);
 
     private static string FirstNonEmpty(params string?[] values)
     {

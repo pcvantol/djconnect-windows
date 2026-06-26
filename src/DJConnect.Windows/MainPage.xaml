@@ -193,6 +193,25 @@
                                                                     </DataTemplate>
                                                                 </CollectionView.ItemTemplate>
                                                             </CollectionView>
+                                                            <VerticalStackLayout Spacing="4" IsVisible="{Binding HasContext}">
+                                                                <Label Text="Context" TextColor="{StaticResource TextSecondary}" FontSize="11" FontAttributes="Bold" />
+                                                                <CollectionView ItemsSource="{Binding Context}">
+                                                                    <CollectionView.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <Grid Padding="0,3" ColumnDefinitions="150,*" ColumnSpacing="10">
+                                                                                <VerticalStackLayout Spacing="1">
+                                                                                    <Label Text="{Binding Title}" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" FontSize="13" LineBreakMode="WordWrap" />
+                                                                                    <Label Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="TailTruncation" />
+                                                                                </VerticalStackLayout>
+                                                                                <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                                                                    <Label Text="{Binding Detail}" IsVisible="{Binding HasDetail}" TextColor="{StaticResource TextPrimary}" FontSize="13" LineBreakMode="WordWrap" />
+                                                                                    <Label Text="{Binding Meta}" IsVisible="{Binding HasMeta}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="WordWrap" />
+                                                                                </VerticalStackLayout>
+                                                                            </Grid>
+                                                                        </DataTemplate>
+                                                                    </CollectionView.ItemTemplate>
+                                                                </CollectionView>
+                                                            </VerticalStackLayout>
                                                             <CollectionView ItemsSource="{Binding Timeline}" IsVisible="{Binding HasTimeline}">
                                                                 <CollectionView.ItemsLayout>
                                                                     <LinearItemsLayout Orientation="Horizontal" ItemSpacing="6" />

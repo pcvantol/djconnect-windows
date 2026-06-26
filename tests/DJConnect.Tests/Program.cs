@@ -12,7 +12,10 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ response deserializes exchange messages", AskDJResponseDeserializesExchangeMessages),
     ("Ask DJ response deserializes media sources and dj text", AskDJResponseDeserializesMediaSourcesAndDjText),
     ("Ask DJ technical track analysis v2 renders sections timeline and tips", AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips),
+    ("Ask DJ technical track analysis renders MetaBrainz metadata context separately", AskDJTechnicalTrackAnalysisRendersMetaBrainzMetadataContextSeparately),
+    ("Ask DJ technical track analysis without metadata remains compatible", AskDJTechnicalTrackAnalysisWithoutMetadataRemainsCompatible),
     ("Ask DJ technical track analysis providers render as diagnostics", AskDJTechnicalTrackAnalysisProvidersRenderAsDiagnostics),
+    ("Ask DJ technical track analysis MetaBrainz provider statuses remain diagnostics", AskDJTechnicalTrackAnalysisMetaBrainzProviderStatusesRemainDiagnostics),
     ("Ask DJ technical track analysis without providers remains compatible", AskDJTechnicalTrackAnalysisWithoutProvidersRemainsCompatible),
     ("Ask DJ technical track analysis tolerates unknown providers", AskDJTechnicalTrackAnalysisToleratesUnknownProviders),
     ("Ask DJ technical track analysis unavailable renders skipped provider diagnostics", AskDJTechnicalTrackAnalysisUnavailableRendersSkippedProviderDiagnostics),
@@ -197,7 +200,8 @@ static void AskDJResponseDeserializesMediaSourcesAndDjText()
         { "image_url": "https://example.invalid/cover.jpg", "title": "Cover" }
       ],
       "sources": [
-        { "id": "djconnect_memory", "label": "djconnect_memory" }
+        { "id": "djconnect_memory", "label": "djconnect_memory" },
+        { "source": "metabrainz_metadata" }
       ]
     }
     """;
@@ -208,6 +212,7 @@ static void AskDJResponseDeserializesMediaSourcesAndDjText()
     AssertEqual("Dit komt uit DJConnect Memory.", response!.DjText);
     AssertEqual("https://example.invalid/cover.jpg", response.Images![0].DisplayUrl);
     AssertEqual("djconnect_memory", response.Sources![0].DisplayLabel);
+    AssertEqual("metabrainz_metadata", response.Sources![1].DisplayLabel);
 }
 
 static void AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips()
@@ -252,6 +257,98 @@ static void AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips()
     AssertTrue(message.TechnicalAnalysis.Tips[0].Meta.Contains("confidence: medium", StringComparison.Ordinal), "confidence must be visible");
 }
 
+static void AskDJTechnicalTrackAnalysisRendersMetaBrainzMetadataContextSeparately()
+{
+    const string json = """
+    {
+      "id": "analysis-metabrainz",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "sources": [
+        { "source": "metabrainz_metadata" }
+      ],
+      "analysis": {
+        "contract_version": 2,
+        "mode": "available",
+        "source": "measured",
+        "confidence": "high",
+        "metadata": {
+          "musicbrainz_recording_id": "0f4c2f62-2f7a-4f1d-a91d-01f3d3c00001",
+          "match_score": 97,
+          "recording_title": "Blue Monday",
+          "artist": "New Order",
+          "first_release_date": "1983-03-07",
+          "release": {
+            "title": "Blue Monday",
+            "date": "1983-03-07",
+            "country": "GB",
+            "status": "Official"
+          },
+          "genres": ["new wave", "synth-pop"],
+          "tags": ["dance-rock", "post-punk"],
+          "listenbrainz_listen_count": 12345,
+          "future_field": "ignored"
+        },
+        "sections": [
+          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 130, "source": "spotify_audio_features", "confidence": "high" },
+          { "id": "metadata_context", "title": "MusicBrainz / ListenBrainz", "summary": "Public metadata matched by recording id.", "source": "metabrainz_metadata", "confidence": "medium" },
+          { "id": "buildup", "summary": "Builds gradually toward the break." }
+        ],
+        "timeline": [
+          { "kind": "intro", "label": "Intro", "start": "0:00", "end": "0:16" }
+        ],
+        "providers": [
+          { "provider_id": "metabrainz_metadata", "display_name": "MusicBrainz / ListenBrainz", "status": "used" }
+        ],
+        "limitations": [
+          { "text": "MusicBrainz/ListenBrainz metadata is contextual and is not audio-DSP analysis.", "source": "metabrainz_metadata", "confidence": "medium" }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertEqual("0f4c2f62-2f7a-4f1d-a91d-01f3d3c00001", message!.Analysis!.Metadata!.MusicBrainzRecordingId);
+    AssertEqual(97, message.Analysis.Metadata.MatchScore);
+    AssertEqual("Blue Monday", message.Analysis.Metadata.Release!.Title);
+    AssertEqual("metabrainz_metadata", message.Sources![0].DisplayLabel);
+    AssertEqual(2, message.TechnicalAnalysis!.Sections.Count);
+    AssertTrue(!message.TechnicalAnalysis.Sections.Any(row => row.Title.Contains("MusicBrainz", StringComparison.OrdinalIgnoreCase)), "metadata context must not render as measured section");
+    AssertTrue(message.TechnicalAnalysis.HasContext, "metadata context should render in the context block");
+    AssertTrue(message.TechnicalAnalysis.Context.Any(row => row.Title.Contains("MusicBrainz", StringComparison.OrdinalIgnoreCase)), "context block should label MusicBrainz / ListenBrainz");
+    AssertTrue(message.TechnicalAnalysis.Context.Any(row => row.Detail.Contains("12345", StringComparison.Ordinal)), "ListenBrainz listen count should be visible as context");
+    AssertEqual(1, message.TechnicalAnalysis.Timeline.Count);
+    AssertTrue(!message.TechnicalAnalysis.Timeline.Any(row => row.Title.Contains("MusicBrainz", StringComparison.OrdinalIgnoreCase)), "metadata context must not create fake timeline labels");
+    AssertEqual(1, message.TechnicalAnalysis.Limitations.Count);
+    AssertTrue(message.TechnicalAnalysis.Limitations[0].Subtitle.Contains("contextual", StringComparison.OrdinalIgnoreCase), "metadata caveat should stay visible");
+}
+
+static void AskDJTechnicalTrackAnalysisWithoutMetadataRemainsCompatible()
+{
+    const string json = """
+    {
+      "id": "analysis-no-metadata",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "sections": [
+          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertTrue(message!.Analysis!.Metadata is null, "missing metadata must remain optional");
+    AssertEqual(1, message.TechnicalAnalysis!.Sections.Count);
+    AssertEqual(0, message.TechnicalAnalysis.Context.Count);
+}
+
 static void AskDJTechnicalTrackAnalysisProvidersRenderAsDiagnostics()
 {
     const string json = """
@@ -291,6 +388,74 @@ static void AskDJTechnicalTrackAnalysisProvidersRenderAsDiagnostics()
     AssertEqual("Spotify measured", message.TechnicalAnalysis.ProviderDiagnostics[0].Title);
     AssertEqual("used", message.TechnicalAnalysis.ProviderDiagnostics[0].Subtitle);
     AssertTrue(!message.TechnicalAnalysis.Sections.Any(row => row.Title.Contains("Spotify", StringComparison.OrdinalIgnoreCase)), "providers must not replace normal analysis UI blocks");
+}
+
+static void AskDJTechnicalTrackAnalysisMetaBrainzProviderStatusesRemainDiagnostics()
+{
+    const string usedJson = """
+    {
+      "id": "analysis-metabrainz-provider-used",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "sections": [
+          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
+        ],
+        "providers": [
+          { "provider_id": "metabrainz_metadata", "display_name": "MusicBrainz / ListenBrainz", "status": "used" }
+        ]
+      }
+    }
+    """;
+
+    const string skippedJson = """
+    {
+      "id": "analysis-metabrainz-provider-skipped",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "sections": [
+          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
+        ],
+        "providers": [
+          { "provider_id": "metabrainz_metadata", "display_name": "MusicBrainz / ListenBrainz", "status": "skipped", "reason": "rate_limited" }
+        ]
+      }
+    }
+    """;
+
+    const string errorJson = """
+    {
+      "id": "analysis-metabrainz-provider-error",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "sections": [
+          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
+        ],
+        "providers": [
+          { "provider_id": "metabrainz_metadata", "display_name": "MusicBrainz / ListenBrainz", "status": "error", "reason": "timeout" }
+        ]
+      }
+    }
+    """;
+
+    var used = JsonSerializer.Deserialize<AskDJMessage>(usedJson, JsonOptions());
+    var skipped = JsonSerializer.Deserialize<AskDJMessage>(skippedJson, JsonOptions());
+    var error = JsonSerializer.Deserialize<AskDJMessage>(errorJson, JsonOptions());
+
+    AssertNotNull(used);
+    AssertNotNull(skipped);
+    AssertNotNull(error);
+    AssertEqual("used", used!.TechnicalAnalysis!.ProviderDiagnostics[0].Subtitle);
+    AssertEqual("skipped", skipped!.TechnicalAnalysis!.ProviderDiagnostics[0].Subtitle);
+    AssertTrue(skipped.TechnicalAnalysis.ProviderDiagnostics[0].Meta.Contains("rate_limited", StringComparison.Ordinal), "rate limit reason should stay diagnostic");
+    AssertEqual("error", error!.TechnicalAnalysis!.ProviderDiagnostics[0].Subtitle);
+    AssertEqual(1, error.TechnicalAnalysis.Sections.Count);
+    AssertEqual(0, error.TechnicalAnalysis.Context.Count);
 }
 
 static void AskDJTechnicalTrackAnalysisWithoutProvidersRemainsCompatible()
