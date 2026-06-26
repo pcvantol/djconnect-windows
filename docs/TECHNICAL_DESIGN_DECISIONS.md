@@ -7,7 +7,7 @@ Windows and macOS. The app targets the DJConnect `3.1.x` Home Assistant
 protocol line and remains a thin client for Home Assistant-owned playback,
 Ask DJ and memory state.
 
-Current app release: `3.1.9`.
+Current app release: `3.1.10`.
 
 ## Project Shape
 
@@ -110,6 +110,8 @@ the contract, model and privacy helper source files directly and cover:
 - client identity and `windows` device-id convention;
 - pairing payload compatibility fields;
 - Ask DJ message serialization and backend exchange ordering;
+- Ask DJ technical track analysis v2 and v1 fallback presentation without prose
+  parsing or stale media/action reuse;
 - history revision, trim metadata and recent item deserialization;
 - confirmation playback action deserialization;
 - generic command payloads without removed Spotify override fields;

@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 3.1.10 - 2026-06-26
+
+- Added Ask DJ technical track analysis contract v2 support. The client now
+  detects technical analysis responses, renders server-provided sections,
+  timeline entries, DJ tips and limitations in a compact read-only card, and
+  preserves v1 measured/inferred fallback rendering.
+- Kept technical analysis responses informational by only showing media and
+  playback actions when the backend explicitly returns `images[]` or
+  `playback_actions[]`, without deriving BPM, structure labels, timestamps or
+  tips from prose.
+
 ## 3.1.9 - 2026-06-25
 
 - Tightened the Ask DJ client contract so text and future voice/PTT requests

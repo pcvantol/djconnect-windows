@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace DJConnect.Windows.Models;
@@ -58,7 +59,10 @@ public sealed record AskDJMessage(
     [property: JsonPropertyName("history_revision")] long? HistoryRevision = null,
     [property: JsonIgnore] int? ServerOrder = null,
     [property: JsonIgnore] bool IsPending = false,
-    [property: JsonIgnore] bool IsFailed = false)
+    [property: JsonIgnore] bool IsFailed = false,
+    [property: JsonPropertyName("intent")] AskDJIntent? Intent = null,
+    [property: JsonPropertyName("action")] string? Action = null,
+    [property: JsonPropertyName("analysis")] AskDJTrackAnalysis? Analysis = null)
 {
     public string DisplayText => Text ?? Message ?? "";
     public bool IsUser => string.Equals(Role, "user", StringComparison.OrdinalIgnoreCase);
@@ -70,6 +74,10 @@ public sealed record AskDJMessage(
     public bool HasItems => (Items?.Count ?? 0) > 0;
     public bool HasImages => (Images?.Count ?? 0) > 0;
     public bool HasSources => (Sources?.Count ?? 0) > 0;
+    public bool IsTechnicalTrackAnalysis => string.Equals(Intent?.Intent, "technical_track_analysis", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Action, "track_analysis", StringComparison.OrdinalIgnoreCase);
+    public TechnicalTrackAnalysisPresentation? TechnicalAnalysis => TechnicalTrackAnalysisPresentation.From(this);
+    public bool HasTechnicalAnalysis => TechnicalAnalysis?.HasContent == true;
     public string BubbleAlignment => IsUser ? "End" : "Start";
     public string BubbleBackground => IsSystem ? "#24304D" : IsUser ? "#5539D7" : "#222852";
     public string RoleLabel => IsSystem ? (Origin ?? "system") : IsUser ? "Jij" : "Ask DJ";
@@ -111,11 +119,276 @@ public sealed record AskDJMessageResponse(
     [property: JsonPropertyName("items")] IReadOnlyList<RecentItem>? Items,
     [property: JsonPropertyName("images")] IReadOnlyList<AskDJImage>? Images,
     [property: JsonPropertyName("sources")] IReadOnlyList<AskDJSource>? Sources,
+    [property: JsonPropertyName("intent")] AskDJIntent? Intent,
+    [property: JsonPropertyName("action")] string? Action,
+    [property: JsonPropertyName("analysis")] AskDJTrackAnalysis? Analysis,
     [property: JsonPropertyName("text")] string? Text,
     [property: JsonPropertyName("dj_text")] string? DjText,
     [property: JsonPropertyName("message")] string? Message,
     [property: JsonPropertyName("audio_url")] string? AudioUrl,
     [property: JsonPropertyName("error")] string? Error);
+
+public sealed record AskDJIntent(
+    [property: JsonPropertyName("intent")] string? Intent,
+    [property: JsonPropertyName("name")] string? Name = null,
+    [property: JsonPropertyName("confidence")] string? Confidence = null,
+    [property: JsonPropertyName("source")] string? Source = null);
+
+public sealed record AskDJTrackAnalysis(
+    [property: JsonPropertyName("contract_version")] int? ContractVersion,
+    [property: JsonPropertyName("mode")] string? Mode,
+    [property: JsonPropertyName("source")] string? Source,
+    [property: JsonPropertyName("confidence")] string? Confidence,
+    [property: JsonPropertyName("sections")] IReadOnlyList<AskDJAnalysisSection>? Sections,
+    [property: JsonPropertyName("timeline")] IReadOnlyList<AskDJAnalysisTimelineEntry>? Timeline,
+    [property: JsonPropertyName("dj_tips")] IReadOnlyList<AskDJAnalysisTip>? DjTips,
+    [property: JsonPropertyName("limitations")] IReadOnlyList<AskDJAnalysisLimitation>? Limitations,
+    [property: JsonPropertyName("measured")] AskDJMeasuredAnalysis? Measured = null,
+    [property: JsonPropertyName("inferred")] AskDJMeasuredAnalysis? Inferred = null);
+
+public sealed record AskDJAnalysisSection(
+    [property: JsonPropertyName("id")] string? Id,
+    [property: JsonPropertyName("kind")] string? Kind,
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("label")] string? Label,
+    [property: JsonPropertyName("value")] JsonElement? Value,
+    [property: JsonPropertyName("summary")] string? Summary,
+    [property: JsonPropertyName("text")] string? Text,
+    [property: JsonPropertyName("source")] string? Source,
+    [property: JsonPropertyName("confidence")] string? Confidence,
+    [property: JsonPropertyName("items")] IReadOnlyList<AskDJAnalysisMetric>? Items);
+
+public sealed record AskDJAnalysisMetric(
+    [property: JsonPropertyName("id")] string? Id,
+    [property: JsonPropertyName("kind")] string? Kind,
+    [property: JsonPropertyName("label")] string? Label,
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("value")] JsonElement? Value,
+    [property: JsonPropertyName("unit")] string? Unit,
+    [property: JsonPropertyName("source")] string? Source,
+    [property: JsonPropertyName("confidence")] string? Confidence);
+
+public sealed record AskDJAnalysisTimelineEntry(
+    [property: JsonPropertyName("id")] string? Id,
+    [property: JsonPropertyName("kind")] string? Kind,
+    [property: JsonPropertyName("label")] string? Label,
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("start")] string? Start,
+    [property: JsonPropertyName("end")] string? End,
+    [property: JsonPropertyName("start_time")] string? StartTime,
+    [property: JsonPropertyName("end_time")] string? EndTime,
+    [property: JsonPropertyName("source")] string? Source,
+    [property: JsonPropertyName("confidence")] string? Confidence);
+
+public sealed record AskDJAnalysisTip(
+    [property: JsonPropertyName("id")] string? Id,
+    [property: JsonPropertyName("kind")] string? Kind,
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("label")] string? Label,
+    [property: JsonPropertyName("text")] string? Text,
+    [property: JsonPropertyName("source")] string? Source,
+    [property: JsonPropertyName("confidence")] string? Confidence);
+
+public sealed record AskDJAnalysisLimitation(
+    [property: JsonPropertyName("id")] string? Id,
+    [property: JsonPropertyName("kind")] string? Kind,
+    [property: JsonPropertyName("text")] string? Text,
+    [property: JsonPropertyName("message")] string? Message,
+    [property: JsonPropertyName("source")] string? Source,
+    [property: JsonPropertyName("confidence")] string? Confidence);
+
+public sealed record AskDJMeasuredAnalysis(
+    [property: JsonPropertyName("sections")] IReadOnlyList<AskDJAnalysisTimelineEntry>? Sections,
+    [property: JsonPropertyName("items")] IReadOnlyList<AskDJAnalysisMetric>? Items,
+    [property: JsonPropertyName("bpm")] JsonElement? Bpm,
+    [property: JsonPropertyName("key")] JsonElement? Key,
+    [property: JsonPropertyName("energy")] JsonElement? Energy,
+    [property: JsonPropertyName("source")] string? Source = null,
+    [property: JsonPropertyName("confidence")] string? Confidence = null);
+
+public sealed record TechnicalTrackAnalysisPresentation(
+    string Header,
+    string MetaLabel,
+    IReadOnlyList<TechnicalAnalysisRow> Sections,
+    IReadOnlyList<TechnicalAnalysisRow> Timeline,
+    IReadOnlyList<TechnicalAnalysisRow> Tips,
+    IReadOnlyList<TechnicalAnalysisRow> Limitations)
+{
+    public bool HasSections => Sections.Count > 0;
+    public bool HasTimeline => Timeline.Count > 0;
+    public bool HasTips => Tips.Count > 0;
+    public bool HasLimitations => Limitations.Count > 0;
+    public bool HasContent => HasSections || HasTimeline || HasTips || HasLimitations;
+    public bool IsUnavailable => Header.Contains("niet beschikbaar", StringComparison.OrdinalIgnoreCase);
+
+    public static TechnicalTrackAnalysisPresentation? From(AskDJMessage message)
+    {
+        if (!message.IsTechnicalTrackAnalysis || message.Analysis is null)
+        {
+            return null;
+        }
+
+        var analysis = message.Analysis;
+        var meta = JoinNonEmpty(
+            analysis.ContractVersion.HasValue ? $"contract v{analysis.ContractVersion}" : null,
+            LabelWithPrefix("bron", analysis.Source),
+            LabelWithPrefix("confidence", analysis.Confidence));
+
+        var sections = new List<TechnicalAnalysisRow>();
+        var timeline = new List<TechnicalAnalysisRow>();
+        var tips = new List<TechnicalAnalysisRow>();
+        var limitations = new List<TechnicalAnalysisRow>();
+
+        if ((analysis.Sections?.Count ?? 0) > 0 || (analysis.Timeline?.Count ?? 0) > 0 || (analysis.DjTips?.Count ?? 0) > 0)
+        {
+            sections.AddRange((analysis.Sections ?? []).Select(SectionRow));
+            timeline.AddRange((analysis.Timeline ?? []).Select(TimelineRow));
+            tips.AddRange((analysis.DjTips ?? []).Select(TipRow));
+            limitations.AddRange((analysis.Limitations ?? []).Select(LimitationRow));
+        }
+        else
+        {
+            sections.AddRange(MeasuredRows("Gemeten", analysis.Measured));
+            sections.AddRange(MeasuredRows("Ingeschat", analysis.Inferred));
+            limitations.AddRange((analysis.Limitations ?? []).Select(LimitationRow));
+        }
+
+        var header = string.Equals(analysis.Mode, "unavailable", StringComparison.OrdinalIgnoreCase)
+            ? "Technische analyse niet beschikbaar"
+            : "Technische analyse";
+
+        return new TechnicalTrackAnalysisPresentation(header, meta, sections, timeline, tips, limitations);
+    }
+
+    private static IEnumerable<TechnicalAnalysisRow> MeasuredRows(string group, AskDJMeasuredAnalysis? measured)
+    {
+        if (measured is null)
+        {
+            yield break;
+        }
+
+        foreach (var item in measured.Items ?? [])
+        {
+            yield return MetricRow(group, item, measured.Source, measured.Confidence);
+        }
+
+        foreach (var item in new[] { ("BPM", measured.Bpm), ("Key", measured.Key), ("Energy", measured.Energy) })
+        {
+            var value = DisplayJson(item.Item2);
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                yield return new TechnicalAnalysisRow(group, item.Item1, value, SourceConfidenceLabel(measured.Source, measured.Confidence));
+            }
+        }
+
+        foreach (var section in measured.Sections ?? [])
+        {
+            yield return TimelineRow(section);
+        }
+    }
+
+    private static TechnicalAnalysisRow SectionRow(AskDJAnalysisSection section)
+    {
+        var detail = FirstNonEmpty(section.Summary, section.Text, DisplayJson(section.Value));
+        if (string.IsNullOrWhiteSpace(detail) && (section.Items?.Count ?? 0) > 0)
+        {
+            detail = string.Join(" · ", section.Items!.Select(item => $"{FirstNonEmpty(item.Label, item.Title, item.Id, item.Kind)} {DisplayJson(item.Value)} {item.Unit}".Trim()).Where(value => !string.IsNullOrWhiteSpace(value)));
+        }
+
+        return new TechnicalAnalysisRow(
+            FirstNonEmpty(section.Title, section.Label, Humanize(section.Id), Humanize(section.Kind), "Analyse"),
+            FirstNonEmpty(Humanize(section.Kind), section.Id),
+            detail,
+            SourceConfidenceLabel(section.Source, section.Confidence));
+    }
+
+    private static TechnicalAnalysisRow MetricRow(string group, AskDJAnalysisMetric metric, string? fallbackSource, string? fallbackConfidence)
+    {
+        return new TechnicalAnalysisRow(
+            group,
+            FirstNonEmpty(metric.Label, metric.Title, Humanize(metric.Id), Humanize(metric.Kind), "Metric"),
+            $"{DisplayJson(metric.Value)} {metric.Unit}".Trim(),
+            SourceConfidenceLabel(metric.Source ?? fallbackSource, metric.Confidence ?? fallbackConfidence));
+    }
+
+    private static TechnicalAnalysisRow TimelineRow(AskDJAnalysisTimelineEntry entry)
+    {
+        return new TechnicalAnalysisRow(
+            FirstNonEmpty(entry.Label, entry.Title, Humanize(entry.Kind), Humanize(entry.Id), "Segment"),
+            JoinNonEmpty(entry.Start ?? entry.StartTime, entry.End ?? entry.EndTime),
+            "",
+            SourceConfidenceLabel(entry.Source, entry.Confidence));
+    }
+
+    private static TechnicalAnalysisRow TipRow(AskDJAnalysisTip tip)
+    {
+        return new TechnicalAnalysisRow(
+            FirstNonEmpty(tip.Title, tip.Label, Humanize(tip.Kind), "DJ tip"),
+            tip.Text ?? "",
+            "",
+            SourceConfidenceLabel(tip.Source, tip.Confidence));
+    }
+
+    private static TechnicalAnalysisRow LimitationRow(AskDJAnalysisLimitation limitation)
+    {
+        return new TechnicalAnalysisRow(
+            FirstNonEmpty(Humanize(limitation.Kind), limitation.Id, "Beperking"),
+            limitation.Text ?? limitation.Message ?? "",
+            "",
+            SourceConfidenceLabel(limitation.Source, limitation.Confidence));
+    }
+
+    private static string SourceConfidenceLabel(string? source, string? confidence)
+    {
+        return JoinNonEmpty(LabelWithPrefix("bron", source), LabelWithPrefix("confidence", confidence));
+    }
+
+    private static string LabelWithPrefix(string prefix, string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "" : $"{prefix}: {value}";
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    }
+
+    private static string JoinNonEmpty(params string?[] values)
+    {
+        return string.Join(" · ", values.Where(value => !string.IsNullOrWhiteSpace(value)));
+    }
+
+    private static string Humanize(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "" : value.Replace('_', ' ');
+    }
+
+    private static string DisplayJson(JsonElement? value)
+    {
+        if (value is null)
+        {
+            return "";
+        }
+
+        return value.Value.ValueKind switch
+        {
+            JsonValueKind.String => value.Value.GetString() ?? "",
+            JsonValueKind.Number => value.Value.GetRawText(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            JsonValueKind.Null => "",
+            JsonValueKind.Undefined => "",
+            _ => value.Value.GetRawText()
+        };
+    }
+}
+
+public sealed record TechnicalAnalysisRow(string Title, string Subtitle, string Detail, string Meta)
+{
+    public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
+    public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
+    public bool HasMeta => !string.IsNullOrWhiteSpace(Meta);
+}
 
 public sealed record AskDJVoiceRequest(
     string ClientMessageId,

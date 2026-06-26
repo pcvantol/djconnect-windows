@@ -171,6 +171,74 @@
                                                 <VerticalStackLayout Spacing="8">
                                                     <Label Text="{Binding RoleLabel}" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
                                                     <Label Text="{Binding DisplayText}" LineBreakMode="WordWrap" TextColor="{StaticResource TextPrimary}" />
+                                                    <Border IsVisible="{Binding HasTechnicalAnalysis}" Padding="12" BackgroundColor="#151936" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                                        <VerticalStackLayout Spacing="10" BindingContext="{Binding TechnicalAnalysis}">
+                                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                                <Label Text="{Binding Header}" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                                                <Label Grid.Column="1" Text="{Binding MetaLabel}" TextColor="{StaticResource TextSecondary}" FontSize="11" HorizontalTextAlignment="End" />
+                                                            </Grid>
+                                                            <CollectionView ItemsSource="{Binding Sections}" IsVisible="{Binding HasSections}">
+                                                                <CollectionView.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Grid Padding="0,3" ColumnDefinitions="150,*" ColumnSpacing="10">
+                                                                            <VerticalStackLayout Spacing="1">
+                                                                                <Label Text="{Binding Title}" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" FontSize="13" LineBreakMode="WordWrap" />
+                                                                                <Label Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="TailTruncation" />
+                                                                            </VerticalStackLayout>
+                                                                            <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                                                                <Label Text="{Binding Detail}" IsVisible="{Binding HasDetail}" TextColor="{StaticResource TextPrimary}" FontSize="13" LineBreakMode="WordWrap" />
+                                                                                <Label Text="{Binding Meta}" IsVisible="{Binding HasMeta}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="WordWrap" />
+                                                                            </VerticalStackLayout>
+                                                                        </Grid>
+                                                                    </DataTemplate>
+                                                                </CollectionView.ItemTemplate>
+                                                            </CollectionView>
+                                                            <CollectionView ItemsSource="{Binding Timeline}" IsVisible="{Binding HasTimeline}">
+                                                                <CollectionView.ItemsLayout>
+                                                                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="6" />
+                                                                </CollectionView.ItemsLayout>
+                                                                <CollectionView.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Border Padding="8,6" BackgroundColor="#242A5B" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                                                            <VerticalStackLayout Spacing="1" WidthRequest="120">
+                                                                                <Label Text="{Binding Title}" TextColor="{StaticResource TextPrimary}" FontSize="12" LineBreakMode="TailTruncation" />
+                                                                                <Label Text="{Binding Subtitle}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="TailTruncation" />
+                                                                                <Label Text="{Binding Meta}" IsVisible="{Binding HasMeta}" TextColor="{StaticResource TextSecondary}" FontSize="10" LineBreakMode="TailTruncation" />
+                                                                            </VerticalStackLayout>
+                                                                        </Border>
+                                                                    </DataTemplate>
+                                                                </CollectionView.ItemTemplate>
+                                                            </CollectionView>
+                                                            <CollectionView ItemsSource="{Binding Tips}" IsVisible="{Binding HasTips}">
+                                                                <CollectionView.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Grid Padding="0,2" ColumnDefinitions="18,*">
+                                                                            <Label Text="•" TextColor="{StaticResource Accent}" />
+                                                                            <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                                                                <Label Text="{Binding Title}" TextColor="{StaticResource TextPrimary}" FontSize="13" />
+                                                                                <Label Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" TextColor="{StaticResource TextPrimary}" FontSize="13" LineBreakMode="WordWrap" />
+                                                                                <Label Text="{Binding Meta}" IsVisible="{Binding HasMeta}" TextColor="{StaticResource TextSecondary}" FontSize="11" />
+                                                                            </VerticalStackLayout>
+                                                                        </Grid>
+                                                                    </DataTemplate>
+                                                                </CollectionView.ItemTemplate>
+                                                            </CollectionView>
+                                                            <CollectionView ItemsSource="{Binding Limitations}" IsVisible="{Binding HasLimitations}">
+                                                                <CollectionView.ItemTemplate>
+                                                                    <DataTemplate>
+                                                                        <Grid Padding="0,2" ColumnDefinitions="18,*">
+                                                                            <Label Text="!" TextColor="{StaticResource TextSecondary}" FontAttributes="Bold" />
+                                                                            <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                                                                <Label Text="{Binding Title}" TextColor="{StaticResource TextSecondary}" FontSize="12" />
+                                                                                <Label Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" TextColor="{StaticResource TextPrimary}" FontSize="13" LineBreakMode="WordWrap" />
+                                                                                <Label Text="{Binding Meta}" IsVisible="{Binding HasMeta}" TextColor="{StaticResource TextSecondary}" FontSize="11" />
+                                                                            </VerticalStackLayout>
+                                                                        </Grid>
+                                                                    </DataTemplate>
+                                                                </CollectionView.ItemTemplate>
+                                                            </CollectionView>
+                                                        </VerticalStackLayout>
+                                                    </Border>
                                                     <Label Text="{Binding DeliveryLabel}" TextColor="{StaticResource TextSecondary}" FontSize="12" />
                                                     <Button Text="Audio opnieuw afspelen" IsVisible="{Binding HasAudio}" Clicked="ReplayAudioClicked" HorizontalOptions="Start" />
                                                     <CollectionView ItemsSource="{Binding Images}" IsVisible="{Binding HasImages}">

@@ -2,14 +2,14 @@
 
 ## Current Status
 
-DJConnect desktop `3.1.9` has been scaffolded as a .NET MAUI app targeting
+DJConnect desktop `3.1.10` has been scaffolded as a .NET MAUI app targeting
 Windows and macOS. It includes:
 
 - onboarding-gated local pairing API and pairable `_djconnect._tcp` mDNS;
 - stable `windows` client identity constants;
 - typed API client for pairing, status, Ask DJ history/message/clear and
   command actions;
-- Ask DJ timeline, action and recent-played rendering;
+- Ask DJ timeline, technical track analysis, action and recent-played rendering;
 - Now Playing, Queue and Playlists rendering with generic playback/start
   commands;
 - Settings, Privacy, Logs/Diagnostics, Feedback, Crash report, Wakeword prompt

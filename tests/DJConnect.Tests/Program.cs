@@ -11,6 +11,12 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ request serializes server-side message contract", AskDJRequestSerializesServerSideContract),
     ("Ask DJ response deserializes exchange messages", AskDJResponseDeserializesExchangeMessages),
     ("Ask DJ response deserializes media sources and dj text", AskDJResponseDeserializesMediaSourcesAndDjText),
+    ("Ask DJ technical track analysis v2 renders sections timeline and tips", AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips),
+    ("Ask DJ technical track analysis v2 without timeline renders sections", AskDJTechnicalTrackAnalysisV2WithoutTimelineRendersSections),
+    ("Ask DJ technical track analysis unavailable renders limitations", AskDJTechnicalTrackAnalysisUnavailableRendersLimitations),
+    ("Ask DJ technical track analysis v1 fallback renders measured inferred and limitations", AskDJTechnicalTrackAnalysisV1FallbackRendersMeasuredInferredAndLimitations),
+    ("Ask DJ technical track analysis renders unknown values generically", AskDJTechnicalTrackAnalysisRendersUnknownValuesGenerically),
+    ("Ask DJ technical track analysis without playback actions has no stale buttons", AskDJTechnicalTrackAnalysisWithoutPlaybackActionsHasNoStaleButtons),
     ("Ask DJ message presentation supports system audio and confirmations", AskDJMessagePresentationSupportsSystemAudioAndConfirmations),
     ("Ask DJ history deserializes revisions trim metadata and recent items", AskDJHistoryDeserializesRevisionsTrimMetadataAndRecentItems),
     ("Playback action deserializes confirmation command", PlaybackActionDeserializesConfirmationCommand),
@@ -198,6 +204,186 @@ static void AskDJResponseDeserializesMediaSourcesAndDjText()
     AssertEqual("Dit komt uit DJConnect Memory.", response!.DjText);
     AssertEqual("https://example.invalid/cover.jpg", response.Images![0].DisplayUrl);
     AssertEqual("djconnect_memory", response.Sources![0].DisplayLabel);
+}
+
+static void AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips()
+{
+    const string json = """
+    {
+      "id": "analysis-1",
+      "role": "assistant",
+      "text": "Technische analyse staat hieronder.",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "mode": "available",
+        "source": "measured",
+        "confidence": "high",
+        "sections": [
+          { "id": "rhythm_bpm", "kind": "metric", "title": "Rhythm / BPM", "value": 128, "source": "measured", "confidence": "high" }
+        ],
+        "timeline": [
+          { "kind": "intro", "label": "Intro", "start": "0:00", "end": "0:16", "source": "measured", "confidence": "high" }
+        ],
+        "dj_tips": [
+          { "kind": "mix", "text": "Mix op de eerste phrase.", "source": "inferred", "confidence": "medium" }
+        ],
+        "limitations": [
+          { "text": "Geen stems beschikbaar.", "source": "local_fallback", "confidence": "low" }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertTrue(message!.IsTechnicalTrackAnalysis, "technical intent must be detected");
+    AssertTrue(message.HasTechnicalAnalysis, "analysis card must be available");
+    AssertEqual(1, message.TechnicalAnalysis!.Sections.Count);
+    AssertEqual(1, message.TechnicalAnalysis.Timeline.Count);
+    AssertEqual(1, message.TechnicalAnalysis.Tips.Count);
+    AssertEqual(1, message.TechnicalAnalysis.Limitations.Count);
+    AssertTrue(message.TechnicalAnalysis.Sections[0].Meta.Contains("bron: measured", StringComparison.Ordinal), "source must be visible");
+    AssertTrue(message.TechnicalAnalysis.Tips[0].Meta.Contains("confidence: medium", StringComparison.Ordinal), "confidence must be visible");
+}
+
+static void AskDJTechnicalTrackAnalysisV2WithoutTimelineRendersSections()
+{
+    const string json = """
+    {
+      "id": "analysis-2",
+      "role": "assistant",
+      "action": "track_analysis",
+      "analysis": {
+        "contract_version": 2,
+        "sections": [
+          { "id": "energy_curve", "summary": "Rustige intro, hoge piek na de break.", "source": "inferred", "confidence": "low" }
+        ],
+        "dj_tips": [
+          { "kind": "transition", "text": "Houd ruimte voor de break." }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertTrue(message!.IsTechnicalTrackAnalysis, "track_analysis action must be detected");
+    AssertEqual(1, message.TechnicalAnalysis!.Sections.Count);
+    AssertEqual(0, message.TechnicalAnalysis.Timeline.Count);
+    AssertEqual("energy curve", message.TechnicalAnalysis.Sections[0].Title);
+    AssertTrue(message.TechnicalAnalysis.Sections[0].Meta.Contains("confidence: low", StringComparison.Ordinal), "low confidence must stay visible");
+}
+
+static void AskDJTechnicalTrackAnalysisUnavailableRendersLimitations()
+{
+    const string json = """
+    {
+      "id": "analysis-unavailable",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "mode": "unavailable",
+        "source": "unavailable",
+        "confidence": "low",
+        "limitations": [
+          { "text": "Analyse is uitgeschakeld op de server.", "source": "unavailable", "confidence": "low" }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertTrue(message!.TechnicalAnalysis!.IsUnavailable, "unavailable mode should render a fallback card");
+    AssertEqual(0, message.TechnicalAnalysis.Sections.Count);
+    AssertEqual(1, message.TechnicalAnalysis.Limitations.Count);
+}
+
+static void AskDJTechnicalTrackAnalysisV1FallbackRendersMeasuredInferredAndLimitations()
+{
+    const string json = """
+    {
+      "id": "analysis-v1",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "measured": {
+          "bpm": 124,
+          "sections": [
+            { "label": "Intro", "start": "0:00", "end": "0:20", "source": "measured" }
+          ]
+        },
+        "inferred": {
+          "key": "Am",
+          "confidence": "low"
+        },
+        "limitations": [
+          { "message": "Structure labels are estimates.", "confidence": "low" }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertTrue(message!.HasTechnicalAnalysis, "v1 fallback must render");
+    AssertTrue(message.TechnicalAnalysis!.Sections.Any(row => row.Title == "Gemeten" && row.Subtitle == "BPM"), "measured bpm must render");
+    AssertTrue(message.TechnicalAnalysis.Sections.Any(row => row.Title == "Ingeschat" && row.Subtitle == "Key"), "inferred key must render");
+    AssertTrue(message.TechnicalAnalysis.Sections.Any(row => row.Title == "Intro" && row.Subtitle.Contains("0:00", StringComparison.Ordinal)), "measured sections are the only v1 timestamps");
+    AssertEqual(1, message.TechnicalAnalysis.Limitations.Count);
+}
+
+static void AskDJTechnicalTrackAnalysisRendersUnknownValuesGenerically()
+{
+    const string json = """
+    {
+      "id": "analysis-unknown",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "sections": [
+          { "id": "spectral_flux_magic", "kind": "future_kind", "value": "wide", "source": "future_sensor", "confidence": "experimental" }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertEqual("spectral flux magic", message!.TechnicalAnalysis!.Sections[0].Title);
+    AssertEqual("future kind", message.TechnicalAnalysis.Sections[0].Subtitle);
+    AssertTrue(message.TechnicalAnalysis.Sections[0].Meta.Contains("future_sensor", StringComparison.Ordinal), "unknown source must render");
+}
+
+static void AskDJTechnicalTrackAnalysisWithoutPlaybackActionsHasNoStaleButtons()
+{
+    const string json = """
+    {
+      "id": "analysis-no-actions",
+      "role": "assistant",
+      "action": "track_analysis",
+      "analysis": {
+        "contract_version": 2,
+        "sections": [
+          { "id": "instrumentation", "summary": "Sparse drums and pads." }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertTrue(!message!.HasPlaybackActions, "missing playback_actions must not imply buttons from previous bubbles");
+    AssertTrue(!message.HasImages, "missing images must not imply artwork from previous bubbles");
 }
 
 static void AskDJHistoryDeserializesRevisionsTrimMetadataAndRecentItems()

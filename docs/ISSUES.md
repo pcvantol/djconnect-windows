@@ -8,7 +8,8 @@
 
 - Mac Catalyst artifacts still depend on an Xcode 26.4.x toolchain. The
   `v3.1.9` GitHub Actions CI and public unsigned Windows publication completed
-  successfully, while Mac Catalyst jobs skipped on hosted runners with
+  successfully. Validate the `v3.1.10` release after push. Mac Catalyst jobs
+  continue to skip on hosted runners with
   incompatible Xcode versions. Local Xcode 26.4.1 builds pass with both
   `MD_APPLE_SDK_ROOT` and `DEVELOPER_DIR` pointed at
   `/Applications/Xcode_26.4.1.app`; one later local no-restore build hung in

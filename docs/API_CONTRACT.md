@@ -116,6 +116,17 @@ the response or message. The client must not reuse previous album art/media,
 show a TTS replay button without `audio_url`, expose raw Spotify URIs/backend
 IDs in visible text or infer actions from answer text.
 
+Technical track analysis responses are detected when `intent.intent` is
+`technical_track_analysis` or `action` is `track_analysis`. They are
+informational/read-only unless `playback_actions[]` is explicitly present.
+For `analysis.contract_version >= 2`, the client renders only server-provided
+`analysis.sections[]`, optional `analysis.timeline[]`, `analysis.dj_tips[]` and
+`analysis.limitations[]`, in that order, with source/confidence metadata. For
+older responses without v2 fields, the client falls back to
+`analysis.measured`, `analysis.inferred` and `analysis.limitations`. The client
+must not parse prose in `text` or `dj_text` to infer BPM, timestamps,
+song-section labels or DJ tips.
+
 ## Queue And Playlists
 
 Queue state may appear as `queue`, `items`, `queue_items` or inside collection

@@ -712,7 +712,7 @@ public sealed class MainViewModel : ObservableObject
 
     public string DeviceId => _identity.DeviceId;
     public string ClientType => _identity.ClientType;
-    public string AppVersion => "3.1.9";
+    public string AppVersion => "3.1.10";
     public string ProtocolVersion => $"{DJConnectContract.ProtocolLine}.x";
     public string BuildChannel => "debug";
     public string PlatformName => "Windows";
@@ -1491,9 +1491,9 @@ public sealed class MainViewModel : ObservableObject
             MergeMessage(message);
         }
 
-        if (responseMessages.Count == 0 && !string.IsNullOrWhiteSpace(response.Text ?? response.DjText ?? response.Message))
+        if (responseMessages.Count == 0 && (!string.IsNullOrWhiteSpace(response.Text ?? response.DjText ?? response.Message) || response.Analysis is not null))
         {
-            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", SafeDisplayText(response.Text ?? response.DjText ?? response.Message), null, DateTimeOffset.Now, "assistant", response.PlaybackActions, response.ConfirmationActions, response.Items, response.Images, response.Sources, response.AudioUrl, ClientMessageId: clientMessageId));
+            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", SafeDisplayText(response.Text ?? response.DjText ?? response.Message), null, DateTimeOffset.Now, "assistant", response.PlaybackActions, response.ConfirmationActions, response.Items, response.Images, response.Sources, response.AudioUrl, ClientMessageId: clientMessageId, Intent: response.Intent, Action: response.Action, Analysis: response.Analysis));
         }
 
         var assistantMessage = responseMessages.LastOrDefault(message => message.IsAssistant);

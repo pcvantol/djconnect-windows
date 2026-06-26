@@ -1,7 +1,7 @@
 # TODO
 
-- Monitor the next release after `v3.1.9`; current `v3.1.9` CI and public
-  unsigned Windows publication completed successfully.
+- Monitor the `v3.1.10` release; `v3.1.9` CI and public unsigned Windows
+  publication completed successfully.
 - Validate EN/NL What's New publication on `djconnect.dev` during the next
   website release-note smoke test.
 - Extend tests for stale-pairing handling and any future real wakeword engine.
