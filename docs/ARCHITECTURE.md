@@ -52,18 +52,18 @@ connection flow rather than in a mobile-style tab bar.
 1. The app creates or loads a stable install id.
 2. The install id becomes `djconnect-windows-XXXXXXXXXXXX`.
 3. First launch shows the interactive welcome wizard until
-   `DJConnectWelcomeSeen` is stored locally. While onboarding is visible, the
-   app does not advertise `_djconnect._tcp`.
-4. After onboarding is dismissed, the local Client API starts on a LAN-reachable
-   random port and the pairing screen shows Client adres plus a short pairing
-   code.
-5. The app advertises `_djconnect._tcp` only while pairable: not onboarding, not
-   demo mode, not paired and local Client API running.
-6. Home Assistant calls `GET /api/device/pairing-info` and then
-   `POST /api/device/pair` on the local Client API.
-7. On successful pairing, the app stores only the Home Assistant-issued
-   DJConnect device token in app-private credential storage, stops mDNS
-   advertising and enters runtime UI.
+   `DJConnectWelcomeSeen` is stored locally.
+4. After onboarding is dismissed, the pairing screen asks for the local Home
+   Assistant URL and pairing code shown by the Home Assistant DJConnect
+   integration.
+5. The app posts pairing data to local Home Assistant through
+   `POST /api/djconnect/pair`. Remote URLs are not used for first pairing.
+6. On successful pairing, the app stores only the Home Assistant-issued
+   DJConnect device token in app-private credential storage, stores non-secret
+   `ha_local_url`/`ha_remote_url` metadata and enters runtime UI.
+7. Runtime transport picks the local HA URL when reachable, falls back to the
+   remote HA URL when local is unreachable and remote is supported, and marks
+   the app offline when neither is reachable.
 8. Runtime status is posted to `POST /api/djconnect/status`; the Now Playing
    page renders playback, output devices and compatibility state from that
    response.
@@ -109,39 +109,30 @@ connection flow rather than in a mobile-style tab bar.
 - Privacy explains local data, Home Assistant-owned state, permissions and
   deletion/reset actions without exposing private identifiers.
 - Demo Mode is session-only. It loads local sample status, queue, playlists and
-  Ask DJ responses only after explicit start, disables mDNS/Home Assistant
-  calls and clears demo runtime state when stopped.
+  Ask DJ responses only after explicit start, disables Home Assistant calls and
+  clears demo runtime state when stopped.
 - Wakeword settings and prompt state exist, but the feature is gated off until
   a real foreground wakeword engine is available. Push-to-talk and text Ask DJ
   remain available without wakeword.
 
-## Local Pairing API And mDNS
+## Pairing And Transport
 
-The local Client API exposes:
+Windows does not expose a client-hosted local API and does not advertise mDNS
+as a Home Assistant-callable device in protocol `3.2.x`.
 
-- `GET /api/device/pairing-info`
-- `GET /api/device/info`
-- `POST /api/device/pair`
+Pairing is local-only:
 
-mDNS service type is `_djconnect._tcp`. TXT records contain only
-non-secret local pairing metadata:
+- Home Assistant starts app pairing and shows a pairing code.
+- Windows must be on the same LAN and posts to local
+  `POST /api/djconnect/pair`.
+- The pairing response may include `ha_local_url`, `ha_remote_url`,
+  `remote_supported` and music backend summary fields.
 
-- `client_type=windows`
-- `platform=windows`
-- `device_id=<stable install id>`
-- `device_name=<friendly device name>`
-- `firmware=<protocol line>`
-- `app_version=<app version>`
-- `pairing_status=unpaired|pairing|paired`
-- `paired=false` while pairable
-- `pair_code=<current pairing code>` only while pairable
-- `local_url=<http://lan-ip:port>`
-
-Tokens, Spotify credentials, Home Assistant long-lived tokens, account names,
-hostnames, Wi-Fi SSIDs and private backend URLs must never be logged or exposed
-through TXT records. Reset pairing clears the DJConnect device token, rotates
-the install id and pairing code, returns to the pairing screen and re-enables
-pairable mDNS.
+After successful local pairing, all `/api/djconnect/...` calls go through the
+transport manager. It prefers local HA, falls back to remote HA when supported,
+and exposes the connection mode as Local, Remote or Offline for diagnostics.
+Reset pairing clears the DJConnect device token, rotates the install id and
+pairing code, and returns to local pairing.
 
 ## Release Artifacts
 

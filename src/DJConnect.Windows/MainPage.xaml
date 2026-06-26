@@ -538,18 +538,17 @@
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
                             <VerticalStackLayout Spacing="12">
                                 <Label Text="VERBINDING" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
                                     <Label Text="Pairing status" TextColor="{StaticResource TextSecondary}" />
                                     <Label Grid.Column="1" Text="{Binding SettingsPairingStatusText}" TextColor="{StaticResource TextPrimary}" />
-                                    <Label Grid.Row="1" Text="Home Assistant URL" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="1" Text="HA lokale URL" TextColor="{StaticResource TextSecondary}" />
                                     <Entry Grid.Row="1" Grid.Column="1" Text="{Binding HomeAssistantUrl}" BackgroundColor="#071026" TextColor="{StaticResource TextPrimary}" Placeholder="https://homeassistant.local:8123" />
-                                    <Label Grid.Row="2" Text="Client adres" TextColor="{StaticResource TextSecondary}" />
-                                    <Grid Grid.Row="2" Grid.Column="1" ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <Label Text="{Binding ClientAddressDisplay}" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" VerticalOptions="Center" />
-                                        <Button Grid.Column="1" Text="⧉" WidthRequest="52" Clicked="CopyClientAddressClicked" IsEnabled="{Binding CanCopyClientAddress}" />
-                                    </Grid>
-                                    <Label Grid.Row="3" Text="Runtime" TextColor="{StaticResource TextSecondary}" />
-                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding SettingsRuntimeSummary}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="2" Text="HA remote URL" TextColor="{StaticResource TextSecondary}" />
+                                    <Entry Grid.Row="2" Grid.Column="1" Text="{Binding HomeAssistantRemoteUrl}" BackgroundColor="#071026" TextColor="{StaticResource TextPrimary}" Placeholder="https://example.ui.nabu.casa" />
+                                    <Label Grid.Row="3" Text="HA mode" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding ConnectionModeText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="4" Text="Runtime" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="4" Grid.Column="1" Text="{Binding SettingsRuntimeSummary}" TextColor="{StaticResource TextPrimary}" />
                                 </Grid>
                                 <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
                                     <Button Text="Opslaan" Command="{Binding SaveSettingsCommand}" />
@@ -559,7 +558,7 @@
 
                             <VerticalStackLayout Grid.Column="1" Spacing="12">
                                 <Label Text="UITVOER EN PLAYBACK" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto" RowSpacing="10">
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
                                     <Label Text="Geselecteerd" TextColor="{StaticResource TextSecondary}" />
                                     <Label Grid.Column="1" Text="{Binding SelectedOutputText}" TextColor="{StaticResource TextPrimary}" />
                                     <Label Grid.Row="1" Text="Uitvoerapparaat" TextColor="{StaticResource TextSecondary}" />
@@ -644,6 +643,16 @@
                                         <Button Text="⧉  Logs kopiëren" Command="{Binding CopyLogsCommand}" />
                                         <Button Grid.Column="1" Text="Logs wissen" Command="{Binding ClearLogsCommand}" />
                                     </Grid>
+                                    <Label Grid.Row="2" Text="Remote support" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="2" Grid.Column="1" Text="{Binding RemoteSupportText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="3" Text="Music backend" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding MusicBackendNameText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="4" Text="Backend status" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="4" Grid.Column="1" Text="{Binding MusicBackendStatusText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="5" Text="Target player" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="5" Grid.Column="1" Text="{Binding MusicTargetPlayerText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="6" Text="Capabilities" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="6" Grid.Column="1" Text="{Binding MusicBackendCapabilitiesText}" TextColor="{StaticResource TextPrimary}" />
                                 </Grid>
                                 <Label Text="Logs worden vóór kopiëren geredigeerd. Secrets worden nooit automatisch geüpload." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
                             </VerticalStackLayout>
@@ -651,7 +660,7 @@
 
                         <VerticalStackLayout Spacing="12">
                             <Label Text="APP-INFO" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                            <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="18">
+                            <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10" ColumnSpacing="18">
                                 <Label Text="App versie" TextColor="{StaticResource TextSecondary}" />
                                 <Label Grid.Column="1" Text="{Binding AppVersion}" TextColor="{StaticResource TextPrimary}" />
                                 <Label Grid.Row="1" Text="Protocol" TextColor="{StaticResource TextSecondary}" />
@@ -668,8 +677,14 @@
                                     <Switch IsToggled="{Binding IsDutch}" />
                                     <Label Text="NL" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
                                 </HorizontalStackLayout>
+                                <Label Grid.Row="6" Text="Device ID" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="6" Grid.Column="1" Text="{Binding DeviceId}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="7" Text="HA verbinding" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="7" Grid.Column="1" Text="{Binding ConnectionModeText}" TextColor="{StaticResource TextPrimary}" />
+                                <Label Grid.Row="8" Text="Backend revision" TextColor="{StaticResource TextSecondary}" />
+                                <Label Grid.Row="8" Grid.Column="1" Text="{Binding MusicBackendRevisionText}" TextColor="{StaticResource TextPrimary}" />
                             </Grid>
-                            <Label Text="Setup loopt via de Home Assistant DJConnect integration. Spotify playback vereist Spotify Premium." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                            <Label Text="Setup loopt via de Home Assistant DJConnect integration. Windows gebruikt na lokale pairing automatisch lokaal of remote Home Assistant transport." TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
                             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="10">
                                 <Button Text="↗  Start/setup" Clicked="OpenSetupLink" />
                                 <Button Grid.Column="1" Text="♧  Privacy" Clicked="OpenPrivacyFromAbout" />
@@ -921,7 +936,7 @@
                                     <VerticalStackLayout Spacing="8">
                                         <Label Text="• DJConnect device-token na pairing" TextColor="{StaticResource TextPrimary}" />
                                         <Label Text="• Stabiele lokale clientidentiteit/device id" TextColor="{StaticResource TextPrimary}" />
-                                        <Label Text="• Home Assistant URL en Client adres configuratie" TextColor="{StaticResource TextPrimary}" />
+                                        <Label Text="• Home Assistant lokale/remote URL configuratie" TextColor="{StaticResource TextPrimary}" />
                                         <Label Text="• Geselecteerd uitvoerapparaat wanneer beschikbaar" TextColor="{StaticResource TextPrimary}" />
                                         <Label Text="• Ask DJ lokale cache voor snelle weergave" TextColor="{StaticResource TextPrimary}" />
                                         <Label Text="• Lokale diagnostics/logs" TextColor="{StaticResource TextPrimary}" />
@@ -987,7 +1002,7 @@
                                     <Button Grid.Row="1" Text="↻  App opnieuw koppelen" Clicked="ResetPairingFromSettingsClicked" />
                                     <Button Grid.Row="1" Grid.Column="1" Text="▱  Feedback delen" Command="{Binding ShowFeedbackCommand}" />
                                 </Grid>
-                                <Label Text="Opnieuw koppelen wist het lokale DJConnect device-token, roteert clientidentiteit en pairing code, en opent de pairing flow opnieuw. mDNS discovery start pas wanneer het pairing scherm zichtbaar is." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                                <Label Text="Opnieuw koppelen wist het lokale DJConnect device-token, roteert clientidentiteit en pairing code, en opent de lokale Home Assistant pairing flow opnieuw." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
                             </VerticalStackLayout>
                         </Grid>
 
@@ -1148,7 +1163,7 @@
                     <VerticalStackLayout IsVisible="{Binding IsPairingFormVisible}" Spacing="16">
                         <Border Padding="16" BackgroundColor="#3B367D" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
                             <VerticalStackLayout Spacing="8">
-                                <Label Text="Home Assistant met de DJConnect integration is nodig. Spotify playback vereist Spotify Premium." TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                                <Label Text="Home Assistant met de DJConnect integration is nodig. Pairing moet lokaal op hetzelfde LAN gebeuren; remote werkt pas na lokale pairing." TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
                                 <Label Text="De Windows client vraagt niet om Spotify login of Home Assistant long-lived tokens." TextColor="{StaticResource TextSecondary}" />
                                 <Label Text="https://djconnect.dev/start" TextColor="{StaticResource Accent}" FontAttributes="Bold">
                                     <Label.GestureRecognizers>
@@ -1158,11 +1173,11 @@
                             </VerticalStackLayout>
                         </Border>
 
-                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="12" ColumnSpacing="12">
-                            <Label Text="Client adres" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                            <Button Grid.Column="1" Text="⧉  Kopieer Client adres" IsEnabled="{Binding CanCopyClientAddress}" Clicked="CopyClientAddressClicked" />
+                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="12" ColumnSpacing="12">
+                            <Label Text="Lokale Home Assistant URL" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Button Grid.Column="1" Text="Opslaan" Command="{Binding SaveSettingsCommand}" />
                             <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
-                                <Label Text="{Binding ClientAddressDisplay}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                                <Entry Text="{Binding HomeAssistantUrl}" BackgroundColor="#071026" TextColor="{StaticResource TextPrimary}" Placeholder="http://homeassistant.local:8123" />
                             </Border>
 
                             <Label Grid.Row="2" Text="Koppelcode" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
@@ -1170,6 +1185,8 @@
                             <Border Grid.Row="3" Grid.ColumnSpan="2" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
                                 <Label Text="{Binding PairingCodeDisplay}" TextColor="{StaticResource TextPrimary}" FontSize="24" FontAttributes="Bold" HorizontalTextAlignment="Center" />
                             </Border>
+                            <Button Grid.Row="4" Grid.ColumnSpan="2" Text="Koppel met lokale Home Assistant" HeightRequest="58" Command="{Binding PairCommand}" />
+                            <Label Grid.Row="5" Grid.ColumnSpan="2" Text="Gebruik de code die Home Assistant tijdens DJConnect pairing toont. Remote URLs worden pas na succesvolle lokale pairing gebruikt." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
                         </Grid>
 
                         <Border Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
@@ -1178,7 +1195,7 @@
 
                         <VerticalStackLayout Spacing="6">
                             <Label Text="Hulp" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                            <Label Text="Open Home Assistant > Integraties > DJConnect. Als discovery niet werkt, vul het Client adres handmatig in. Zorg dat Windows en Home Assistant op hetzelfde lokale netwerk zitten; firewall kan lokale pairing blokkeren." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                            <Label Text="Open Home Assistant > Integraties > DJConnect, start app-pairing en vul de getoonde code hier in. Zorg dat Windows en Home Assistant op hetzelfde lokale netwerk zitten." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
                         </VerticalStackLayout>
 
                         <Button Text="App afsluiten" HeightRequest="58" Clicked="ExitAppClicked" />
@@ -1188,7 +1205,7 @@
                         <Border Padding="18" BackgroundColor="#143A2A" Stroke="#35E56B" StrokeShape="RoundRectangle 8">
                             <VerticalStackLayout Spacing="8">
                                 <Label Text="Succesvol gekoppeld" FontSize="26" FontAttributes="Bold" TextColor="#35E56B" HorizontalTextAlignment="Center" />
-                                <Label Text="Het DJConnect device-token is app-private opgeslagen. mDNS discovery is gestopt." TextColor="{StaticResource TextPrimary}" HorizontalTextAlignment="Center" />
+                                <Label Text="Het DJConnect device-token is app-private opgeslagen. Remote transport wordt pas vanaf nu gebruikt als lokaal niet bereikbaar is." TextColor="{StaticResource TextPrimary}" HorizontalTextAlignment="Center" />
                             </VerticalStackLayout>
                         </Border>
                         <Button Text="Aan de slag!" HeightRequest="58" Command="{Binding CompletePairingSuccessCommand}" />
@@ -1426,17 +1443,13 @@
                         </VerticalStackLayout>
                     </Border>
 
-                    <Border IsVisible="{Binding IsLocalNetworkPermission}" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
-                        <Label Text="{Binding ClientAddress, StringFormat='Client adres: {0}'}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
-                    </Border>
-
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                         <Button Text="{Binding PermissionContinueText}" HeightRequest="56" Clicked="ContinuePermissionExplanationClicked" />
                         <Button Grid.Column="1" Text="Niet nu" HeightRequest="56" Command="{Binding HidePermissionExplanationCommand}" />
                     </Grid>
 
                     <Grid ColumnDefinitions="*,*" ColumnSpacing="12" IsVisible="{Binding IsLocalNetworkPermission}">
-                        <Button Text="Kopieer Client adres" HeightRequest="52" IsEnabled="{Binding CanCopyClientAddress}" Clicked="CopyClientAddressClicked" />
+                        <Button Text="Lokale pairing doorgaan" HeightRequest="52" Command="{Binding SaveSettingsCommand}" />
                         <Button Grid.Column="1" Text="Open firewall instellingen" HeightRequest="52" Clicked="OpenPermissionSettingsClicked" />
                     </Grid>
 

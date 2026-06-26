@@ -6,6 +6,8 @@ integration.
 The app may store locally:
 
 - stable install identity;
+- non-secret Home Assistant local/remote URL metadata after successful local
+  pairing;
 - non-secret sync cursors such as `history_revision` and `clear_revision`;
 - non-secret app preferences such as onboarding, What's New, permissions,
   diagnostics level, wakeword prompt dismissal and local mini-game highscores;
@@ -31,7 +33,7 @@ upload diagnostics automatically. Opening a GitHub issue only opens a browser
 with redacted text prefilled; the user decides whether to submit it.
 
 Demo Mode is local and session-only. It uses sample data and must not call Home
-Assistant, advertise mDNS or write credentials.
+Assistant or write credentials.
 
 The Privacy screen must not display device serials, account names, hostnames,
 bearer tokens, pairing codes or private Home Assistant URLs.

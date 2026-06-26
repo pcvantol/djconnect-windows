@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## 3.2.0 - 2026-06-26
+
+- Upgraded the desktop client contract to DJConnect protocol `3.2.x`.
+- Replaced the Windows-hosted local Client API/mDNS pairing flow with local
+  Home Assistant pairing through `POST /api/djconnect/pair`; remote Home
+  Assistant transport is only used after successful local pairing.
+- Added local-to-remote Home Assistant transport selection, connection mode
+  diagnostics and backend summary parsing for Spotify Direct / Music Assistant
+  responses.
+- Forward backend-owned playback actions without Spotify-only assumptions,
+  including Music Assistant action values and optional backend revision data.
+
 ## 3.1.10 - 2026-06-26
 
 - Added Ask DJ technical track analysis contract v2 support. The client now

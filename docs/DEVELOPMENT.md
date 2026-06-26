@@ -47,18 +47,18 @@ dotnet build DJConnect.Windows.sln
 ## Local Pairing
 
 1. Start the app.
-2. Finish or skip onboarding. The app does not advertise mDNS while onboarding
-   is visible.
-3. Open pairing and keep the app running so the local Client API can expose the
-   Client adres and pairing code.
-4. Pair from Home Assistant through the DJConnect integration. Successful
-   pairing stores only the returned DJConnect device token and stops mDNS.
+2. Finish or skip onboarding. The app does not advertise mDNS or host a local
+   Client API.
+3. Open pairing in Home Assistant through the DJConnect integration.
+4. Enter the local Home Assistant URL and the pairing code shown by Home
+   Assistant in the Windows app. Successful pairing stores only the returned
+   DJConnect device token plus HA local/remote URL metadata.
 5. Keep the app open while validating status, Ask DJ, Queue, Playlists and
    command flows.
 
 The app sends the same pairing code as `pairing_token`, `pair_code` and
 `pairing_code` for compatibility with current Home Assistant integration
-builds.
+builds. Remote Home Assistant URLs are used only after successful local pairing.
 
 ## Logging And Secrets
 
@@ -75,7 +75,7 @@ GitHub issue URL.
 
 Demo Mode is session-only. Startup forces it off, starting it loads local sample
 runtime data, and stopping it clears demo state. Demo Mode must not make Home
-Assistant calls, advertise mDNS or write tokens.
+Assistant calls or write tokens.
 
 For CI or UI stress testing, set:
 
@@ -84,8 +84,8 @@ DJCONNECT_DEMO_MONKEY_TEST=1
 ```
 
 This starts directly in Demo Mode and makes random interaction non-destructive:
-settings are not persisted, pairing/token writes are rejected, mDNS/local Client
-API startup is suppressed, clipboard and browser actions are no-ops, and clear
+settings are not persisted, pairing/token writes are rejected, clipboard and
+browser actions are no-ops, and clear
 or reset actions do not delete local state. Legacy env names
 `DJCONNECT_MONKEY_TEST`, `DJCONNECT_UI_TEST`, `MONKEY_TEST` and `UITEST` are also
 recognized.

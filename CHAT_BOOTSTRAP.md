@@ -26,7 +26,8 @@ Lees eerst:
 Belangrijke huidige status:
 - Repo: `pcvantol/djconnect-windows`.
 - Remote: `git@github.com:pcvantol/djconnect-windows.git`.
-- Huidige lokale release/tag: `v3.1.10`.
+- Huidige lokale release/tag: `v3.2.0` voorbereid in werkboom; laatste
+  gepubliceerde 3.1-release was `v3.1.10`.
 - App stack: .NET MAUI single-project desktop app.
 - Targets:
   - `net10.0-windows10.0.19041.0`
@@ -55,8 +56,8 @@ Belangrijke huidige status:
 - Release cleanup helper heet `clear_old_releases.sh`; dry-run is default.
 - Werkboom bevat lokale Unreleased UI/runtime uitbreidingen:
   - permissions-uitleg voor microfoon, notificaties en lokale netwerk/firewall;
-  - vernieuwde pairing-flow met Client adres, koppelcode, strikte mDNS gating
-    en success-state;
+  - vernieuwde 3.2 pairing-flow met lokale Home Assistant URL, koppelcode,
+    remote fallback na lokale pairing en success-state;
   - Update Required, What's New, About, Legal en Mini-games schermen;
   - Settings, Playlists, Privacy, Logs/Diagnostiek, Feedback, Crash report,
     Wakeword-prompt state en session-only Demo Mode.
@@ -70,18 +71,18 @@ Belangrijke huidige status:
     exchange, ook bij optimistic UI, HTTP response, push en history sync.
 - Update Required blokkeert runtime controls bij HTTP 426, `version_mismatch`
   of HA major/minor buiten de compatibele app-reeks, maar reset geen
-  pairing/token/mDNS state. Settings, logs, privacy, legal en feedback blijven
+  pairing/token state. Settings, logs, privacy, legal en feedback blijven
   bereikbaar.
-- Pairing mDNS mag alleen adverteren wanneer `IsPairable` waar is en de lokale
-  Client API draait; pairing success stopt mDNS en toont `Aan de slag!` voordat
-  runtime UI wordt vrijgegeven.
+- Windows host in protocol 3.2 geen lokale Client API en adverteert geen mDNS.
+  Pairing post zelf naar lokale Home Assistant via `/api/djconnect/pair`;
+  remote HA URLs mogen pas na succesvolle lokale pairing gebruikt worden.
 - What's New gebruikt lokale `LastSeenAppVersion`: fresh install/onboarding zet
   de huidige versie als gezien, app-updates tonen release notes eenmalig,
   demo/monkey/UI-test mode slaat over. Release notes worden privacy-safe vanaf
   `djconnect.dev/release-notes/windows/...` geladen met korte timeout en
   fallbacktekst.
 - Mini-games zijn volledig local-only: geen Home Assistant/API/playback/Ask
-  DJ/token/mDNS gebruik. Highscores staan in Preferences onder
+  DJ/token gebruik. Highscores staan in Preferences onder
   `djconnect.windows.game.paddle.high`, `djconnect.windows.game.meteor.high`,
   `djconnect.windows.game.sky.high` en `djconnect.windows.game.maze.high`.
 - About en Legal tonen alleen privacy-safe metadata; geen device id, private
@@ -90,17 +91,17 @@ Belangrijke huidige status:
   `DiagnosticRedactor`. Preview/copy/open-issue gebeurt pas na redaction en er
   is geen automatische upload.
 - Demo Mode is session-only en wordt bij startup uitgezet. Demo flows gebruiken
-  geen Home Assistant calls, mDNS of token writes.
+  geen Home Assistant calls of token writes.
 - Non-destructive monkeytest mode voor CI: `DJCONNECT_DEMO_MONKEY_TEST=1`
   start direct in Demo Mode en onderdrukt settings persistence, pairing/token
-  writes, mDNS/local Client API, clipboard, browser, permission settings en
+  writes, clipboard, browser, permission settings en
   destructieve reset/clear acties.
 - Wakeword state/settings bestaan, maar `WakewordFeatureAvailable` is bewust
   `false` zolang er geen echte foreground wakeword engine is.
 
 Belangrijke regels:
 - Dit is een .NET MAUI desktop app voor Windows en macOS.
-- Huidige desktop app release: `3.1.10`.
+- Huidige desktop app release: `3.2.0` in werkboom.
 - Home Assistant blijft eigenaar van pairing, Spotify OAuth/backend playback,
   Ask DJ history, DJ Memory, Assist/TTS en command execution.
 - De app bewaart geen Spotify credentials, OAuth tokens, DJ Memory of Ask DJ

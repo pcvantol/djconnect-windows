@@ -2,10 +2,11 @@
 
 ## Current Status
 
-DJConnect desktop `3.1.10` has been scaffolded as a .NET MAUI app targeting
+DJConnect desktop `3.2.0` has been scaffolded as a .NET MAUI app targeting
 Windows and macOS. It includes:
 
-- onboarding-gated local pairing API and pairable `_djconnect._tcp` mDNS;
+- local Home Assistant app-pairing through `/api/djconnect/pair`;
+- local-to-remote Home Assistant transport fallback after local pairing;
 - stable `windows` client identity constants;
 - typed API client for pairing, status, Ask DJ history/message/clear and
   command actions;
@@ -28,9 +29,12 @@ Windows and macOS. It includes:
 - Local Mac Catalyst builds with side-by-side Xcode 26.4.x pass when both
   `MD_APPLE_SDK_ROOT=/Applications/Xcode_26.4.1.app` and
   `DEVELOPER_DIR=/Applications/Xcode_26.4.1.app/Contents/Developer` are set.
-- The backend contract does not yet document `client_type: "windows"`.
+- Home Assistant DJConnect `3.2.x` support is required for
+  `/api/djconnect/pair`, local/remote URL metadata and music backend summary
+  fields.
 - GitHub Actions CI and public unsigned Windows publication passed for
-  `v3.1.9`. Mac Catalyst release artifacts continue to skip on hosted runners
+  `v3.1.9`. The `3.2.0` upgrade still needs CI/release validation after push.
+  Mac Catalyst release artifacts continue to skip on hosted runners
   without the required Xcode 26.4.x toolchain.
 - Public unsigned release automation exists; signed Windows installers,
   Windows signing and Mac Catalyst notarization are not implemented.
@@ -39,7 +43,7 @@ Windows and macOS. It includes:
 
 ## Next Best Steps
 
-1. Add backend/doc support for `windows` client type in the Home Assistant repo.
+1. Validate local pairing, remote fallback and Ask DJ against Home Assistant
+   DJConnect `3.2.x`.
 2. Extend tests for stale-pairing handling and any future real wakeword engine.
-3. Validate live pairing and Ask DJ against Home Assistant.
-4. Add signed Windows packaging and signed/notarized Mac Catalyst distribution.
+3. Add signed Windows packaging and signed/notarized Mac Catalyst distribution.

@@ -18,8 +18,8 @@ automatically.
 
 ## Current Version
 
-- Desktop app: `3.1.10`
-- Home Assistant protocol line: `3.1.x`
+- Desktop app: `3.2.0`
+- Home Assistant protocol line: `3.2.x`
 - Current local `client_type`: `windows`
 
 ## Stack
@@ -94,8 +94,8 @@ Windows packaging and Mac Catalyst notarization are added.
 
 Key screens and flows mirrored from macOS and extended for desktop:
 
-- Pairing/configuration: onboarding-gated local Client API, pairable mDNS,
-  client address, pairing code, stable client identity and pairing reset.
+- Pairing/configuration: local Home Assistant app-pairing with pairing code,
+  stable client identity, local/remote HA URL storage and pairing reset.
 - Ask DJ: `POST /api/djconnect/ask_dj/message`, server-side history sync via
   `GET /api/djconnect/ask_dj/history`, clear via
   `POST /api/djconnect/ask_dj/history/clear`.
@@ -114,10 +114,10 @@ Key screens and flows mirrored from macOS and extended for desktop:
 - Privacy/legal/about: local data explanation, app metadata, MIT license,
   Spotify notice, project/security links and deletion/reset actions.
 - Demo Mode: session-only local demo runtime with sample Now Playing, Ask DJ,
-  Queue and Playlists; no Home Assistant calls, mDNS or token writes.
+  Queue and Playlists; no Home Assistant calls or token writes.
 - Monkey-test mode: `DJCONNECT_DEMO_MONKEY_TEST=1` starts Demo Mode for CI/UI
-  stress runs and suppresses persistence, pairing/token writes, local discovery,
-  clipboard, browser and destructive reset/clear actions.
+  stress runs and suppresses persistence, pairing/token writes, clipboard,
+  browser and destructive reset/clear actions.
 - Wakeword prompt: state and settings are present, but the foreground wakeword
   listener is feature-gated off until a real engine exists.
 
@@ -186,7 +186,8 @@ packs when first installed.
 ## Security
 
 - Do not log or commit bearer tokens, passwords, OAuth tokens or other secrets.
-- Spotify OAuth and refresh tokens remain in Home Assistant.
+- Spotify OAuth, refresh tokens and backend-specific music credentials remain
+  in Home Assistant.
 - Ask DJ Memory and history remain server-side in Home Assistant.
 - Local app settings are non-secret JSON under the user's application data
   folder. The DJConnect bearer token is stored in Windows Credential Manager or

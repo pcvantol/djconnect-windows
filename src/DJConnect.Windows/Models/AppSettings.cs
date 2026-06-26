@@ -6,6 +6,10 @@ namespace DJConnect.Windows.Models;
 public sealed class AppSettings
 {
     public string HomeAssistantUrl { get; set; } = DJConnectContract.DefaultHomeAssistantUrl;
+    public string HomeAssistantLocalUrl { get; set; } = DJConnectContract.DefaultHomeAssistantUrl;
+    public string HomeAssistantRemoteUrl { get; set; } = "";
+    public bool RemoteSupported { get; set; }
+    public string MusicBackendRevision { get; set; } = "";
     public string InstallId { get; set; } = "";
     public string DeviceName { get; set; } = Environment.MachineName;
     public string Language { get; set; } = "nl";

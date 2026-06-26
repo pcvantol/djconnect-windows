@@ -17,7 +17,57 @@ public sealed record PairingResponse(
     [property: JsonPropertyName("device_token")] string? DeviceToken,
     [property: JsonPropertyName("ha_pairing_status")] string? PairingStatus,
     [property: JsonPropertyName("message")] string? Message,
-    [property: JsonPropertyName("error")] string? Error);
+    [property: JsonPropertyName("error")] string? Error,
+    [property: JsonPropertyName("ha_local_url")] string? HomeAssistantLocalUrl = null,
+    [property: JsonPropertyName("ha_remote_url")] string? HomeAssistantRemoteUrl = null,
+    [property: JsonPropertyName("remote_supported")] bool? RemoteSupported = null,
+    [property: JsonPropertyName("music_backend")] string? MusicBackend = null,
+    [property: JsonPropertyName("music_backend_name")] string? MusicBackendName = null,
+    [property: JsonPropertyName("music_backend_available")] bool? MusicBackendAvailable = null,
+    [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
+    [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
+    [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
+    [property: JsonPropertyName("music_backend_error")] string? MusicBackendError = null);
+
+public sealed record MusicBackendCapabilities(
+    [property: JsonPropertyName("supports_search")] bool? SupportsSearch,
+    [property: JsonPropertyName("supports_queue")] bool? SupportsQueue,
+    [property: JsonPropertyName("supports_outputs")] bool? SupportsOutputs,
+    [property: JsonPropertyName("supports_favorites")] bool? SupportsFavorites,
+    [property: JsonPropertyName("supports_recently_played")] bool? SupportsRecentlyPlayed,
+    [property: JsonPropertyName("supports_top_items")] bool? SupportsTopItems)
+{
+    public string CompactSummary => string.Join(", ", new[]
+    {
+        Capability("search", SupportsSearch),
+        Capability("queue", SupportsQueue),
+        Capability("outputs", SupportsOutputs),
+        Capability("favorites", SupportsFavorites),
+        Capability("recent", SupportsRecentlyPlayed),
+        Capability("top", SupportsTopItems)
+    }.Where(value => !string.IsNullOrWhiteSpace(value)));
+
+    private static string Capability(string label, bool? supported) => supported == true ? label : "";
+}
+
+public sealed record MusicTargetPlayer(
+    [property: JsonPropertyName("id")] string? Id,
+    [property: JsonPropertyName("name")] string? Name);
+
+public sealed record MusicBackendSummary(
+    string? Backend,
+    string? Name,
+    bool? Available,
+    int? Revision,
+    MusicBackendCapabilities? Capabilities,
+    MusicTargetPlayer? TargetPlayer,
+    string? Error)
+{
+    public static readonly MusicBackendSummary Empty = new(null, null, null, null, null, null, null);
+    public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Backend ?? "unknown" : Name;
+    public string AvailabilityText => Available == false ? "unavailable" : Available == true ? "available" : "unknown";
+    public bool IsUnavailable => Available == false || !string.IsNullOrWhiteSpace(Error);
+}
 
 public sealed record AskDJRequest(
     [property: JsonPropertyName("client_message_id")] string ClientMessageId,
@@ -127,7 +177,17 @@ public sealed record AskDJMessageResponse(
     [property: JsonPropertyName("dj_text")] string? DjText,
     [property: JsonPropertyName("message")] string? Message,
     [property: JsonPropertyName("audio_url")] string? AudioUrl,
-    [property: JsonPropertyName("error")] string? Error);
+    [property: JsonPropertyName("error")] string? Error,
+    [property: JsonPropertyName("ha_local_url")] string? HomeAssistantLocalUrl = null,
+    [property: JsonPropertyName("ha_remote_url")] string? HomeAssistantRemoteUrl = null,
+    [property: JsonPropertyName("remote_supported")] bool? RemoteSupported = null,
+    [property: JsonPropertyName("music_backend")] string? MusicBackend = null,
+    [property: JsonPropertyName("music_backend_name")] string? MusicBackendName = null,
+    [property: JsonPropertyName("music_backend_available")] bool? MusicBackendAvailable = null,
+    [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
+    [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
+    [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
+    [property: JsonPropertyName("music_backend_error")] string? MusicBackendError = null);
 
 public sealed record AskDJIntent(
     [property: JsonPropertyName("intent")] string? Intent,
@@ -568,7 +628,8 @@ public sealed record PlaybackAction(
     [property: JsonPropertyName("action_style")] string? ActionStyle = null,
     [property: JsonPropertyName("response_value")] string? ResponseValue = null,
     [property: JsonPropertyName("image_url")] string? ImageUrl = null,
-    [property: JsonPropertyName("source_url")] string? SourceUrl = null)
+    [property: JsonPropertyName("source_url")] string? SourceUrl = null,
+    [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null)
 {
     public string DisplayLabel
     {
@@ -624,7 +685,17 @@ public sealed record CommandResponse(
     [property: JsonPropertyName("queue")] IReadOnlyList<QueueItem>? Queue = null,
     [property: JsonPropertyName("items")] IReadOnlyList<QueueItem>? Items = null,
     [property: JsonPropertyName("playlists")] IReadOnlyList<PlaylistItem>? Playlists = null,
-    [property: JsonPropertyName("collection")] PlaylistEnvelope? Collection = null);
+    [property: JsonPropertyName("collection")] PlaylistEnvelope? Collection = null,
+    [property: JsonPropertyName("ha_local_url")] string? HomeAssistantLocalUrl = null,
+    [property: JsonPropertyName("ha_remote_url")] string? HomeAssistantRemoteUrl = null,
+    [property: JsonPropertyName("remote_supported")] bool? RemoteSupported = null,
+    [property: JsonPropertyName("music_backend")] string? MusicBackend = null,
+    [property: JsonPropertyName("music_backend_name")] string? MusicBackendName = null,
+    [property: JsonPropertyName("music_backend_available")] bool? MusicBackendAvailable = null,
+    [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
+    [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
+    [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
+    [property: JsonPropertyName("music_backend_error")] string? MusicBackendError = null);
 
 public sealed record StatusResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -650,7 +721,17 @@ public sealed record StatusResponse(
     [property: JsonPropertyName("outputs")] IReadOnlyList<PlaybackOutput>? Outputs,
     [property: JsonPropertyName("output_devices")] IReadOnlyList<PlaybackOutput>? OutputDevices,
     [property: JsonPropertyName("devices")] IReadOnlyList<PlaybackOutput>? Devices,
-    [property: JsonPropertyName("error")] string? Error);
+    [property: JsonPropertyName("error")] string? Error,
+    [property: JsonPropertyName("ha_local_url")] string? HomeAssistantLocalUrl = null,
+    [property: JsonPropertyName("ha_remote_url")] string? HomeAssistantRemoteUrl = null,
+    [property: JsonPropertyName("remote_supported")] bool? RemoteSupported = null,
+    [property: JsonPropertyName("music_backend")] string? MusicBackend = null,
+    [property: JsonPropertyName("music_backend_name")] string? MusicBackendName = null,
+    [property: JsonPropertyName("music_backend_available")] bool? MusicBackendAvailable = null,
+    [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
+    [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
+    [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
+    [property: JsonPropertyName("music_backend_error")] string? MusicBackendError = null);
 
 public sealed record PlaybackState(
     [property: JsonPropertyName("title")] string? Title,

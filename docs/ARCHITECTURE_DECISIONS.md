@@ -88,7 +88,7 @@ connection state.
 Rationale:
 
 - Demo Mode must never mask a real stale pairing/token problem across launches.
-- It must not advertise mDNS, call Home Assistant or write credentials.
+- It must not call Home Assistant or write credentials.
 - A fresh launch should always prefer real pairing/runtime state.
 
 ## Gate Wakeword Until There Is A Real Engine

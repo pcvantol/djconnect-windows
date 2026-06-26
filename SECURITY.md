@@ -16,6 +16,8 @@ Report private security issues to `security@djconnect.dev`.
 - Treat `401`/`403` from authenticated DJConnect routes as stale pairing.
 - Treat HTTP `426` protocol mismatch as an update-required condition, not as a
   token failure.
+- Pairing must use the local Home Assistant URL. Remote Home Assistant URLs are
+  non-secret metadata and may be used only after successful local pairing.
 
 ## Scope
 

@@ -1,22 +1,18 @@
 # Issues
 
-## P0
-
-- Backend contract does not yet list `windows` as a supported client type.
-
 ## P1
 
+- Live Home Assistant `3.2.x` validation is still needed for local pairing,
+  remote fallback, Queue, Playlists, Ask DJ actions, Feedback issue URL prefill
+  and redacted diagnostics copy flows.
 - Mac Catalyst artifacts still depend on an Xcode 26.4.x toolchain. The
   `v3.1.9` GitHub Actions CI and public unsigned Windows publication completed
-  successfully. Validate the `v3.1.10` release after push. Mac Catalyst jobs
+  successfully. Validate the `3.2.0` upgrade after push. Mac Catalyst jobs
   continue to skip on hosted runners with
   incompatible Xcode versions. Local Xcode 26.4.1 builds pass with both
   `MD_APPLE_SDK_ROOT` and `DEVELOPER_DIR` pointed at
   `/Applications/Xcode_26.4.1.app`; one later local no-restore build hung in
   tooling/bundling and was stopped.
-- Live Home Assistant validation is still needed for pairing, status, Queue,
-  Playlists, Ask DJ actions, Feedback issue URL prefill and redacted diagnostics
-  copy flows.
 - Tests cover command payloads and privacy helpers, but stale-pairing handling
   still needs focused coverage.
 

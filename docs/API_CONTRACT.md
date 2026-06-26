@@ -15,13 +15,13 @@ Current local constants:
 }
 ```
 
-Open point: `windows` is not yet listed in the canonical backend docs. See
-`docs/ARCHITECTURE.md` for the backend follow-up.
+`windows` is canonical for protocol `3.2.x`. Windows does not expose a
+client-hosted local API or mDNS pairing service.
 
 ## Pairing
 
 ```http
-POST /api/device/pair
+POST /api/djconnect/pair
 ```
 
 Payload includes:
@@ -33,8 +33,11 @@ Payload includes:
 - `pair_code`
 - `pairing_code`
 
-Response may include `device_token`, `ha_pairing_status`, `message` and
-`error`. The app stores only the returned DJConnect bearer token.
+Response may include `device_token`, `ha_pairing_status`, `message`, `error`,
+`ha_local_url`, `ha_remote_url`, `remote_supported` and music backend summary
+fields. The app stores only the returned DJConnect bearer token. Pairing must
+use the local Home Assistant URL; remote pairing is rejected and remote URLs are
+used only after successful local pairing.
 
 ## Status
 
@@ -47,7 +50,37 @@ metadata. Response may include `spotify_configured`, `ask_dj_supported`,
 `ask_dj_voice_supported` and `playback`.
 
 HTTP `401`/`403` means stale pairing or invalid token. HTTP `426` means
-protocol mismatch and must not be treated as a token failure.
+protocol mismatch and must not be treated as a token failure. At runtime the
+client chooses the local HA URL when reachable, falls back to the remote HA URL
+when local is unreachable and remote is supported, and marks itself offline
+when neither URL is reachable.
+
+Pair/status/command/Ask DJ responses may include this backend summary:
+
+```json
+{
+  "ha_local_url": "http://192.168.1.x:8123",
+  "ha_remote_url": "https://example.ui.nabu.casa",
+  "remote_supported": true,
+  "music_backend": "music_assistant",
+  "music_backend_name": "Music Assistant",
+  "music_backend_available": true,
+  "music_backend_revision": 4,
+  "music_backend_capabilities": {
+    "supports_search": true,
+    "supports_queue": true,
+    "supports_outputs": true,
+    "supports_favorites": false,
+    "supports_recently_played": true,
+    "supports_top_items": false
+  },
+  "music_target_player": {
+    "id": "media_player.mass_woonkamer",
+    "name": "Woonkamer"
+  },
+  "music_backend_error": null
+}
+```
 
 ## Ask DJ
 
@@ -107,7 +140,10 @@ command endpoint.
 
 Recent-played informational responses render returned `items[]` as compact
 lists. The app must not invent Play Now buttons unless `playback_actions[]` is
-present.
+present. Playback actions are backend-owned. Spotify Direct actions may contain
+`spotify:` URIs; Music Assistant actions may contain `item_id`, `provider`,
+`media_type` and `target_player_id`. The client forwards action/value data back
+to Home Assistant intact through `/api/djconnect/command`.
 
 Response `text`, `dj_text` or `message` is rendered as the main answer.
 `images[]`, `sources[]`, `items[]`, `playback_actions[]` and

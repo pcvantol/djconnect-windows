@@ -16,11 +16,13 @@ public sealed class MainViewModel : ObservableObject
     private readonly SettingsStore _settingsStore = new();
     private readonly CredentialStore _credentialStore = new();
     private readonly DJConnectApiClient _apiClient = new(new HttpClient());
-    private readonly MdnsAdvertiser _mdnsAdvertiser;
-    private LocalClientApiService? _localClientApi;
+    private readonly HomeAssistantTransportManager _transportManager = new();
     private AppSettings _settings = new();
     private ClientIdentity _identity = ClientIdentity.CreateOrLoad(null);
     private string _homeAssistantUrl = DJConnectContract.DefaultHomeAssistantUrl;
+    private string _homeAssistantRemoteUrl = "";
+    private HomeAssistantConnectionMode _connectionMode = HomeAssistantConnectionMode.Offline;
+    private MusicBackendSummary _musicBackendSummary = MusicBackendSummary.Empty;
     private string _token = "";
     private string _pairingCode = "030610";
     private string _askDJText = "";
@@ -65,7 +67,6 @@ public sealed class MainViewModel : ObservableObject
     private bool _isDemoMode;
     private bool _backendAvailable;
     private bool _runtimeCompatible = true;
-    private bool _localNetworkAvailable = true;
     private bool _hasActivePlayback;
     private bool _isPlaying;
     private bool _isOnboardingVisible = true;
@@ -141,7 +142,6 @@ public sealed class MainViewModel : ObservableObject
         CopyClientAddressCommand = new AsyncCommand(CopyClientAddressAsync);
         RetryVersionCheckCommand = new AsyncCommand(RetryVersionCheckAsync, () => IsPaired || IsDemoMode);
         DismissWhatsNewCommand = new AsyncCommand(DismissWhatsNewAsync);
-        _mdnsAdvertiser = new MdnsAdvertiser(AddDiagnostic);
     }
 
     public ObservableCollection<AskDJMessage> Messages { get; } = [];
@@ -158,6 +158,12 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _homeAssistantUrl;
         set => SetProperty(ref _homeAssistantUrl, value);
+    }
+
+    public string HomeAssistantRemoteUrl
+    {
+        get => _homeAssistantRemoteUrl;
+        set => SetProperty(ref _homeAssistantRemoteUrl, value);
     }
 
     public string Token
@@ -712,14 +718,14 @@ public sealed class MainViewModel : ObservableObject
 
     public string DeviceId => _identity.DeviceId;
     public string ClientType => _identity.ClientType;
-    public string AppVersion => "3.1.10";
+    public string AppVersion => "3.2.0";
     public string ProtocolVersion => $"{DJConnectContract.ProtocolLine}.x";
     public string BuildChannel => "debug";
     public string PlatformName => "Windows";
     public string WebsiteUrl => "https://djconnect.dev";
-    public string ClientAddress => _localClientApi?.LocalUrl ?? L("Client adres wordt gestart...", "Starting Client address...");
-    public string ClientAddressDisplay => _localClientApi?.LocalUrl ?? L("Client adres ophalen...", "Getting Client address...");
-    public bool IsClientAddressAvailable => !string.IsNullOrWhiteSpace(_localClientApi?.LocalUrl);
+    public string ClientAddress => HomeAssistantUrl;
+    public string ClientAddressDisplay => L("Windows host geen Client API meer; pairing loopt via lokale Home Assistant URL.", "Windows no longer hosts a Client API; pairing uses the local Home Assistant URL.");
+    public bool IsClientAddressAvailable => false;
     public bool IsPairable => IsPairingOverlayVisible && !IsPairingSuccessVisible && !IsOnboardingVisible && !IsDemoMode && !IsPaired;
     public bool IsPairingFormVisible => IsPairingOverlayVisible && !IsPairingSuccessVisible;
     public bool IsPairingWaitingVisible => IsPairingFormVisible && !IsPaired;
@@ -758,12 +764,11 @@ public sealed class MainViewModel : ObservableObject
         : IsPaired ? "verlopen/stale"
         : IsPairingOverlayVisible ? "koppelen"
         : "niet gekoppeld";
-    public string SettingsRuntimeSummary => $"{RuntimeCompatibilityText} · backend {AboutBackendAvailabilityText} · lokaal netwerk {(_localNetworkAvailable ? "available" : "unavailable")}";
+    public string SettingsRuntimeSummary => $"{RuntimeCompatibilityText} · HA {ConnectionModeText} · muziekbackend {MusicBackendStatusText}";
     public string PairingStatusText => IsPairingSuccessVisible ? L("Succesvol gekoppeld", "Successfully paired")
         : IsUpdateRequired ? L("Update vereist", "Update required")
         : IsPaired ? L("Gekoppeld", "Paired")
-        : !IsClientAddressAvailable ? L("Client adres ophalen...", "Getting Client address...")
-        : L("Wachten op Home Assistant...", "Waiting for Home Assistant...");
+        : L("Voer de lokale Home Assistant URL en koppelcode in", "Enter the local Home Assistant URL and pairing code");
     public string PlaybackAvailabilityText => IsDemoMode || IsPaired ? L("Beschikbaar", "Available") : L("Niet beschikbaar", "Unavailable");
     public string ConnectionStatusText => IsDemoMode
         ? L("Demo mode", "Demo mode")
@@ -793,22 +798,40 @@ public sealed class MainViewModel : ObservableObject
         ? L("Demo muziek", "Demo music")
         : !IsPaired ? L("Muziek niet gekoppeld", "Music not paired")
         : !_runtimeCompatible ? L("Update vereist", "Update required")
-        : !_localNetworkAvailable ? L("Lokaal netwerk offline", "Local network offline")
         : !_backendAvailable ? L("Muziek offline", "Music offline")
+        : _musicBackendSummary.IsUnavailable ? L("Muziekbackend niet beschikbaar", "Music backend unavailable")
         : L("Muziek beschikbaar", "Music available");
-    public string NowPlayingMusicBackendStatusColor => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && _localNetworkAvailable)
+    public string NowPlayingMusicBackendStatusColor => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && !_musicBackendSummary.IsUnavailable)
         ? "#35E56B"
         : "#EF4444";
     public string RuntimeCompatibilityText => _runtimeCompatible ? L("Compatible", "Compatible") : L("Update vereist", "Update required");
     public string AboutPairingStatusText => IsPaired ? "paired" : IsPairingOverlayVisible ? "pairing" : "unpaired";
     public string AboutBackendAvailabilityText => _backendAvailable ? "available" : "unavailable";
     public string AboutDemoModeText => IsDemoMode ? "true" : "false";
-    public bool CanUsePlaybackFeatures => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && _localNetworkAvailable);
+    public string ConnectionModeText => IsDemoMode ? "Demo" : _connectionMode switch
+    {
+        HomeAssistantConnectionMode.Local => "Local",
+        HomeAssistantConnectionMode.Remote => "Remote",
+        _ => "Offline"
+    };
+    public string RemoteSupportText => _transportManager.Current.RemoteSupported
+        ? L("Remote fallback beschikbaar", "Remote fallback available")
+        : L("Alleen lokaal", "Local only");
+    public string MusicBackendNameText => _musicBackendSummary.DisplayName;
+    public string MusicBackendStatusText => _musicBackendSummary.Error ?? _musicBackendSummary.AvailabilityText;
+    public string MusicBackendRevisionText => _musicBackendSummary.Revision?.ToString() ?? "-";
+    public string MusicTargetPlayerText => _musicBackendSummary.TargetPlayer is null
+        ? "-"
+        : $"{_musicBackendSummary.TargetPlayer.Name ?? _musicBackendSummary.TargetPlayer.Id} ({_musicBackendSummary.TargetPlayer.Id ?? "unknown"})";
+    public string MusicBackendCapabilitiesText => string.IsNullOrWhiteSpace(_musicBackendSummary.Capabilities?.CompactSummary)
+        ? "-"
+        : _musicBackendSummary.Capabilities!.CompactSummary;
+    public bool CanUsePlaybackFeatures => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && !_musicBackendSummary.IsUnavailable && _connectionMode != HomeAssistantConnectionMode.Offline);
     public bool CanStartPlayback => CanUsePlaybackFeatures && SelectedOutput is not null;
-    public bool CanUseAskDJ => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && _localNetworkAvailable);
+    public bool CanUseAskDJ => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && _connectionMode != HomeAssistantConnectionMode.Offline);
     public bool CanSendAskDJ => CanUseAskDJ && !string.IsNullOrWhiteSpace(AskDJText);
     public string AskDJPlaceholder => L("Vraag Ask DJ iets, bv. zet huidig nummer in favorieten...", "Ask DJ anything, e.g. save this track to liked songs...");
-    public bool ShouldAdvertiseMdns => IsPairable && (_localClientApi?.IsRunning == true);
+    public bool ShouldAdvertiseMdns => false;
     public bool IsMonkeyTestMode => MonkeyTestMode.IsEnabled;
 
     public bool IsPaired
@@ -826,7 +849,6 @@ public sealed class MainViewModel : ObservableObject
                 RaiseFeedbackContextProperties();
                 EvaluateWakewordPrompt();
                 RaisePairingProperties();
-                _ = UpdateMdnsAdvertisingAsync();
             }
         }
     }
@@ -1096,7 +1118,7 @@ public sealed class MainViewModel : ObservableObject
     public bool HasPermissionBodyTertiary => !string.IsNullOrWhiteSpace(PermissionBodyTertiary);
     public bool IsPermissionSettingsMode => ActivePermissionMode == PermissionExplanationMode.Settings;
     public bool IsLocalNetworkPermission => ActivePermissionKind == PermissionExplanationKind.LocalNetwork;
-    public bool CanCopyClientAddress => !string.IsNullOrWhiteSpace(_localClientApi?.LocalUrl);
+    public bool CanCopyClientAddress => false;
     public string PermissionContinueText => IsPermissionSettingsMode ? L("Open Windows instellingen", "Open Windows settings") : L("Doorgaan", "Continue");
     public string PermissionSettingsText => ActivePermissionKind == PermissionExplanationKind.LocalNetwork
         ? L("Open firewall instellingen", "Open firewall settings")
@@ -1167,7 +1189,9 @@ public sealed class MainViewModel : ObservableObject
         _settings.CleanShutdown = false;
         _settings.CrashPromptPending = _isCrashReportPending;
         _identity = ClientIdentity.CreateOrLoad(_settings.InstallId, _settings.DeviceName);
-        HomeAssistantUrl = _settings.HomeAssistantUrl;
+        HomeAssistantUrl = string.IsNullOrWhiteSpace(_settings.HomeAssistantLocalUrl) ? _settings.HomeAssistantUrl : _settings.HomeAssistantLocalUrl;
+        HomeAssistantRemoteUrl = _settings.HomeAssistantRemoteUrl;
+        _transportManager.UpdateUrls(HomeAssistantUrl, HomeAssistantRemoteUrl, _settings.RemoteSupported);
         Language = string.IsNullOrWhiteSpace(_settings.Language) ? "nl" : _settings.Language;
         LogLevel = string.IsNullOrWhiteSpace(_settings.LogLevel) ? "info" : _settings.LogLevel;
         _wakewordEnabled = WakewordFeatureAvailable && _settings.WakewordEnabled;
@@ -1212,7 +1236,6 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ClientAddress));
         OnPropertyChanged(nameof(IsCrashReportPromptVisible));
         EvaluateWakewordPrompt();
-        await UpdateMdnsAdvertisingAsync();
         await PrepareWhatsNewAsync();
         if (IsPaired)
         {
@@ -1230,6 +1253,9 @@ public sealed class MainViewModel : ObservableObject
         }
 
         _settings.HomeAssistantUrl = HomeAssistantUrl;
+        _settings.HomeAssistantLocalUrl = HomeAssistantUrl;
+        _settings.HomeAssistantRemoteUrl = HomeAssistantRemoteUrl;
+        _settings.RemoteSupported = _transportManager.Current.RemoteSupported;
         _settings.InstallId = _identity.InstallId;
         _settings.DeviceName = _identity.DeviceName;
         _settings.Language = Language;
@@ -1244,10 +1270,9 @@ public sealed class MainViewModel : ObservableObject
             _credentialStore.SaveToken(Token.Trim());
             IsPaired = true;
             IsPairingOverlayVisible = IsPairingSuccessVisible;
-            await UpdateMdnsAdvertisingAsync();
         }
 
-        ConfigureClient();
+        await ConfigureClientAsync(pairingOnly: false);
         Status = L("Instellingen opgeslagen", "Settings saved");
         AddDiagnostic("INF Settings saved.");
     }
@@ -1261,7 +1286,16 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        ConfigureClient();
+        var pairingTransport = await _transportManager.ResolvePairingAsync(HomeAssistantUrl, CancellationToken.None);
+        if (pairingTransport.Mode != HomeAssistantConnectionMode.Local || string.IsNullOrWhiteSpace(pairingTransport.ActiveUrl))
+        {
+            Status = L("Pairing moet lokaal via Home Assistant op hetzelfde LAN.", "Pairing must use local Home Assistant on the same LAN.");
+            Notice = Status;
+            AddDiagnostic("WRN Pairing blocked because local Home Assistant URL is unreachable.");
+            return;
+        }
+
+        ConfigureClient(pairingTransport.ActiveUrl);
         var payload = new PairingPayload(
             _identity.DeviceId,
             _identity.DeviceName,
@@ -1279,6 +1313,8 @@ public sealed class MainViewModel : ObservableObject
         }
 
         Token = response.DeviceToken;
+        ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
+        ApplyBackendSummary(BackendSummaryFrom(response));
         try
         {
             _credentialStore.SaveToken(Token);
@@ -1293,7 +1329,6 @@ public sealed class MainViewModel : ObservableObject
         IsPaired = true;
         IsPairingSuccessVisible = true;
         IsPairingOverlayVisible = true;
-        await UpdateMdnsAdvertisingAsync();
         await SaveSettingsAsync();
         Status = $"{L("Gekoppeld", "Paired")}: {response.PairingStatus ?? "paired"}";
         AddDiagnostic("INF Pairing completed.");
@@ -1312,7 +1347,17 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        ConfigureClient();
+        var transport = await ConfigureClientAsync(pairingOnly: false);
+        if (!transport.IsOnline)
+        {
+            _backendAvailable = false;
+            _connectionMode = HomeAssistantConnectionMode.Offline;
+            Notice = L("Home Assistant niet bereikbaar via lokaal of remote adres", "Home Assistant is unreachable through local or remote URL");
+            Status = Notice;
+            RaisePlaybackStateProperties();
+            RaiseSettingsStatusProperties();
+            return;
+        }
         StatusResponse response;
         try
         {
@@ -1372,6 +1417,8 @@ public sealed class MainViewModel : ObservableObject
         }
 
         _backendAvailable = response.BackendAvailable ?? true;
+        ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
+        ApplyBackendSummary(BackendSummaryFrom(response));
         ApplyVersionCompatibility(response);
         ApplyPlaybackState(response.Playback);
         ReplaceOutputs(response.ResolvedOutputs());
@@ -1465,11 +1512,13 @@ public sealed class MainViewModel : ObservableObject
             }
 
             MarkMessageFailed(clientMessageId);
-            AskDJNotice = L("Home Assistant gaf geen antwoord", "Home Assistant did not answer");
+            AskDJNotice = BackendActionErrorMessage(response.Error, response.Message);
             AddDiagnostic("WRN Ask DJ request failed.");
             return;
         }
 
+        ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
+        ApplyBackendSummary(BackendSummaryFrom(response));
         MarkMessageSent(clientMessageId);
 
         if (response.HistoryRevision.HasValue)
@@ -1643,6 +1692,8 @@ public sealed class MainViewModel : ObservableObject
         }
 
         ApplyVersionCompatibility(response);
+        ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
+        ApplyBackendSummary(BackendSummaryFrom(response));
         if (!_runtimeCompatible)
         {
             Status = L("Update vereist", "Update required");
@@ -1651,7 +1702,7 @@ public sealed class MainViewModel : ObservableObject
 
         Status = response.Success
             ? response.DjText ?? response.Message ?? $"{L("Command uitgevoerd", "Command executed")}: {command}"
-            : response.Error ?? $"{L("Command mislukt", "Command failed")}: {command}";
+            : BackendActionErrorMessage(response.Error, response.Message);
         AddDiagnostic(response.Success ? "INF Command executed: " + command : "WRN Command failed: " + command);
         await RefreshAsync();
     }
@@ -1722,6 +1773,8 @@ public sealed class MainViewModel : ObservableObject
         }
 
         ApplyVersionCompatibility(response);
+        ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
+        ApplyBackendSummary(BackendSummaryFrom(response));
         if (!_runtimeCompatible)
         {
             Notice = L("Update vereist", "Update required");
@@ -1731,7 +1784,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (!response.Success)
         {
-            Notice = L("Playback niet beschikbaar", "Playback unavailable");
+            Notice = BackendActionErrorMessage(response.Error, response.Message);
             AddDiagnostic("WRN Playback command failed: " + command);
             return;
         }
@@ -2132,12 +2185,11 @@ public sealed class MainViewModel : ObservableObject
         }
         else
         {
-            await EnsureLocalClientApiAsync();
+            await Task.CompletedTask;
         }
 
         await SaveSettingsIfMutableAsync();
-        await UpdateMdnsAdvertisingAsync();
-        AddDiagnostic("INF Onboarding completed; local pairing screen can advertise discovery.");
+        AddDiagnostic("INF Onboarding completed; local HA pairing screen is available.");
     }
 
     private async Task PrepareWhatsNewAsync()
@@ -2221,21 +2273,20 @@ public sealed class MainViewModel : ObservableObject
         IsPairingOverlayVisible = true;
         IsPairingSuccessVisible = false;
         ShowPermissionExplanation(PermissionExplanationKind.LocalNetwork);
-        return UpdateMdnsAdvertisingAsync();
+        return Task.CompletedTask;
     }
 
     private Task HidePairingAsync()
     {
         IsPairingOverlayVisible = false;
         IsPairingSuccessVisible = false;
-        return UpdateMdnsAdvertisingAsync();
+        return Task.CompletedTask;
     }
 
     private async Task CompletePairingSuccessAsync()
     {
         IsPairingSuccessVisible = false;
         IsPairingOverlayVisible = false;
-        await UpdateMdnsAdvertisingAsync();
         await RefreshAsync();
         EvaluateWakewordPrompt();
     }
@@ -2287,7 +2338,6 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ClientType));
         RaisePlaybackStateProperties();
         RaiseSettingsStatusProperties();
-        await UpdateMdnsAdvertisingAsync();
         Status = L("Klaar om opnieuw te koppelen", "Ready to pair again");
         AddDiagnostic("INF Pairing reset: identity and pair code rotated.");
     }
@@ -2632,126 +2682,45 @@ public sealed class MainViewModel : ObservableObject
         return RedactFeedbackText(body.ToString().TrimEnd());
     }
 
-    private async Task EnsureLocalClientApiAsync()
+    private Task EnsureLocalClientApiAsync()
     {
-        if (IsMonkeyTestMode)
-        {
-            AddDiagnostic("INF Monkey test suppressed local Client API start.");
-            return;
-        }
-
-        if (_localClientApi is null)
-        {
-            _localClientApi = new LocalClientApiService(CreateLocalPairingSnapshot, HandleLocalPairAsync, AddDiagnostic);
-        }
-
-        if (!_localClientApi.IsRunning)
-        {
-            await _localClientApi.StartAsync();
-            OnPropertyChanged(nameof(ClientAddress));
-            OnPropertyChanged(nameof(CanCopyClientAddress));
-        }
+        AddDiagnostic("INF Local Client API is disabled for protocol 3.2 Windows clients.");
+        return Task.CompletedTask;
     }
 
-    private LocalPairingSnapshot CreateLocalPairingSnapshot()
-    {
-        return new LocalPairingSnapshot(
-            _identity,
-            PairingCode,
-            IsPaired ? "paired" : IsPairingOverlayVisible ? "pairing" : "unpaired",
-            _localClientApi?.LocalUrl ?? "",
-            IsPairable,
-            DJConnectContract.ProtocolLine,
-            AppVersion);
-    }
-
-    private async Task<LocalPairResponse> HandleLocalPairAsync(LocalPairRequest request)
-    {
-        if (IsMonkeyTestMode)
-        {
-            AddDiagnostic("INF Monkey test rejected local pair request.");
-            return new LocalPairResponse(false, "monkey_test_mode", "Pairing is disabled during monkey tests.");
-        }
-
-        if (request.DeviceId != _identity.DeviceId)
-        {
-            AddDiagnostic("WRN Local pair rejected: wrong device_id.");
-            return new LocalPairResponse(false, "wrong_device_id", "Pair request is for a different DJConnect device.");
-        }
-
-        if (!string.Equals(request.ClientType, _identity.ClientType, StringComparison.OrdinalIgnoreCase))
-        {
-            AddDiagnostic("WRN Local pair rejected: wrong client_type.");
-            return new LocalPairResponse(false, "wrong_client_type", "Pair request is for a different DJConnect client type.");
-        }
-
-        if (request.ResolvedPairCode != PairingCode)
-        {
-            AddDiagnostic("WRN Local pair rejected: pair code mismatch.");
-            return new LocalPairResponse(false, "pair_code_mismatch", "Pairing code does not match this app.");
-        }
-
-        var token = request.ResolvedDeviceToken;
-        if (string.IsNullOrWhiteSpace(token))
-        {
-            AddDiagnostic("WRN Local pair rejected: missing device token.");
-            return new LocalPairResponse(false, "missing_token", "Pair request did not include a device token.");
-        }
-
-        try
-        {
-            _credentialStore.SaveToken(token);
-        }
-        catch (Exception ex)
-        {
-            AddDiagnostic("WRN Local pair token storage failed: " + ex.GetType().Name);
-            return new LocalPairResponse(false, "token_storage_failed", "Token storage failed.");
-        }
-
-        Token = token;
-        IsPaired = true;
-        IsPairingOverlayVisible = true;
-        IsPairingSuccessVisible = true;
-        IsOnboardingVisible = false;
-        if (!string.IsNullOrWhiteSpace(request.HomeAssistantLocalUrl))
-        {
-            HomeAssistantUrl = request.HomeAssistantLocalUrl;
-        }
-
-        _settings.HomeAssistantUrl = HomeAssistantUrl;
-        _settings.InstallId = _identity.InstallId;
-        _settings.PairingCode = "";
-        _settings.DJConnectWelcomeSeen = true;
-        _settings.HasCompletedOnboarding = true;
-        await SaveSettingsIfMutableAsync();
-        ConfigureClient();
-        await UpdateMdnsAdvertisingAsync();
-        Status = L("Gekoppeld met Home Assistant", "Paired with Home Assistant");
-        AddDiagnostic("INF Local Client API completed pairing from Home Assistant.");
-        return new LocalPairResponse(true, Message: "paired", DeviceId: _identity.DeviceId, ClientType: _identity.ClientType, Paired: true);
-    }
-
-    private async Task UpdateMdnsAdvertisingAsync()
+    private Task UpdateMdnsAdvertisingAsync()
     {
         OnPropertyChanged(nameof(ShouldAdvertiseMdns));
-        if (IsMonkeyTestMode)
+        return Task.CompletedTask;
+    }
+
+    private async Task<HomeAssistantTransportState> ConfigureClientAsync(bool pairingOnly)
+    {
+        _transportManager.UpdateUrls(HomeAssistantUrl, HomeAssistantRemoteUrl, _settings.RemoteSupported);
+        var state = pairingOnly
+            ? await _transportManager.ResolvePairingAsync(HomeAssistantUrl, CancellationToken.None)
+            : await _transportManager.ResolveRuntimeAsync(CancellationToken.None);
+        _connectionMode = state.Mode;
+        if (!string.IsNullOrWhiteSpace(state.ActiveUrl))
         {
-            await _mdnsAdvertiser.StopAsync();
-            return;
+            _apiClient.Configure(state.ActiveUrl, Token);
         }
 
-        if (ShouldAdvertiseMdns)
-        {
-            await _mdnsAdvertiser.StartOrUpdateAsync(CreateLocalPairingSnapshot());
-            return;
-        }
-
-        await _mdnsAdvertiser.StopAsync();
+        RaiseTransportProperties();
+        return state;
     }
 
     private void ConfigureClient()
     {
-        _apiClient.Configure(HomeAssistantUrl, Token);
+        var activeUrl = _transportManager.Current.ActiveUrl ?? HomeAssistantUrl;
+        _apiClient.Configure(activeUrl, Token);
+    }
+
+    private void ConfigureClient(string activeUrl)
+    {
+        _apiClient.Configure(activeUrl, Token);
+        _connectionMode = HomeAssistantConnectionMode.Local;
+        RaiseTransportProperties();
     }
 
     private void ApplyVersionCompatibility(StatusResponse response)
@@ -2775,6 +2744,62 @@ public sealed class MainViewModel : ObservableObject
             response.Error);
         ApplyVersionCompatibilityResult(result);
     }
+
+    private void ApplyPairingTransport(string? localUrl, string? remoteUrl, bool? remoteSupported)
+    {
+        _transportManager.UpdateUrls(localUrl, remoteUrl, remoteSupported);
+        HomeAssistantUrl = _transportManager.Current.LocalUrl;
+        HomeAssistantRemoteUrl = _transportManager.Current.RemoteUrl;
+        _settings.HomeAssistantUrl = HomeAssistantUrl;
+        _settings.HomeAssistantLocalUrl = HomeAssistantUrl;
+        _settings.HomeAssistantRemoteUrl = HomeAssistantRemoteUrl;
+        _settings.RemoteSupported = _transportManager.Current.RemoteSupported;
+        RaiseTransportProperties();
+    }
+
+    private void ApplyBackendSummary(MusicBackendSummary summary)
+    {
+        _musicBackendSummary = summary;
+        _settings.MusicBackendRevision = summary.Revision?.ToString() ?? "";
+        RaiseTransportProperties();
+        RaisePlaybackStateProperties();
+    }
+
+    private static MusicBackendSummary BackendSummaryFrom(PairingResponse response) => new(
+        response.MusicBackend,
+        response.MusicBackendName,
+        response.MusicBackendAvailable,
+        response.MusicBackendRevision,
+        response.MusicBackendCapabilities,
+        response.MusicTargetPlayer,
+        response.MusicBackendError);
+
+    private static MusicBackendSummary BackendSummaryFrom(StatusResponse response) => new(
+        response.MusicBackend,
+        response.MusicBackendName,
+        response.MusicBackendAvailable,
+        response.MusicBackendRevision,
+        response.MusicBackendCapabilities,
+        response.MusicTargetPlayer,
+        response.MusicBackendError);
+
+    private static MusicBackendSummary BackendSummaryFrom(CommandResponse response) => new(
+        response.MusicBackend,
+        response.MusicBackendName,
+        response.MusicBackendAvailable,
+        response.MusicBackendRevision,
+        response.MusicBackendCapabilities,
+        response.MusicTargetPlayer,
+        response.MusicBackendError);
+
+    private static MusicBackendSummary BackendSummaryFrom(AskDJMessageResponse response) => new(
+        response.MusicBackend,
+        response.MusicBackendName,
+        response.MusicBackendAvailable,
+        response.MusicBackendRevision,
+        response.MusicBackendCapabilities,
+        response.MusicTargetPlayer,
+        response.MusicBackendError);
 
     private void ApplyVersionCompatibilityResult(VersionCompatibilityResult result)
     {
@@ -2871,6 +2896,25 @@ public sealed class MainViewModel : ObservableObject
             || error.Contains("token is no longer accepted", StringComparison.OrdinalIgnoreCase);
     }
 
+    private string BackendActionErrorMessage(string? error, string? message)
+    {
+        if (string.Equals(error, "stale_backend_action", StringComparison.OrdinalIgnoreCase))
+        {
+            return L(
+                "Deze actie hoort bij een vorige muziekbackend. Vraag DJConnect opnieuw om een actuele aanbeveling.",
+                "This action belongs to a previous music backend. Ask DJConnect again for a current recommendation.");
+        }
+
+        if (string.Equals(error, "unsupported_backend_capability", StringComparison.OrdinalIgnoreCase))
+        {
+            return string.IsNullOrWhiteSpace(message)
+                ? L("Deze muziekbackend ondersteunt deze actie niet.", "This music backend does not support this action.")
+                : message;
+        }
+
+        return message ?? error ?? L("Home Assistant gaf geen antwoord", "Home Assistant did not answer");
+    }
+
     private async Task RetryVersionCheckAsync()
     {
         IsRefreshingVersionCheck = true;
@@ -2958,11 +3002,13 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            AskDJNotice = L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
+            AskDJNotice = BackendActionErrorMessage(response.Error, response.Message);
             AddDiagnostic("WRN Ask DJ action failed.");
             return;
         }
 
+        ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
+        ApplyBackendSummary(BackendSummaryFrom(response));
         AskDJNotice = "";
         Status = response.DjText ?? response.Message ?? L("Command uitgevoerd", "Command executed");
         await RefreshAsync();
@@ -3020,9 +3066,7 @@ public sealed class MainViewModel : ObservableObject
                 AddDiagnostic("INF Notification explanation accepted; toast backend is not implemented yet.");
                 break;
             case PermissionExplanationKind.LocalNetwork:
-                await EnsureLocalClientApiAsync();
-                await UpdateMdnsAdvertisingAsync();
-                AddDiagnostic("INF Local network explanation accepted; local Client API can run for pairing.");
+                AddDiagnostic("INF Local network explanation accepted; local Home Assistant pairing can continue.");
                 break;
         }
     }
@@ -3054,9 +3098,9 @@ public sealed class MainViewModel : ObservableObject
 
     private Task CopyClientAddressAsync()
     {
-        PermissionNotice = string.IsNullOrWhiteSpace(_localClientApi?.LocalUrl)
-            ? L("Client adres is nog niet beschikbaar.", "Client address is not available yet.")
-            : L("Client adres is beschikbaar om te kopiëren.", "Client address is available to copy.");
+        PermissionNotice = L(
+            "Protocol 3.2 gebruikt geen Windows Client adres meer. Vul de lokale Home Assistant URL en koppelcode in.",
+            "Protocol 3.2 no longer uses a Windows Client address. Enter the local Home Assistant URL and pairing code.");
         return Task.CompletedTask;
     }
 
@@ -3081,7 +3125,6 @@ public sealed class MainViewModel : ObservableObject
             && _settings.PermissionExplanationLocalNetworkSeen
             && mode == PermissionExplanationMode.Request)
         {
-            _ = EnsureLocalClientApiAsync();
             return;
         }
 
@@ -3987,6 +4030,23 @@ public sealed class MainViewModel : ObservableObject
     {
         OnPropertyChanged(nameof(SettingsPairingStatusText));
         OnPropertyChanged(nameof(SettingsRuntimeSummary));
+        RaiseTransportProperties();
+    }
+
+    private void RaiseTransportProperties()
+    {
+        OnPropertyChanged(nameof(ConnectionModeText));
+        OnPropertyChanged(nameof(RemoteSupportText));
+        OnPropertyChanged(nameof(MusicBackendNameText));
+        OnPropertyChanged(nameof(MusicBackendStatusText));
+        OnPropertyChanged(nameof(MusicBackendRevisionText));
+        OnPropertyChanged(nameof(MusicTargetPlayerText));
+        OnPropertyChanged(nameof(MusicBackendCapabilitiesText));
+        OnPropertyChanged(nameof(CanUsePlaybackFeatures));
+        OnPropertyChanged(nameof(CanUseAskDJ));
+        OnPropertyChanged(nameof(CanSendAskDJ));
+        OnPropertyChanged(nameof(NowPlayingMusicBackendStatusText));
+        OnPropertyChanged(nameof(NowPlayingMusicBackendStatusColor));
     }
 
     private void RaisePermissionExplanationProperties()

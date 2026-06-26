@@ -3,11 +3,11 @@
 ## Scope
 
 This repository contains the MIT-licensed DJConnect desktop app scaffold for
-Windows and macOS. The app targets the DJConnect `3.1.x` Home Assistant
+Windows and macOS. The app targets the DJConnect `3.2.x` Home Assistant
 protocol line and remains a thin client for Home Assistant-owned playback,
 Ask DJ and memory state.
 
-Current app release: `3.1.10`.
+Current app release: `3.2.0`.
 
 ## Project Shape
 
@@ -19,10 +19,8 @@ Current app release: `3.1.10`.
   entrypoint.
 - `ViewModels/MainViewModel.cs`: runtime state and user actions.
 - `Services/DJConnectApiClient.cs`: typed HTTP client for Home Assistant.
-- `Services/LocalClientApiService.cs`: LAN-reachable local pairing API used by
-  Home Assistant during app pairing.
-- `Services/MdnsAdvertiser.cs`: `_djconnect._tcp` mDNS TXT publication while
-  the app is pairable.
+- `Services/HomeAssistantTransportManager.cs`: local/remote HA URL selection
+  after local pairing.
 - `Services/DiagnosticRedactor.cs`: shared redaction for logs, feedback,
   crash reports, diagnostics and clipboard exports.
 - `Services/CredentialStore.cs`: Windows Credential Manager and macOS Keychain.
@@ -51,11 +49,10 @@ applies feature gating and sends generic commands only; it does not hardcode
 Spotify-specific queue, playlist or intent families.
 
 First launch is gated by the interactive welcome wizard. `DJConnectWelcomeSeen`
-is stored locally once the user skips or finishes it. mDNS/Bonjour advertising
-is intentionally disabled while onboarding is visible. Dismissing onboarding
-opens pairing, starts the local Client API and enables `_djconnect._tcp`
-advertising only when the app is pairable. Demo mode and successful pairing both
-stop advertising.
+is stored locally once the user skips or finishes it. Dismissing onboarding
+opens local Home Assistant pairing. Windows no longer starts a client-hosted
+local API or `_djconnect._tcp` advertisement; the user enters the local Home
+Assistant URL and the pairing code shown by the HA integration.
 
 Settings, Privacy, Logs, Feedback and Crash report are utility flows rather
 than backend upload surfaces. They show privacy-safe context, use explicit user
@@ -69,16 +66,15 @@ listener that can satisfy privacy, lifecycle and platform-permission
 requirements.
 
 Demo Mode is session-only and forced off during startup. It is a local product
-tour/runtime substitute, not a persisted connection mode: no mDNS, no Home
-Assistant calls and no token writes occur while demo data is active.
+tour/runtime substitute, not a persisted connection mode: no Home Assistant
+calls and no token writes occur while demo data is active.
 
 Monkey-test mode is an explicit CI/UI-stress extension of Demo Mode. It is
 enabled through `DJCONNECT_DEMO_MONKEY_TEST=1` or legacy monkey/UI-test
 environment variables. When enabled, the ViewModel starts directly in Demo Mode
 and routes settings writes through a no-op save helper. Destructive or external
-actions such as pairing reset, token writes, local Client API startup, mDNS,
-clipboard copy, browser launch, permission settings, log/history clear and demo
-exit are suppressed.
+actions such as pairing reset, token writes, clipboard copy, browser launch,
+permission settings, log/history clear and demo exit are suppressed.
 
 ## Serialization
 
@@ -121,4 +117,4 @@ the contract, model and privacy helper source files directly and cover:
 - queue and playlist normalization limits/dedupe;
 - onboarding, What's New, crash, wakeword, demo, monkey-test env detection,
   diagnostic preference,
-  permission flag and mDNS lifecycle defaults.
+  permission flag and inactive local API/mDNS defaults.

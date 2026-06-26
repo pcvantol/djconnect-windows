@@ -15,6 +15,7 @@ public sealed class DJConnectApiClient
     public DJConnectApiClient(HttpClient httpClient)
     {
         _httpClient = httpClient;
+        _httpClient.Timeout = TimeSpan.FromSeconds(15);
     }
 
     public void Configure(string homeAssistantUrl, string? token)
@@ -27,7 +28,7 @@ public sealed class DJConnectApiClient
 
     public async Task<PairingResponse> PairAsync(PairingPayload payload, CancellationToken cancellationToken)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/device/pair", payload, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync("api/djconnect/pair", payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<PairingResponse>(response, cancellationToken);
     }
 
@@ -163,6 +164,11 @@ public sealed class DJConnectApiClient
         if (value is not null)
         {
             payload["value"] = value;
+        }
+
+        if (value is PlaybackAction action && action.MusicBackendRevision.HasValue)
+        {
+            payload["music_backend_revision"] = action.MusicBackendRevision.Value;
         }
 
         return payload;

@@ -44,8 +44,13 @@ var tests = new (string Name, Action Run)[]
     ("Monkey test mode is explicit and environment driven", MonkeyTestModeIsExplicitAndEnvironmentDriven),
     ("Diagnostic log preferences are bounded by default", DiagnosticLogPreferencesAreBoundedByDefault),
     ("Permission explanation flags default to unseen", PermissionExplanationFlagsDefaultToUnseen),
-    ("mDNS TXT includes pair code only while pairable", MdnsTxtIncludesPairCodeOnlyWhilePairable),
-    ("mDNS lifecycle snapshots only advertise when pairable", MdnsLifecycleSnapshotsOnlyAdvertiseWhenPairable)
+    ("Protocol 3.2 uses local-only pairing transport", Protocol32UsesLocalOnlyPairingTransport),
+    ("Protocol 3.2 falls back from local to remote after pairing", Protocol32FallsBackFromLocalToRemoteAfterPairing),
+    ("Protocol 3.2 marks offline when no HA URL is reachable", Protocol32MarksOfflineWhenNoUrlReachable),
+    ("Protocol 3.2 parses backend summary", Protocol32ParsesBackendSummary),
+    ("Backend-aware actions preserve Music Assistant value", BackendAwareActionsPreserveMusicAssistantValue),
+    ("Backend-aware actions carry backend revision", BackendAwareActionsCarryBackendRevision),
+    ("Protocol 3.2 keeps app local API and mDNS inactive", Protocol32KeepsAppLocalApiAndMdnsInactive)
 };
 
 var failed = 0;
@@ -836,19 +841,19 @@ static void DiagnosticRedactionRemovesSecrets()
 
 static void VersionCompatibilityEnforcesAppProtocolMinor()
 {
-    var sameMinor = VersionCompatibility.Evaluate("3.1", "3.1.9", null, false, null);
-    var olderMinor = VersionCompatibility.Evaluate("3.1", "3.0.12", null, false, null);
-    var newerMinor = VersionCompatibility.Evaluate("3.1", null, "3.2", false, null);
-    var explicitMismatch = VersionCompatibility.Evaluate("3.1", "3.1.1", null, true, "version_mismatch");
-    var devEscapeHatch = VersionCompatibility.Evaluate("3.1", "0.0.0", null, true, "version_mismatch");
+    var sameMinor = VersionCompatibility.Evaluate("3.2", "3.2.1", null, false, null);
+    var olderMinor = VersionCompatibility.Evaluate("3.2", "3.1.12", null, false, null);
+    var newerMinor = VersionCompatibility.Evaluate("3.2", null, "3.3", false, null);
+    var explicitMismatch = VersionCompatibility.Evaluate("3.2", "3.2.1", null, true, "version_mismatch");
+    var devEscapeHatch = VersionCompatibility.Evaluate("3.2", "0.0.0", null, true, "version_mismatch");
 
     AssertTrue(sameMinor.IsCompatible, "patch versions may differ within the same app protocol minor");
     AssertTrue(!olderMinor.IsCompatible, "older HA minor must require an update");
     AssertTrue(!newerMinor.IsCompatible, "newer HA minor must require an update");
     AssertTrue(!explicitMismatch.IsCompatible, "explicit version_mismatch must require an update");
     AssertTrue(devEscapeHatch.IsCompatible, "0.0.0 is kept as a dev escape hatch");
-    AssertEqual("3.1", olderMinor.RequiredMajorMinor);
-    AssertEqual("3.0", olderMinor.HomeAssistantMajorMinor);
+    AssertEqual("3.2", olderMinor.RequiredMajorMinor);
+    AssertEqual("3.1", olderMinor.HomeAssistantMajorMinor);
 }
 
 static void QueueNormalizationDeduplicatesAndLimitsItems()
@@ -1001,39 +1006,121 @@ static void PermissionExplanationFlagsDefaultToUnseen()
     AssertTrue(json.Contains("\"DJConnectPermissionExplanation.localNetwork.seen\":true"), "local network explanation must use the requested persisted key");
 }
 
-static void MdnsTxtIncludesPairCodeOnlyWhilePairable()
+static void Protocol32UsesLocalOnlyPairingTransport()
 {
-    var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
-    var pairable = new LocalPairingSnapshot(identity, "123456", "pairing", "http://192.168.1.10:56789", true, "3.1", "3.1.1");
-    var paired = pairable with { PairingStatus = "paired", Pairable = false };
+    var manager = new HomeAssistantTransportManager((url, _) => Task.FromResult(url.Contains("local", StringComparison.OrdinalIgnoreCase)));
+    manager.UpdateUrls("http://ha-local:8123", "https://remote.example", true);
 
-    var pairableTxt = MdnsAdvertiser.BuildTxtRecord(pairable);
-    var pairedTxt = MdnsAdvertiser.BuildTxtRecord(paired);
+    var local = manager.ResolvePairingAsync("http://ha-local:8123", CancellationToken.None).GetAwaiter().GetResult();
+    var remoteOnly = manager.ResolvePairingAsync("https://remote.example", CancellationToken.None).GetAwaiter().GetResult();
 
-    AssertEqual("windows", pairableTxt["client_type"]);
-    AssertEqual("windows", pairableTxt["platform"]);
-    AssertEqual(identity.DeviceId, pairableTxt["device_id"]);
-    AssertEqual("false", pairableTxt["paired"]);
-    AssertEqual("123456", pairableTxt["pair_code"]);
-    AssertEqual("http://192.168.1.10:56789", pairableTxt["local_url"]);
-    AssertTrue(!pairableTxt.ContainsKey("token"), "mDNS TXT must not expose tokens");
-    AssertTrue(!pairableTxt.ContainsKey("ssid"), "mDNS TXT must not expose Wi-Fi SSID");
-    AssertTrue(!pairedTxt.ContainsKey("pair_code"), "paired mDNS TXT must not expose pair codes");
-    AssertEqual("true", pairedTxt["paired"]);
+    AssertEqual(HomeAssistantConnectionMode.Local, local.Mode);
+    AssertEqual("http://ha-local:8123", local.ActiveUrl);
+    AssertEqual(HomeAssistantConnectionMode.Offline, remoteOnly.Mode);
+    AssertTrue(remoteOnly.ActiveUrl is null, "remote URL must not be used for first pairing");
 }
 
-static void MdnsLifecycleSnapshotsOnlyAdvertiseWhenPairable()
+static void Protocol32FallsBackFromLocalToRemoteAfterPairing()
+{
+    var manager = new HomeAssistantTransportManager((url, _) => Task.FromResult(url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)));
+    manager.UpdateUrls("http://ha-local:8123", "https://remote.example", true);
+
+    var state = manager.ResolveRuntimeAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual(HomeAssistantConnectionMode.Remote, state.Mode);
+    AssertEqual("https://remote.example", state.ActiveUrl);
+}
+
+static void Protocol32MarksOfflineWhenNoUrlReachable()
+{
+    var manager = new HomeAssistantTransportManager((_, _) => Task.FromResult(false));
+    manager.UpdateUrls("http://ha-local:8123", "https://remote.example", true);
+
+    var state = manager.ResolveRuntimeAsync(CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual(HomeAssistantConnectionMode.Offline, state.Mode);
+    AssertTrue(state.ActiveUrl is null, "offline transport must not keep an active URL");
+}
+
+static void Protocol32ParsesBackendSummary()
+{
+    const string json = """
+    {
+      "success": true,
+      "ha_local_url": "http://192.168.1.2:8123",
+      "ha_remote_url": "https://example.ui.nabu.casa",
+      "remote_supported": true,
+      "music_backend": "music_assistant",
+      "music_backend_name": "Music Assistant",
+      "music_backend_available": true,
+      "music_backend_revision": 4,
+      "music_backend_capabilities": {
+        "supports_search": true,
+        "supports_queue": true,
+        "supports_outputs": true,
+        "supports_favorites": false,
+        "supports_recently_played": true,
+        "supports_top_items": false
+      },
+      "music_target_player": {
+        "id": "media_player.mass_woonkamer",
+        "name": "Woonkamer"
+      }
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<StatusResponse>(json, JsonOptions());
+
+    AssertNotNull(response);
+    AssertEqual("http://192.168.1.2:8123", response!.HomeAssistantLocalUrl);
+    AssertEqual("https://example.ui.nabu.casa", response.HomeAssistantRemoteUrl);
+    AssertTrue(response.RemoteSupported == true, "remote support must parse");
+    AssertEqual("Music Assistant", response.MusicBackendName);
+    AssertEqual(4, response.MusicBackendRevision);
+    AssertTrue(response.MusicBackendCapabilities!.CompactSummary.Contains("queue", StringComparison.Ordinal), "capabilities summary should include supported features");
+    AssertEqual("Woonkamer", response.MusicTargetPlayer!.Name);
+}
+
+static void BackendAwareActionsPreserveMusicAssistantValue()
 {
     var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
-    var onboarding = new LocalPairingSnapshot(identity, "123456", "pairing", "http://192.168.1.10:56789", false, "3.1", "3.1.1");
-    var pairing = onboarding with { Pairable = true };
-    var paired = pairing with { PairingStatus = "paired", Pairable = false };
-    var demo = pairing with { PairingStatus = "demo", Pairable = false };
+    const string json = """
+    {
+      "id": "ma-1",
+      "kind": "track",
+      "action_style": "play_now",
+      "value": {
+        "item_id": "library://track/123",
+        "provider": "music_assistant",
+        "media_type": "track",
+        "target_player_id": "media_player.mass_woonkamer"
+      }
+    }
+    """;
+    var action = JsonSerializer.Deserialize<PlaybackAction>(json, JsonOptions())!;
+    var payload = DJConnectApiClient.BuildActionCommandPayload(identity, "ask_dj_play_recommendation", action.Value, "ma-action-1");
+    var serialized = JsonSerializer.Serialize(payload, JsonOptions());
 
-    AssertTrue(!onboarding.Pairable, "onboarding must not advertise mDNS");
-    AssertTrue(pairing.Pairable, "pairing screen may advertise mDNS");
-    AssertTrue(!paired.Pairable, "paired state must not advertise mDNS");
-    AssertTrue(!demo.Pairable, "demo mode must not advertise mDNS");
+    AssertTrue(serialized.Contains("\"provider\":\"music_assistant\""), "Music Assistant provider value must be forwarded");
+    AssertTrue(serialized.Contains("\"item_id\":\"library://track/123\""), "Music Assistant item id must be forwarded");
+    AssertTrue(!serialized.Contains("spotify:track", StringComparison.OrdinalIgnoreCase), "Music Assistant action must not require a Spotify URI");
+}
+
+static void BackendAwareActionsCarryBackendRevision()
+{
+    var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
+    var action = new PlaybackAction("track-1", "track", null, "Play Now", "Play Now", "Song", "Artist", "spotify:track:abc", null, null, null, "play_now", MusicBackendRevision: 7);
+    var payload = DJConnectApiClient.BuildActionCommandPayload(identity, "ask_dj_play_recommendation", action, "rev-action-1");
+    var serialized = JsonSerializer.Serialize(payload, JsonOptions());
+
+    AssertTrue(serialized.Contains("\"music_backend_revision\":7"), "backend revision must be forwarded when HA includes it");
+    AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "action payload must include Windows client type");
+}
+
+static void Protocol32KeepsAppLocalApiAndMdnsInactive()
+{
+    AssertEqual("3.2", DJConnectContract.ProtocolLine);
+    AssertTrue(!DJConnectApiClient.BuildCommandPayload(ClientIdentity.CreateOrLoad("abc123def4567890"), "status").ContainsKey("local_url"), "Windows command payload must not expose a client-hosted local URL");
 }
 
 static JsonSerializerOptions JsonOptions() => new(JsonSerializerDefaults.Web);

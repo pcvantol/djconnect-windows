@@ -18,28 +18,28 @@ Mini-games and update/error states.
   `liked_proxy_playlist_uri` must not appear in UI, payloads or settings.
 - Logs, feedback bodies, crash reports, diagnostics and clipboard exports must
   use `DiagnosticRedactor` before user-visible/exported output.
-- mDNS TXT records must never contain bearer tokens, Wi-Fi identifiers or
-  secrets. Pairing code data is present only while pairable.
+- Protocol `3.2.x` Windows builds must not advertise a client-hosted local API
+  or mDNS pairing service.
 - Diagnostics are never uploaded automatically.
 
 ## Pairing And Discovery
 
-`shouldAdvertiseMdns` is true only when onboarding is complete, Demo Mode is
-off, the pairing screen is visible, the client is not paired and the local
-Client API is running.
+`shouldAdvertiseMdns` is false for the protocol `3.2.x` Windows runtime.
 
 Required lifecycle:
 
-- Fresh install: onboarding visible, no mDNS.
-- After onboarding while unpaired: pairing screen visible, pairable mDNS may run.
-- Successful pairing: token stored in OS credential storage, mDNS stops.
+- Fresh install: onboarding visible, no local API or mDNS.
+- After onboarding while unpaired: pairing screen visible for local HA URL plus
+  pairing code entry.
+- Successful pairing: token stored in OS credential storage, HA local/remote
+  URL metadata stored as non-secret settings.
 - Pairing reset: token/runtime state cleared, identity and pairing code rotated,
-  pairing screen shown, mDNS starts only after the screen is visible.
-- Demo Mode: no mDNS, no Home Assistant calls, no token writes, session-only.
+  pairing screen shown.
+- Demo Mode: no Home Assistant calls, no token writes, session-only.
 - Demo monkey-test mode: when `DJCONNECT_DEMO_MONKEY_TEST` or a supported legacy
   monkey/UI-test env var is truthy, the app starts directly in Demo Mode and
-  must suppress persistence, credential writes, local Client API/mDNS startup,
-  clipboard writes, external browser launches, permission settings, pairing
+  must suppress persistence, credential writes, clipboard writes, external
+  browser launches, permission settings, pairing
   reset, log/history clear and demo exit actions.
 
 ## Runtime And Errors
@@ -81,7 +81,7 @@ Required lifecycle:
 
 - User-facing strings should be available in Dutch and English where the
   surrounding ViewModel localization pattern is used.
-- The user-facing term is `Client adres`, not `Client API URL`.
+- The pairing UI must not ask users to copy a Windows `Client adres`.
 - Release notes use Dutch when locale starts with `nl`; otherwise English.
 
 ## Verification
@@ -97,7 +97,7 @@ The local test suite guards the highest-risk NFRs:
 - crash and wakeword defaults;
 - Demo Mode defaults to session-off;
 - monkey-test mode is explicit and environment driven;
-- mDNS TXT secret hygiene and pairable-only lifecycle snapshots.
+- inactive Windows local API/mDNS runtime path.
 
 Before release, run:
 
