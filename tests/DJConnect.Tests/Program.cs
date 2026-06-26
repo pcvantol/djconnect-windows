@@ -12,6 +12,10 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ response deserializes exchange messages", AskDJResponseDeserializesExchangeMessages),
     ("Ask DJ response deserializes media sources and dj text", AskDJResponseDeserializesMediaSourcesAndDjText),
     ("Ask DJ technical track analysis v2 renders sections timeline and tips", AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips),
+    ("Ask DJ technical track analysis providers render as diagnostics", AskDJTechnicalTrackAnalysisProvidersRenderAsDiagnostics),
+    ("Ask DJ technical track analysis without providers remains compatible", AskDJTechnicalTrackAnalysisWithoutProvidersRemainsCompatible),
+    ("Ask DJ technical track analysis tolerates unknown providers", AskDJTechnicalTrackAnalysisToleratesUnknownProviders),
+    ("Ask DJ technical track analysis unavailable renders skipped provider diagnostics", AskDJTechnicalTrackAnalysisUnavailableRendersSkippedProviderDiagnostics),
     ("Ask DJ technical track analysis v2 without timeline renders sections", AskDJTechnicalTrackAnalysisV2WithoutTimelineRendersSections),
     ("Ask DJ technical track analysis unavailable renders limitations", AskDJTechnicalTrackAnalysisUnavailableRendersLimitations),
     ("Ask DJ technical track analysis v1 fallback renders measured inferred and limitations", AskDJTechnicalTrackAnalysisV1FallbackRendersMeasuredInferredAndLimitations),
@@ -246,6 +250,135 @@ static void AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips()
     AssertEqual(1, message.TechnicalAnalysis.Limitations.Count);
     AssertTrue(message.TechnicalAnalysis.Sections[0].Meta.Contains("bron: measured", StringComparison.Ordinal), "source must be visible");
     AssertTrue(message.TechnicalAnalysis.Tips[0].Meta.Contains("confidence: medium", StringComparison.Ordinal), "confidence must be visible");
+}
+
+static void AskDJTechnicalTrackAnalysisProvidersRenderAsDiagnostics()
+{
+    const string json = """
+    {
+      "id": "analysis-providers",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "mode": "available",
+        "sections": [
+          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
+        ],
+        "timeline": [
+          { "kind": "intro", "label": "Intro", "start": "0:00", "end": "0:16" }
+        ],
+        "dj_tips": [
+          { "kind": "mix", "text": "Mix op de eerste phrase." }
+        ],
+        "providers": [
+          { "provider_id": "spotify_measured", "display_name": "Spotify measured", "status": "used", "requires_config": false },
+          { "provider_id": "ha_conversation", "display_name": "HA Conversation", "status": "skipped", "reason": "not requested" },
+          { "provider_id": "local_fallback", "display_name": "Local fallback", "status": "used" }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertEqual(3, message!.Analysis!.Providers!.Count);
+    AssertEqual(1, message.TechnicalAnalysis!.Sections.Count);
+    AssertEqual(1, message.TechnicalAnalysis.Timeline.Count);
+    AssertEqual(1, message.TechnicalAnalysis.Tips.Count);
+    AssertEqual(3, message.TechnicalAnalysis.ProviderDiagnostics.Count);
+    AssertEqual("Spotify measured", message.TechnicalAnalysis.ProviderDiagnostics[0].Title);
+    AssertEqual("used", message.TechnicalAnalysis.ProviderDiagnostics[0].Subtitle);
+    AssertTrue(!message.TechnicalAnalysis.Sections.Any(row => row.Title.Contains("Spotify", StringComparison.OrdinalIgnoreCase)), "providers must not replace normal analysis UI blocks");
+}
+
+static void AskDJTechnicalTrackAnalysisWithoutProvidersRemainsCompatible()
+{
+    const string json = """
+    {
+      "id": "analysis-no-providers",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "sections": [
+          { "id": "energy_curve", "summary": "Rustige intro, hoge piek na de break." }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertTrue(message!.Analysis!.Providers is null, "missing providers must deserialize as optional metadata");
+    AssertEqual(1, message.TechnicalAnalysis!.Sections.Count);
+    AssertEqual(0, message.TechnicalAnalysis.ProviderDiagnostics.Count);
+}
+
+static void AskDJTechnicalTrackAnalysisToleratesUnknownProviders()
+{
+    const string json = """
+    {
+      "id": "analysis-unknown-provider",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "sections": [
+          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 126 }
+        ],
+        "providers": [
+          {
+            "provider_id": "future_provider",
+            "status": "deferred",
+            "reason": "Authorization: Bearer secret-provider-token",
+            "raw_prompt": "do not render me"
+          }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertEqual("future provider", message!.TechnicalAnalysis!.ProviderDiagnostics[0].Title);
+    AssertEqual("deferred", message.TechnicalAnalysis.ProviderDiagnostics[0].Subtitle);
+    AssertTrue(message.TechnicalAnalysis.ProviderDiagnostics[0].Meta.Contains("reason:", StringComparison.Ordinal), "unknown reasons can remain diagnostic metadata");
+    AssertTrue(!message.TechnicalAnalysis.ProviderDiagnostics[0].Meta.Contains("secret-provider-token", StringComparison.Ordinal), "provider diagnostics must redact accidental secrets");
+    AssertTrue(!message.TechnicalAnalysis.ProviderDiagnostics[0].Meta.Contains("raw_prompt", StringComparison.OrdinalIgnoreCase), "unknown provider fields must be ignored");
+}
+
+static void AskDJTechnicalTrackAnalysisUnavailableRendersSkippedProviderDiagnostics()
+{
+    const string json = """
+    {
+      "id": "analysis-unavailable-providers",
+      "role": "assistant",
+      "intent": { "intent": "technical_track_analysis" },
+      "analysis": {
+        "contract_version": 2,
+        "mode": "unavailable",
+        "providers": [
+          { "provider_id": "spotify_measured", "status": "skipped", "reason": "no current track" },
+          { "provider_id": "ha_conversation", "status": "skipped", "requires_config": true },
+          { "provider_id": "local_fallback", "status": "skipped" }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+
+    AssertNotNull(message);
+    AssertTrue(message!.TechnicalAnalysis!.IsUnavailable, "unavailable mode should still be visible");
+    AssertEqual(0, message.TechnicalAnalysis.Sections.Count);
+    AssertEqual(0, message.TechnicalAnalysis.Timeline.Count);
+    AssertEqual(0, message.TechnicalAnalysis.Tips.Count);
+    AssertEqual(3, message.TechnicalAnalysis.ProviderDiagnostics.Count);
+    AssertTrue(message.HasTechnicalAnalysis, "provider diagnostics may keep the diagnostic analysis card visible");
 }
 
 static void AskDJTechnicalTrackAnalysisV2WithoutTimelineRendersSections()

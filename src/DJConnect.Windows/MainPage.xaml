@@ -237,6 +237,22 @@
                                                                     </DataTemplate>
                                                                 </CollectionView.ItemTemplate>
                                                             </CollectionView>
+                                                            <VerticalStackLayout Spacing="4" IsVisible="{Binding HasProviderDiagnostics}">
+                                                                <Label Text="Sources / diagnostics" TextColor="{StaticResource TextSecondary}" FontSize="11" FontAttributes="Bold" />
+                                                                <CollectionView ItemsSource="{Binding ProviderDiagnostics}">
+                                                                    <CollectionView.ItemTemplate>
+                                                                        <DataTemplate>
+                                                                            <Grid Padding="0,2" ColumnDefinitions="150,*" ColumnSpacing="10">
+                                                                                <Label Text="{Binding Title}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="TailTruncation" />
+                                                                                <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                                                                    <Label Text="{Binding Subtitle}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="TailTruncation" />
+                                                                                    <Label Text="{Binding Meta}" IsVisible="{Binding HasMeta}" TextColor="{StaticResource TextSecondary}" FontSize="10" LineBreakMode="WordWrap" />
+                                                                                </VerticalStackLayout>
+                                                                            </Grid>
+                                                                        </DataTemplate>
+                                                                    </CollectionView.ItemTemplate>
+                                                                </CollectionView>
+                                                            </VerticalStackLayout>
                                                         </VerticalStackLayout>
                                                     </Border>
                                                     <Label Text="{Binding DeliveryLabel}" TextColor="{StaticResource TextSecondary}" FontSize="12" />

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DJConnect.Windows.Services;
 
 namespace DJConnect.Windows.Models;
 
@@ -142,9 +143,17 @@ public sealed record AskDJTrackAnalysis(
     [property: JsonPropertyName("sections")] IReadOnlyList<AskDJAnalysisSection>? Sections,
     [property: JsonPropertyName("timeline")] IReadOnlyList<AskDJAnalysisTimelineEntry>? Timeline,
     [property: JsonPropertyName("dj_tips")] IReadOnlyList<AskDJAnalysisTip>? DjTips,
+    [property: JsonPropertyName("providers")] IReadOnlyList<TrackAnalysisProviderStatus>? Providers,
     [property: JsonPropertyName("limitations")] IReadOnlyList<AskDJAnalysisLimitation>? Limitations,
     [property: JsonPropertyName("measured")] AskDJMeasuredAnalysis? Measured = null,
     [property: JsonPropertyName("inferred")] AskDJMeasuredAnalysis? Inferred = null);
+
+public sealed record TrackAnalysisProviderStatus(
+    [property: JsonPropertyName("provider_id")] string? ProviderId,
+    [property: JsonPropertyName("display_name")] string? DisplayName,
+    [property: JsonPropertyName("status")] string? Status,
+    [property: JsonPropertyName("requires_config")] bool? RequiresConfig,
+    [property: JsonPropertyName("reason")] string? Reason);
 
 public sealed record AskDJAnalysisSection(
     [property: JsonPropertyName("id")] string? Id,
@@ -212,13 +221,15 @@ public sealed record TechnicalTrackAnalysisPresentation(
     IReadOnlyList<TechnicalAnalysisRow> Sections,
     IReadOnlyList<TechnicalAnalysisRow> Timeline,
     IReadOnlyList<TechnicalAnalysisRow> Tips,
-    IReadOnlyList<TechnicalAnalysisRow> Limitations)
+    IReadOnlyList<TechnicalAnalysisRow> Limitations,
+    IReadOnlyList<TechnicalAnalysisRow> ProviderDiagnostics)
 {
     public bool HasSections => Sections.Count > 0;
     public bool HasTimeline => Timeline.Count > 0;
     public bool HasTips => Tips.Count > 0;
     public bool HasLimitations => Limitations.Count > 0;
-    public bool HasContent => HasSections || HasTimeline || HasTips || HasLimitations;
+    public bool HasProviderDiagnostics => ProviderDiagnostics.Count > 0;
+    public bool HasContent => HasSections || HasTimeline || HasTips || HasLimitations || HasProviderDiagnostics;
     public bool IsUnavailable => Header.Contains("niet beschikbaar", StringComparison.OrdinalIgnoreCase);
 
     public static TechnicalTrackAnalysisPresentation? From(AskDJMessage message)
@@ -238,6 +249,7 @@ public sealed record TechnicalTrackAnalysisPresentation(
         var timeline = new List<TechnicalAnalysisRow>();
         var tips = new List<TechnicalAnalysisRow>();
         var limitations = new List<TechnicalAnalysisRow>();
+        var providerDiagnostics = new List<TechnicalAnalysisRow>();
 
         if ((analysis.Sections?.Count ?? 0) > 0 || (analysis.Timeline?.Count ?? 0) > 0 || (analysis.DjTips?.Count ?? 0) > 0)
         {
@@ -257,7 +269,9 @@ public sealed record TechnicalTrackAnalysisPresentation(
             ? "Technische analyse niet beschikbaar"
             : "Technische analyse";
 
-        return new TechnicalTrackAnalysisPresentation(header, meta, sections, timeline, tips, limitations);
+        providerDiagnostics.AddRange((analysis.Providers ?? []).Select(ProviderRow));
+
+        return new TechnicalTrackAnalysisPresentation(header, meta, sections, timeline, tips, limitations, providerDiagnostics);
     }
 
     private static IEnumerable<TechnicalAnalysisRow> MeasuredRows(string group, AskDJMeasuredAnalysis? measured)
@@ -336,6 +350,24 @@ public sealed record TechnicalTrackAnalysisPresentation(
             limitation.Text ?? limitation.Message ?? "",
             "",
             SourceConfidenceLabel(limitation.Source, limitation.Confidence));
+    }
+
+    private static TechnicalAnalysisRow ProviderRow(TrackAnalysisProviderStatus provider)
+    {
+        var requiresConfig = provider.RequiresConfig.HasValue
+            ? $"config: {(provider.RequiresConfig.Value ? "required" : "not required")}"
+            : null;
+
+        return new TechnicalAnalysisRow(
+            FirstNonEmpty(provider.DisplayName, Humanize(provider.ProviderId), "Unknown"),
+            FirstNonEmpty(provider.Status, "Unknown"),
+            "",
+            JoinNonEmpty(requiresConfig, LabelWithPrefix("reason", RedactProviderMetadata(provider.Reason))));
+    }
+
+    private static string? RedactProviderMetadata(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? value : DiagnosticRedactor.Redact(value);
     }
 
     private static string SourceConfidenceLabel(string? source, string? confidence)
