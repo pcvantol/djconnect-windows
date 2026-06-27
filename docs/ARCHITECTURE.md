@@ -136,9 +136,9 @@ pairing code, and returns to local pairing.
 
 ## Release Artifacts
 
-The source repo release tag is `vX.Y.Z`. The public unsigned release workflow
-publishes diagnostic artifacts to `pcvantol/djconnect-app-releases` with
-platform-specific tags:
+The source repo release tag is `vX.Y.Z`. When a maintainer starts the manual
+public unsigned release workflow, it publishes diagnostic artifacts to
+`pcvantol/djconnect-app-releases` with platform-specific tags:
 
 - `windows/vX.Y.Z`
 - `maccatalyst/vX.Y.Z`

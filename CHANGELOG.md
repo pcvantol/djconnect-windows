@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added a CI/security baseline for the Windows client: Windows-runner restore,
+  build, tests, formatting and unsigned artifact sanity checks; CodeQL for C#;
+  advisory Semgrep through the shared DJConnect workflow; and manual-only
+  public unsigned release publication.
+
 ## 3.2.1 - 2026-06-27
 
 - Synced the Windows client contract with the Home Assistant `3.2.x` backend:

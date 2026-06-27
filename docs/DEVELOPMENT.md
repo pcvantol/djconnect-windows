@@ -132,14 +132,14 @@ Jobs:
 - `maui-windows-build`: restores MAUI workloads and builds
   `net10.0-windows10.0.19041.0` on Windows.
 
-Release workflow:
+Manual release workflow:
 
 ```text
 .github/workflows/public-unsigned-release.yml
 ```
 
-It runs on `vX.Y.Z` tags or manual dispatch, builds unsigned Windows and Mac
-Catalyst artifacts, and publishes platform releases to
+It runs only through manual dispatch, builds unsigned Windows and Mac Catalyst
+artifacts, and publishes platform releases to
 `pcvantol/djconnect-app-releases` when `PUBLIC_RELEASES_TOKEN` is configured.
 The public tags are `windows/vX.Y.Z` and `maccatalyst/vX.Y.Z`. Windows release
 artifacts are produced for both `win-x64` and `win-arm64`; the ARM64 zip is the

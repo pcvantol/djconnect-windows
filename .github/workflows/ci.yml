@@ -12,9 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
-  actions: write
-  pull-requests: write
+  contents: read
 
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: "1"
@@ -98,5 +96,88 @@ jobs:
       - name: Restore app dependencies
         run: dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-windows10.0.19041.0
 
+      - name: Restore test dependencies
+        run: dotnet restore tests/DJConnect.Tests/DJConnect.Tests.csproj
+
       - name: Build Windows app
         run: dotnet build src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-windows10.0.19041.0 --no-restore
+
+      - name: Run protocol/core tests on Windows
+        shell: pwsh
+        run: dotnet run --project tests/DJConnect.Tests/DJConnect.Tests.csproj --no-restore
+
+      - name: Check test project formatting on Windows
+        shell: pwsh
+        run: dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj --verify-no-changes --no-restore
+
+  windows-release-artifact-sanity:
+    name: Windows release artifact sanity
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Install MAUI workload
+        shell: pwsh
+        run: dotnet workload restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-windows10.0.19041.0
+
+      - name: Publish unsigned Windows artifacts
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $project = "src/DJConnect.Windows/DJConnect.Windows.csproj"
+          $tfm = "net10.0-windows10.0.19041.0"
+          [xml]$projectXml = Get-Content $project
+          $version = $projectXml.Project.PropertyGroup.ApplicationDisplayVersion
+
+          New-Item -ItemType Directory -Force -Path ".public-release/artifacts" | Out-Null
+          foreach ($rid in @("win-x64", "win-arm64")) {
+            $outputDir = ".public-release/windows/$rid"
+            dotnet restore $project -p:TargetFramework=$tfm -p:RuntimeIdentifier=$rid -r $rid
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+            dotnet publish $project `
+              -c Release `
+              -f $tfm `
+              -r $rid `
+              --no-restore `
+              -p:RuntimeIdentifier=$rid `
+              -p:PublishReadyToRun=false `
+              -p:WindowsPackageType=None `
+              -o $outputDir
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+            $arch = if ($rid -eq "win-arm64") { "arm64" } else { "x64" }
+            $zipPath = ".public-release/artifacts/DJConnect-Windows-$arch-$version-unsigned.zip"
+            Compress-Archive -Path "$outputDir/*" -DestinationPath $zipPath -Force
+            $hash = Get-FileHash -Algorithm SHA256 $zipPath
+            "$($hash.Hash.ToLowerInvariant())  $(Split-Path -Leaf $zipPath)" |
+              Set-Content -NoNewline -Encoding ascii ".public-release/artifacts/DJConnect-Windows-$arch-$version-SHA256SUMS.txt"
+          }
+
+      - name: Validate unsigned artifact shape
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $zips = Get-ChildItem ".public-release/artifacts" -Filter "DJConnect-Windows-*-unsigned.zip"
+          $checksums = Get-ChildItem ".public-release/artifacts" -Filter "DJConnect-Windows-*-SHA256SUMS.txt"
+          if ($zips.Count -ne 2) {
+            throw "Expected exactly 2 unsigned Windows zip artifacts, found $($zips.Count)."
+          }
+          if ($checksums.Count -ne 2) {
+            throw "Expected exactly 2 checksum files, found $($checksums.Count)."
+          }
+          foreach ($zip in $zips) {
+            if ($zip.Length -le 0) {
+              throw "Artifact is empty: $($zip.Name)."
+            }
+            $listing = tar -tf $zip.FullName
+            if (-not ($listing -match "DJConnect\.exe")) {
+              throw "Artifact does not contain DJConnect.exe: $($zip.Name)."
+            }
+          }

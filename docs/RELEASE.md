@@ -24,17 +24,18 @@ Current release: `3.2.1`.
 - Validate pairing, status, Ask DJ message/history/clear and command actions
   against a real Home Assistant `djconnect` integration.
 - Confirm no secrets, tokens, passwords or OAuth values are committed.
-- Confirm the repository secret `PUBLIC_RELEASES_TOKEN` is present when a
-  public unsigned release should be published.
+- Confirm the repository secret `PUBLIC_RELEASES_TOKEN` is present only when a
+  maintainer intentionally starts the manual public unsigned release workflow.
 - Add/update `docs/release-notes/en/vX.Y.Z.md` and
   `docs/release-notes/nl/vX.Y.Z.md` when the in-app What's New text should
   differ from the full changelog.
 - Push `main` and the release tag only when explicitly requested by the
   maintainer.
 - After pushing, validate GitHub Actions with `gh run list` and inspect failed
-  jobs before considering the release complete.
-- After the new release is published and validated, run the cleanup helper in
-  dry-run mode and then execute it when the plan is correct.
+  jobs before considering the source release complete.
+- Start the manual public unsigned release workflow only when publication is
+  intended. After the new public release is published and validated, run the
+  cleanup helper in dry-run mode and then execute it when the plan is correct.
 
 ## Standard Release Hygiene
 
@@ -54,7 +55,7 @@ for a different flow:
 3. Commit the release changes and create or move the local annotated
    `vX.Y.Z` tag before it is pushed.
 4. Push `main` and the release tag only after explicit maintainer approval.
-5. Validate GitHub CI/release workflows:
+5. Validate GitHub CI/security workflows:
 
    ```sh
    gh run list --repo pcvantol/djconnect-windows --limit 10
@@ -62,17 +63,23 @@ for a different flow:
    gh release list --repo pcvantol/djconnect-app-releases --limit 10
    ```
 
-   Newer workflow runs for the same branch/tag should cancel older in-progress
-   attempts through workflow concurrency.
+   Newer CI runs for the same branch should cancel older in-progress attempts
+   through workflow concurrency.
 
-6. Run cleanup:
+6. If public unsigned artifacts should be published, manually start
+   `.github/workflows/public-unsigned-release.yml` with the release version and
+   validate the public release repository afterward. This workflow is not
+   triggered by tag pushes and is the only workflow that should receive
+   publication secrets.
+
+7. Run cleanup:
 
    ```sh
    ./clear_old_releases.sh --keep 1 --keep-workflow-runs 2
    ./clear_old_releases.sh --keep 1 --keep-workflow-runs 2 --execute
    ```
 
-7. Re-check `gh run list` and document any remaining failed/pending workflows.
+8. Re-check `gh run list` and document any remaining failed/pending workflows.
 
 ## Public Unsigned Releases
 
@@ -82,9 +89,9 @@ Workflow:
 .github/workflows/public-unsigned-release.yml
 ```
 
-The workflow runs on `vX.Y.Z` tags and can also be started manually with a
-semver version. It builds unsigned Windows and Mac Catalyst artifacts, creates
-SHA-256 checksum files and publishes them to:
+The workflow is manual-only through `workflow_dispatch` with a semver version.
+It builds unsigned Windows and Mac Catalyst artifacts, creates SHA-256 checksum
+files and publishes them to:
 
 ```text
 pcvantol/djconnect-app-releases
@@ -134,7 +141,9 @@ The non-localized paths are English fallbacks for older clients.
 The workflow deliberately exposes `PUBLIC_RELEASES_TOKEN` only in the final
 publish job, after unsigned build artifacts have been produced by the
 platform-specific jobs. `WEBSITE_RELEASE_NOTES_TOKEN` is only exposed in the
-static release-note publication step.
+static release-note publication step. Signing keys, API tokens, pairing tokens
+and app secrets are not used by CI; future signing must be added as a separate
+manual release workflow with scoped secrets.
 
 ## In-App What's New Notes
 

@@ -71,9 +71,9 @@ Release cleanup helper:
 This keeps both the new CI run and the new public unsigned release run
 available for audit.
 
-Release and cleanup automation requires GitHub Actions read/write workflow
-permissions plus workflow `contents: write` and `actions: write`; see
-[docs/RELEASE.md](docs/RELEASE.md).
+Normal CI and security scans run with read-only repository permissions. Public
+unsigned release publication is a separate manual workflow that uses scoped
+release secrets only in publish steps; see [docs/RELEASE.md](docs/RELEASE.md).
 
 Public unsigned releases use platform-specific tags in
 [pcvantol/djconnect-app-releases](https://github.com/pcvantol/djconnect-app-releases):
@@ -179,9 +179,13 @@ Run automatic protocol/core tests:
 ```
 
 GitHub Actions runs these tests on every push and pull request, plus MAUI build
-jobs for Mac Catalyst and Windows.
+jobs for Mac Catalyst and Windows. The Windows CI baseline also runs
+protocol/core tests and formatting on a Windows runner, publishes unsigned local
+artifacts for shape/checksum validation only, and runs CodeQL for C# plus
+advisory Semgrep through the shared DJConnect workflow. CI does not use signing
+keys, API tokens, pairing tokens or app secrets.
 
-Release tags run `.github/workflows/public-unsigned-release.yml`, which builds
+The manual `.github/workflows/public-unsigned-release.yml` workflow builds
 unsigned Windows and Mac Catalyst diagnostic artifacts and publishes EN/NL
 What's New files when the required repository secrets are configured.
 

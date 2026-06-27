@@ -13,16 +13,18 @@
   `docs/TECHNICAL_DESIGN_DECISIONS.md`.
 - Do not push from this repo unless explicitly requested by the maintainer.
 - When the maintainer asks to release/push, push `main` and the release tag,
-  validate GitHub Actions, then run `./clear_old_releases.sh` first as a
-  dry-run and then with `--execute` when the plan is correct.
-- CI and public unsigned release workflows use concurrency cancellation, so a
-  newer run for the same branch/tag cancels older in-progress attempts.
+  validate GitHub Actions, manually start public unsigned publication only when
+  requested, then run `./clear_old_releases.sh` first as a dry-run and then
+  with `--execute` when the plan is correct.
+- CI uses concurrency cancellation, so a newer run for the same branch cancels
+  older in-progress attempts.
 - Use `./clear_old_releases.sh` without `--execute` first when pruning old
   GitHub releases, tags or workflow runs.
+- Normal CI/security workflows use read-only repository permissions.
 - Confirm GitHub Actions workflow permissions are read/write before release
   cleanup; workflow-run deletion requires `actions: write`.
-- Public unsigned release publication requires `PUBLIC_RELEASES_TOKEN` with
-  write access to `pcvantol/djconnect-app-releases`.
+- Manual public unsigned release publication requires `PUBLIC_RELEASES_TOKEN`
+  with write access to `pcvantol/djconnect-app-releases`.
 - Static EN/NL What's New publication requires `WEBSITE_RELEASE_NOTES_TOKEN`
   with write access to `pcvantol/djconnect-website`.
 - Keep `docs/release-notes/en/vX.Y.Z.md` and

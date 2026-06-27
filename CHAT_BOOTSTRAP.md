@@ -39,7 +39,7 @@ Belangrijke huidige status:
   - MAUI Windows build op Windows.
 - Public unsigned release flow staat in
   `.github/workflows/public-unsigned-release.yml`:
-  - triggert op `vX.Y.Z` tags of handmatige versie;
+  - triggert alleen handmatig via `workflow_dispatch` met semver versie;
   - publiceert unsigned `windows/vX.Y.Z` en `maccatalyst/vX.Y.Z` releases naar
     `pcvantol/djconnect-app-releases` via `PUBLIC_RELEASES_TOKEN`;
   - publiceert EN/NL What's New JSON/Markdown naar `djconnect.dev` via
@@ -150,7 +150,8 @@ Belangrijke regels:
   daarna groen.
 - Push niet tenzij de gebruiker expliciet vraagt om pushen.
 - Als de gebruiker expliciet vraagt om release/push: push `main` en de release
-  tag, valideer GitHub Actions met `gh run list`, voer daarna
+  tag, valideer GitHub Actions met `gh run list`. Start public unsigned
+  publication alleen expliciet/handmatig wanneer gevraagd. Voer daarna
   `./clear_old_releases.sh --keep 1 --keep-workflow-runs 2` uit als dry-run en
   vervolgens met `--execute` als het plan klopt. Rapporteer CI/release status.
 ```
