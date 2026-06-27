@@ -31,8 +31,9 @@ Current app release: `3.2.1`.
 - `tests/DJConnect.Tests`: package-free console test harness for protocol/core
   behavior that can run without MAUI workloads.
 - `.github/workflows/ci.yml`: GitHub Actions CI for protocol tests, Windows
-  runner tests/format checks, platform MAUI builds and unsigned Windows
-  artifact sanity checks without signing secrets.
+  runner tests/format checks, workflow YAML hygiene, secret-term scanning,
+  platform MAUI builds and unsigned Windows artifact sanity checks without
+  signing secrets.
 - `.github/workflows/codeql.yml`: CodeQL security analysis for C#.
 - `.github/workflows/semgrep.yml`: advisory Semgrep scan through the shared
   DJConnect Semgrep workflow.

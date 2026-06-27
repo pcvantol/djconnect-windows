@@ -181,9 +181,10 @@ Run automatic protocol/core tests:
 GitHub Actions runs these tests on every push and pull request, plus MAUI build
 jobs for Mac Catalyst and Windows. The Windows CI baseline also runs
 protocol/core tests and formatting on a Windows runner, publishes unsigned local
-artifacts for shape/checksum validation only, and runs CodeQL for C# plus
-advisory Semgrep through the shared DJConnect workflow. CI does not use signing
-keys, API tokens, pairing tokens or app secrets.
+artifacts for shape/checksum validation only, validates workflow YAML, scans
+for unexpected secret-like strings, and runs CodeQL for C# plus advisory
+Semgrep through the shared DJConnect workflow. CI does not use signing keys,
+API tokens, pairing tokens or app secrets.
 
 The manual `.github/workflows/public-unsigned-release.yml` workflow builds
 unsigned Windows and Mac Catalyst diagnostic artifacts and publishes EN/NL

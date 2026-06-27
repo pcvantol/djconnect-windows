@@ -19,6 +19,45 @@ env:
   DOTNET_NOLOGO: "1"
 
 jobs:
+  workflow-hygiene:
+    name: Workflow hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate workflow YAML
+        run: ruby -e 'require "yaml"; Dir[".github/workflows/*.{yml,yaml}"].each { |f| YAML.load_file(f); puts "ok #{f}" }'
+
+      - name: Scan for accidental secret material
+        shell: bash
+        run: |
+          set -euo pipefail
+          matches="$(mktemp)"
+          rg -n \
+            "([A-Za-z0-9_]*token[A-Za-z0-9_]*|password|secret|refresh|authorization|Bearer|djci_|p8|pfx|client_secret|api_key)" \
+            -g '!bin/**' \
+            -g '!obj/**' \
+            -g '!artifacts/**' \
+            -g '!publish/**' \
+            -g '!.public-release/**' \
+            . > "$matches" || true
+
+          if [[ ! -s "$matches" ]]; then
+            exit 0
+          fi
+
+          unexpected="$(mktemp)"
+          grep -Ev \
+            '(^|/)(README\.md|SECURITY\.md|PRIVACY\.md|CONTRIBUTING\.md|CHAT_BOOTSTRAP\.md|CHANGELOG\.md|docs/|tests/|src/DJConnect\.Windows/MainPage\.xaml|src/DJConnect\.Windows/Platforms/Windows/Package\.appxmanifest|src/DJConnect\.Windows/Services/DiagnosticRedactor\.cs|src/DJConnect\.Windows/Services/CredentialStore\.cs|src/DJConnect\.Windows/Services/DJConnectApiClient\.cs|src/DJConnect\.Windows/ViewModels/MainViewModel\.cs|src/DJConnect\.Windows/Models/ApiModels\.cs|\.github/workflows/public-unsigned-release\.yml|\.github/workflows/ci\.yml)' \
+            "$matches" > "$unexpected" || true
+
+          if [[ -s "$unexpected" ]]; then
+            echo "Unexpected secret-like strings found outside approved docs/tests/security plumbing:"
+            cat "$unexpected"
+            exit 1
+          fi
+
   protocol-tests:
     name: Protocol/core tests
     runs-on: ubuntu-latest
