@@ -18,7 +18,7 @@ automatically.
 
 ## Current Version
 
-- Desktop app: `3.2.0`
+- Desktop app: `3.2.1`
 - Home Assistant protocol line: `3.2.x`
 - Current local `client_type`: `windows`
 

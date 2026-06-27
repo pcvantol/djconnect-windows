@@ -1,6 +1,6 @@
 # TODO
 
-- Validate the `3.2.0` local-pairing and remote-fallback upgrade against a live
+- Validate the `3.2.1` local-pairing and remote-fallback upgrade against a live
   Home Assistant DJConnect `3.2.x` backend.
 - Run the Home Assistant `FIELD_TEST_APP_CLIENTS.md` checklist for Windows and
   record app build, HA version, DJConnect integration version, backend

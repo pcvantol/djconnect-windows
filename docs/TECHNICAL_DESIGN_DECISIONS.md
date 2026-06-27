@@ -7,7 +7,7 @@ Windows and macOS. The app targets the DJConnect `3.2.x` Home Assistant
 protocol line and remains a thin client for Home Assistant-owned playback,
 Ask DJ and memory state.
 
-Current app release: `3.2.0`.
+Current app release: `3.2.1`.
 
 ## Project Shape
 
