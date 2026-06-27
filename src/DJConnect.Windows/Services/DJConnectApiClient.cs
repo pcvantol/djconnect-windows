@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DJConnect.Windows.Contracts;
 using DJConnect.Windows.Models;
 
 namespace DJConnect.Windows.Services;
@@ -34,13 +35,7 @@ public sealed class DJConnectApiClient
 
     public async Task<StatusResponse> GetStatusAsync(ClientIdentity identity, CancellationToken cancellationToken)
     {
-        var payload = new
-        {
-            device_id = identity.DeviceId,
-            device_name = identity.DeviceName,
-            client_type = identity.ClientType,
-            firmware = "windows-app"
-        };
+        var payload = BuildStatusPayload(identity);
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/status", payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<StatusResponse>(response, cancellationToken);
     }
@@ -156,6 +151,20 @@ public sealed class DJConnectApiClient
         }
 
         return payload;
+    }
+
+    public static Dictionary<string, object?> BuildStatusPayload(ClientIdentity identity)
+    {
+        return new Dictionary<string, object?>
+        {
+            ["device_id"] = identity.DeviceId,
+            ["device_name"] = identity.DeviceName,
+            ["client_type"] = identity.ClientType,
+            ["firmware"] = "windows-app",
+            ["version"] = DJConnectContract.AppVersion,
+            ["app_version"] = DJConnectContract.AppVersion,
+            ["protocol_version"] = DJConnectContract.ProtocolLine
+        };
     }
 
     public static Dictionary<string, object?> BuildActionCommandPayload(ClientIdentity identity, string command, object? value = null, string? clientMessageId = null)

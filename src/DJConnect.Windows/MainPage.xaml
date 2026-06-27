@@ -291,7 +291,7 @@
                                                             </DataTemplate>
                                                         </CollectionView.ItemTemplate>
                                                     </CollectionView>
-                                                    <CollectionView ItemsSource="{Binding Sources}" IsVisible="{Binding HasSources}">
+                                                    <CollectionView ItemsSource="{Binding DisplaySources}" IsVisible="{Binding HasSources}">
                                                         <CollectionView.ItemsLayout>
                                                             <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
                                                         </CollectionView.ItemsLayout>

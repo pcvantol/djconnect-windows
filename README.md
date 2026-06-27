@@ -98,13 +98,19 @@ Key screens and flows mirrored from macOS and extended for desktop:
   stable client identity, local/remote HA URL storage and pairing reset.
 - Ask DJ: `POST /api/djconnect/ask_dj/message`, server-side history sync via
   `GET /api/djconnect/ask_dj/history`, clear via
-  `POST /api/djconnect/ask_dj/history/clear`.
+  `POST /api/djconnect/ask_dj/history/clear`, with client mood values,
+  `audio_response` preference, `links[]`/`sources[]` rendering and bounded
+  history trim metadata.
 - Playback actions: follow-up confirmations and Play Now actions go through
   `POST /api/djconnect/command`.
 - Recent played answers: compact list rendering from returned `items[]`.
 - Now Playing/status: Home Assistant status and generic playback commands.
 - Queue and Playlists: backend-owned collections normalized locally, capped at
   100 rendered items, deterministic dedupe and generic start commands.
+- Backend playback: Spotify Direct and Music Assistant are both consumed
+  through Home Assistant response/action shapes. Backend-specific actions carry
+  `music_backend_revision`; stale actions and unsupported capabilities are
+  shown as refresh/unavailable states instead of Spotify-only UI.
 - Settings: connection status, pairing reset, output/playback preferences,
   Ask DJ, Demo Mode, permissions, diagnostics, app info and legal/privacy links.
 - Logs/diagnostics: bounded local logs, log-level filtering, search, copy and

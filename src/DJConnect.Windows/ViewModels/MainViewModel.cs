@@ -649,6 +649,14 @@ public sealed class MainViewModel : ObservableObject
         set => SetProperty(ref _askDJMood, string.IsNullOrWhiteSpace(value) ? "Groove" : value);
     }
 
+    private int AskDJMoodValue() => AskDJMood switch
+    {
+        "Chill" => 12,
+        "Energy" => 72,
+        "Party" => 92,
+        _ => 42
+    };
+
     public bool WakewordFeatureAvailable => false;
 
     public bool WakewordEnabled
@@ -718,7 +726,7 @@ public sealed class MainViewModel : ObservableObject
 
     public string DeviceId => _identity.DeviceId;
     public string ClientType => _identity.ClientType;
-    public string AppVersion => "3.2.0";
+    public string AppVersion => DJConnectContract.AppVersion;
     public string ProtocolVersion => $"{DJConnectContract.ProtocolLine}.x";
     public string BuildChannel => "debug";
     public string PlatformName => "Windows";
@@ -818,7 +826,9 @@ public sealed class MainViewModel : ObservableObject
         ? L("Remote fallback beschikbaar", "Remote fallback available")
         : L("Alleen lokaal", "Local only");
     public string MusicBackendNameText => _musicBackendSummary.DisplayName;
-    public string MusicBackendStatusText => _musicBackendSummary.Error ?? _musicBackendSummary.AvailabilityText;
+    public string MusicBackendStatusText => string.IsNullOrWhiteSpace(_musicBackendSummary.ErrorText)
+        ? _musicBackendSummary.AvailabilityText
+        : _musicBackendSummary.ErrorText;
     public string MusicBackendRevisionText => _musicBackendSummary.Revision?.ToString() ?? "-";
     public string MusicTargetPlayerText => _musicBackendSummary.TargetPlayer is null
         ? "-"
@@ -1472,7 +1482,10 @@ public sealed class MainViewModel : ObservableObject
             _identity.DeviceName,
             _identity.ClientType,
             text,
-            text);
+            text,
+            Mood: AskDJMoodValue(),
+            AppVersion: AppVersion,
+            ProtocolVersion: DJConnectContract.ProtocolLine);
 
         AskDJMessageResponse response;
         try
@@ -1542,7 +1555,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (responseMessages.Count == 0 && (!string.IsNullOrWhiteSpace(response.Text ?? response.DjText ?? response.Message) || response.Analysis is not null))
         {
-            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", SafeDisplayText(response.Text ?? response.DjText ?? response.Message), null, DateTimeOffset.Now, "assistant", response.PlaybackActions, response.ConfirmationActions, response.Items, response.Images, response.Sources, response.AudioUrl, ClientMessageId: clientMessageId, Intent: response.Intent, Action: response.Action, Analysis: response.Analysis));
+            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", SafeDisplayText(response.Text ?? response.DjText ?? response.Message), null, DateTimeOffset.Now, "assistant", response.PlaybackActions, response.ConfirmationActions, response.Items, response.Images, response.Sources, response.AudioUrl, ClientMessageId: clientMessageId, Intent: response.Intent, Action: response.Action, Analysis: response.Analysis, Links: response.Links));
         }
 
         var assistantMessage = responseMessages.LastOrDefault(message => message.IsAssistant);

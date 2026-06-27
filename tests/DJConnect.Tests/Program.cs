@@ -8,9 +8,10 @@ var tests = new (string Name, Action Run)[]
     ("Client identity uses windows contract", ClientIdentityUsesWindowsContract),
     ("Client identity pads short install IDs", ClientIdentityPadsShortInstallIds),
     ("Pairing payload serializes HA compatibility fields", PairingPayloadSerializesCompatibilityFields),
+    ("Status payload serializes app protocol metadata", StatusPayloadSerializesAppProtocolMetadata),
     ("Ask DJ request serializes server-side message contract", AskDJRequestSerializesServerSideContract),
     ("Ask DJ response deserializes exchange messages", AskDJResponseDeserializesExchangeMessages),
-    ("Ask DJ response deserializes media sources and dj text", AskDJResponseDeserializesMediaSourcesAndDjText),
+    ("Ask DJ response deserializes media sources links and dj text", AskDJResponseDeserializesMediaSourcesLinksAndDjText),
     ("Ask DJ technical track analysis v2 renders sections timeline and tips", AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips),
     ("Ask DJ technical track analysis renders MetaBrainz metadata context separately", AskDJTechnicalTrackAnalysisRendersMetaBrainzMetadataContextSeparately),
     ("Ask DJ technical track analysis without metadata remains compatible", AskDJTechnicalTrackAnalysisWithoutMetadataRemainsCompatible),
@@ -48,8 +49,10 @@ var tests = new (string Name, Action Run)[]
     ("Protocol 3.2 falls back from local to remote after pairing", Protocol32FallsBackFromLocalToRemoteAfterPairing),
     ("Protocol 3.2 marks offline when no HA URL is reachable", Protocol32MarksOfflineWhenNoUrlReachable),
     ("Protocol 3.2 parses backend summary", Protocol32ParsesBackendSummary),
+    ("Protocol 3.2 parses safe backend error object", Protocol32ParsesSafeBackendErrorObject),
     ("Backend-aware actions preserve Music Assistant value", BackendAwareActionsPreserveMusicAssistantValue),
     ("Backend-aware actions carry backend revision", BackendAwareActionsCarryBackendRevision),
+    ("Backend error responses deserialize stale and unsupported contracts", BackendErrorResponsesDeserializeStaleAndUnsupportedContracts),
     ("Protocol 3.2 keeps app local API and mDNS inactive", Protocol32KeepsAppLocalApiAndMdnsInactive)
 };
 
@@ -116,6 +119,18 @@ static void PairingPayloadSerializesCompatibilityFields()
     AssertEqual("123456", root.GetProperty("pairing_code").GetString());
 }
 
+static void StatusPayloadSerializesAppProtocolMetadata()
+{
+    var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
+    var payload = DJConnectApiClient.BuildStatusPayload(identity);
+    var serialized = JsonSerializer.Serialize(payload, JsonOptions());
+
+    AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "status must include Windows client type");
+    AssertTrue(serialized.Contains("\"firmware\":\"windows-app\""), "status must identify the app surface as firmware metadata for HA compatibility");
+    AssertTrue(serialized.Contains("\"app_version\":\"3.2.0\""), "status must include app version");
+    AssertTrue(serialized.Contains("\"protocol_version\":\"3.2\""), "status must include protocol line");
+}
+
 static void AskDJRequestSerializesServerSideContract()
 {
     var request = new AskDJRequest(
@@ -125,7 +140,10 @@ static void AskDJRequestSerializesServerSideContract()
         "Studio PC",
         "windows",
         "Welke nummers hoorde ik net?",
-        "Welke nummers hoorde ik net?");
+        "Welke nummers hoorde ik net?",
+        Mood: 72,
+        AppVersion: DJConnectContract.AppVersion,
+        ProtocolVersion: DJConnectContract.ProtocolLine);
 
     using var document = JsonSerializer.SerializeToDocument(request);
     var root = document.RootElement;
@@ -137,6 +155,9 @@ static void AskDJRequestSerializesServerSideContract()
     AssertEqual("Welke nummers hoorde ik net?", root.GetProperty("text").GetString());
     AssertEqual("Welke nummers hoorde ik net?", root.GetProperty("message").GetString());
     AssertEqual("auto", root.GetProperty("audio_response").GetString());
+    AssertEqual(72, root.GetProperty("mood").GetInt32());
+    AssertEqual("3.2.0", root.GetProperty("app_version").GetString());
+    AssertEqual("3.2", root.GetProperty("protocol_version").GetString());
 }
 
 static void AskDJResponseDeserializesExchangeMessages()
@@ -195,7 +216,7 @@ static void AskDJMessagePresentationSupportsSystemAudioAndConfirmations()
     AssertEqual("Nee", no.DisplayLabel);
 }
 
-static void AskDJResponseDeserializesMediaSourcesAndDjText()
+static void AskDJResponseDeserializesMediaSourcesLinksAndDjText()
 {
     const string json = """
     {
@@ -207,6 +228,9 @@ static void AskDJResponseDeserializesMediaSourcesAndDjText()
       "sources": [
         { "id": "djconnect_memory", "label": "djconnect_memory" },
         { "source": "metabrainz_metadata" }
+      ],
+      "links": [
+        { "source": "bandsintown", "label": "Concertagenda", "url": "https://example.invalid/show" }
       ]
     }
     """;
@@ -218,6 +242,12 @@ static void AskDJResponseDeserializesMediaSourcesAndDjText()
     AssertEqual("https://example.invalid/cover.jpg", response.Images![0].DisplayUrl);
     AssertEqual("djconnect_memory", response.Sources![0].DisplayLabel);
     AssertEqual("metabrainz_metadata", response.Sources![1].DisplayLabel);
+    AssertEqual("Concertagenda", response.Links![0].DisplayLabel);
+    AssertEqual("https://example.invalid/show", response.Links![0].DisplayUrl);
+
+    var message = new AskDJMessage("links-1", "assistant", "Concerten", null, DateTimeOffset.Now, "assistant", null, null, null, null, response.Sources, Links: response.Links);
+    AssertTrue(message.HasSources, "links should render on the same source surface");
+    AssertEqual(3, message.DisplaySources.Count);
 }
 
 static void AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips()
@@ -1081,6 +1111,37 @@ static void Protocol32ParsesBackendSummary()
     AssertEqual("Woonkamer", response.MusicTargetPlayer!.Name);
 }
 
+static void Protocol32ParsesSafeBackendErrorObject()
+{
+    const string json = """
+    {
+      "success": true,
+      "music_backend": "music_assistant",
+      "music_backend_available": false,
+      "music_backend_error": {
+        "code": "unsupported_backend_capability",
+        "message": "The selected music backend does not provide recent listening history."
+      }
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<StatusResponse>(json, JsonOptions());
+    var summary = new MusicBackendSummary(
+        response!.MusicBackend,
+        response.MusicBackendName,
+        response.MusicBackendAvailable,
+        response.MusicBackendRevision,
+        response.MusicBackendCapabilities,
+        response.MusicTargetPlayer,
+        response.MusicBackendError);
+
+    AssertNotNull(response);
+    AssertEqual("unsupported_backend_capability", response.MusicBackendError!.Code);
+    AssertEqual("The selected music backend does not provide recent listening history.", response.MusicBackendError.Message);
+    AssertTrue(summary.IsUnavailable, "safe backend error object should mark backend summary unavailable");
+    AssertEqual("The selected music backend does not provide recent listening history.", summary.ErrorText);
+}
+
 static void BackendAwareActionsPreserveMusicAssistantValue()
 {
     var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
@@ -1115,6 +1176,36 @@ static void BackendAwareActionsCarryBackendRevision()
 
     AssertTrue(serialized.Contains("\"music_backend_revision\":7"), "backend revision must be forwarded when HA includes it");
     AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "action payload must include Windows client type");
+}
+
+static void BackendErrorResponsesDeserializeStaleAndUnsupportedContracts()
+{
+    const string staleJson = """
+    {
+      "success": false,
+      "error": "stale_backend_action",
+      "message": "This action was created for a previous music backend. Ask DJ again for a fresh recommendation."
+    }
+    """;
+    const string unsupportedJson = """
+    {
+      "success": false,
+      "error": "unsupported_backend_capability",
+      "capability": "supports_recently_played",
+      "backend": "music_assistant",
+      "message": "The selected music backend does not provide recent listening history."
+    }
+    """;
+
+    var stale = JsonSerializer.Deserialize<CommandResponse>(staleJson, JsonOptions());
+    var unsupported = JsonSerializer.Deserialize<CommandResponse>(unsupportedJson, JsonOptions());
+
+    AssertNotNull(stale);
+    AssertTrue(!stale!.Success, "stale backend action response should be unsuccessful");
+    AssertEqual("stale_backend_action", stale.Error);
+    AssertNotNull(unsupported);
+    AssertEqual("unsupported_backend_capability", unsupported!.Error);
+    AssertEqual("The selected music backend does not provide recent listening history.", unsupported.Message);
 }
 
 static void Protocol32KeepsAppLocalApiAndMdnsInactive()

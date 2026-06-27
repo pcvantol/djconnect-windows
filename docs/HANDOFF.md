@@ -11,6 +11,9 @@ Windows and macOS. It includes:
 - typed API client for pairing, status, Ask DJ history/message/clear and
   command actions;
 - Ask DJ timeline, technical track analysis, action and recent-played rendering;
+- Ask DJ mood values, optional audio-response mode, `links[]`/`sources[]`,
+  stale backend action and unsupported backend capability handling aligned with
+  the Home Assistant `3.2.x` contract;
 - Now Playing, Queue and Playlists rendering with generic playback/start
   commands;
 - Settings, Privacy, Logs/Diagnostics, Feedback, Crash report, Wakeword prompt
@@ -32,6 +35,10 @@ Windows and macOS. It includes:
 - Home Assistant DJConnect `3.2.x` support is required for
   `/api/djconnect/pair`, local/remote URL metadata and music backend summary
   fields.
+- Real Home Assistant field testing is still needed for the synced backend
+  contract paths: local app pairing, remote fallback, Music Assistant
+  unsupported-capability fallbacks, stale backend action rejection and Ask DJ
+  links/sources rendering.
 - GitHub Actions CI and public unsigned Windows publication passed for
   `v3.1.9`. The `3.2.0` upgrade still needs CI/release validation after push.
   Mac Catalyst release artifacts continue to skip on hosted runners

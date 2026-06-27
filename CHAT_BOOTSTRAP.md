@@ -46,7 +46,7 @@ Belangrijke huidige status:
     `WEBSITE_RELEASE_NOTES_TOKEN`.
 - Automatische tests staan in `tests/DJConnect.Tests` en draaien via
   `./run_tests.sh`.
-- Laatste lokale package-free checks waren groen: 24 tests passed.
+- Laatste lokale package-free checks waren groen: 49 tests passed.
 - Lokale Mac Catalyst debug build is groen met Xcode 26.4.1 wanneer zowel
   `MD_APPLE_SDK_ROOT` als `DEVELOPER_DIR` naar
   `/Applications/Xcode_26.4.1.app` wijzen. Een lokale no-restore compile komt
@@ -69,6 +69,10 @@ Belangrijke huidige status:
   - `exchange_id + exchange_order` is alleen ordeningssignaal;
   - user-vragen blijven visueel boven assistant-antwoorden binnen dezelfde
     exchange, ook bij optimistic UI, HTTP response, push en history sync.
+- Ask DJ/backend sync met HA `3.2.x` omvat numerieke moodwaarden, optionele
+  `audio_response`, `links[]` naast `sources[]`, safe
+  `music_backend_error { code, message }`, `stale_backend_action` en
+  `unsupported_backend_capability` handling.
 - Update Required blokkeert runtime controls bij HTTP 426, `version_mismatch`
   of HA major/minor buiten de compatibele app-reeks, maar reset geen
   pairing/token state. Settings, logs, privacy, legal en feedback blijven

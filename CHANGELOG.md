@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Synced the Windows client contract with the Home Assistant `3.2.x` backend:
+  status now sends app/protocol version metadata, Ask DJ sends canonical mood
+  values, `links[]` render with sources, safe backend error objects parse, and
+  tests cover stale backend actions plus unsupported backend capabilities.
+
 ## 3.2.0 - 2026-06-26
 
 - Upgraded the desktop client contract to DJConnect protocol `3.2.x`.

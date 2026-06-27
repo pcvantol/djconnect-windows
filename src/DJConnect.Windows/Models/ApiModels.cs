@@ -27,7 +27,7 @@ public sealed record PairingResponse(
     [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
     [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
-    [property: JsonPropertyName("music_backend_error")] string? MusicBackendError = null);
+    [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null);
 
 public sealed record MusicBackendCapabilities(
     [property: JsonPropertyName("supports_search")] bool? SupportsSearch,
@@ -54,6 +54,62 @@ public sealed record MusicTargetPlayer(
     [property: JsonPropertyName("id")] string? Id,
     [property: JsonPropertyName("name")] string? Name);
 
+[JsonConverter(typeof(MusicBackendErrorConverter))]
+public sealed record MusicBackendError(
+    [property: JsonPropertyName("code")] string? Code,
+    [property: JsonPropertyName("message")] string? Message)
+{
+    public string DisplayText => string.IsNullOrWhiteSpace(Message) ? Code ?? "" : Message;
+}
+
+public sealed class MusicBackendErrorConverter : JsonConverter<MusicBackendError>
+{
+    public override MusicBackendError? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.Null)
+        {
+            return null;
+        }
+
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            var stringMessage = reader.GetString();
+            return string.IsNullOrWhiteSpace(stringMessage) ? null : new MusicBackendError(null, stringMessage);
+        }
+
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            return new MusicBackendError(null, root.GetRawText());
+        }
+
+        var code = root.TryGetProperty("code", out var codeElement) && codeElement.ValueKind == JsonValueKind.String
+            ? codeElement.GetString()
+            : null;
+        var objectMessage = root.TryGetProperty("message", out var messageElement) && messageElement.ValueKind == JsonValueKind.String
+            ? messageElement.GetString()
+            : null;
+        return new MusicBackendError(code, objectMessage);
+    }
+
+    public override void Write(Utf8JsonWriter writer, MusicBackendError value, JsonSerializerOptions options)
+    {
+        writer.WriteStartObject();
+        if (!string.IsNullOrWhiteSpace(value.Code))
+        {
+            writer.WriteString("code", value.Code);
+        }
+
+        if (!string.IsNullOrWhiteSpace(value.Message))
+        {
+            writer.WriteString("message", value.Message);
+        }
+
+        writer.WriteEndObject();
+    }
+}
+
 public sealed record MusicBackendSummary(
     string? Backend,
     string? Name,
@@ -61,12 +117,13 @@ public sealed record MusicBackendSummary(
     int? Revision,
     MusicBackendCapabilities? Capabilities,
     MusicTargetPlayer? TargetPlayer,
-    string? Error)
+    MusicBackendError? Error)
 {
     public static readonly MusicBackendSummary Empty = new(null, null, null, null, null, null, null);
     public string DisplayName => string.IsNullOrWhiteSpace(Name) ? Backend ?? "unknown" : Name;
     public string AvailabilityText => Available == false ? "unavailable" : Available == true ? "available" : "unknown";
-    public bool IsUnavailable => Available == false || !string.IsNullOrWhiteSpace(Error);
+    public string ErrorText => Error?.DisplayText ?? "";
+    public bool IsUnavailable => Available == false || !string.IsNullOrWhiteSpace(ErrorText);
 }
 
 public sealed record AskDJRequest(
@@ -78,7 +135,10 @@ public sealed record AskDJRequest(
     [property: JsonPropertyName("text")] string Text,
     [property: JsonPropertyName("message")] string Message,
     [property: JsonPropertyName("metadata")] IReadOnlyDictionary<string, object?>? Metadata = null,
-    [property: JsonPropertyName("audio_response")] string AudioResponse = "auto");
+    [property: JsonPropertyName("audio_response")] string AudioResponse = "auto",
+    [property: JsonPropertyName("mood")] int? Mood = null,
+    [property: JsonPropertyName("app_version")] string? AppVersion = null,
+    [property: JsonPropertyName("protocol_version")] string? ProtocolVersion = null);
 
 public sealed record AskDJHistoryResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -113,7 +173,8 @@ public sealed record AskDJMessage(
     [property: JsonIgnore] bool IsFailed = false,
     [property: JsonPropertyName("intent")] AskDJIntent? Intent = null,
     [property: JsonPropertyName("action")] string? Action = null,
-    [property: JsonPropertyName("analysis")] AskDJTrackAnalysis? Analysis = null)
+    [property: JsonPropertyName("analysis")] AskDJTrackAnalysis? Analysis = null,
+    [property: JsonPropertyName("links")] IReadOnlyList<AskDJSource>? Links = null)
 {
     public string DisplayText => Text ?? Message ?? "";
     public bool IsUser => string.Equals(Role, "user", StringComparison.OrdinalIgnoreCase);
@@ -124,7 +185,8 @@ public sealed record AskDJMessage(
     public bool HasPlaybackActions => (PlaybackActions?.Count ?? 0) > 0 || (ConfirmationActions?.Count ?? 0) > 0;
     public bool HasItems => (Items?.Count ?? 0) > 0;
     public bool HasImages => (Images?.Count ?? 0) > 0;
-    public bool HasSources => (Sources?.Count ?? 0) > 0;
+    public bool HasSources => (Sources?.Count ?? 0) > 0 || (Links?.Count ?? 0) > 0;
+    public IReadOnlyList<AskDJSource> DisplaySources => AskDJSourceCollection.SourcesAndLinks(Sources, Links);
     public bool IsTechnicalTrackAnalysis => string.Equals(Intent?.Intent, "technical_track_analysis", StringComparison.OrdinalIgnoreCase)
         || string.Equals(Action, "track_analysis", StringComparison.OrdinalIgnoreCase);
     public TechnicalTrackAnalysisPresentation? TechnicalAnalysis => TechnicalTrackAnalysisPresentation.From(this);
@@ -187,7 +249,8 @@ public sealed record AskDJMessageResponse(
     [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
     [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
-    [property: JsonPropertyName("music_backend_error")] string? MusicBackendError = null);
+    [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null,
+    [property: JsonPropertyName("links")] IReadOnlyList<AskDJSource>? Links = null);
 
 public sealed record AskDJIntent(
     [property: JsonPropertyName("intent")] string? Intent,
@@ -603,13 +666,35 @@ public sealed record AskDJSource(
     [property: JsonPropertyName("source")] string? Source,
     [property: JsonPropertyName("name")] string? Name,
     [property: JsonPropertyName("label")] string? Label,
-    [property: JsonPropertyName("kind")] string? Kind)
+    [property: JsonPropertyName("kind")] string? Kind,
+    [property: JsonPropertyName("url")] string? Url = null,
+    [property: JsonPropertyName("href")] string? Href = null)
 {
     public string DisplayLabel => FirstNonEmpty(Label, Name, Source, Id, Kind);
+    public string DisplayUrl => FirstNonEmpty(Url, Href);
+    public bool HasUrl => !string.IsNullOrWhiteSpace(DisplayUrl);
 
     private static string FirstNonEmpty(params string?[] values)
     {
         return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    }
+}
+
+public static class AskDJSourceCollection
+{
+    public static IReadOnlyList<AskDJSource> SourcesAndLinks(IReadOnlyList<AskDJSource>? sources, IReadOnlyList<AskDJSource>? links)
+    {
+        if ((sources?.Count ?? 0) == 0)
+        {
+            return links ?? [];
+        }
+
+        if ((links?.Count ?? 0) == 0)
+        {
+            return sources ?? [];
+        }
+
+        return sources!.Concat(links!).ToList();
     }
 }
 
@@ -695,7 +780,7 @@ public sealed record CommandResponse(
     [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
     [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
-    [property: JsonPropertyName("music_backend_error")] string? MusicBackendError = null);
+    [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null);
 
 public sealed record StatusResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -731,7 +816,7 @@ public sealed record StatusResponse(
     [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
     [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
-    [property: JsonPropertyName("music_backend_error")] string? MusicBackendError = null);
+    [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null);
 
 public sealed record PlaybackState(
     [property: JsonPropertyName("title")] string? Title,

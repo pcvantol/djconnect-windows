@@ -45,9 +45,10 @@ used only after successful local pairing.
 POST /api/djconnect/status
 ```
 
-Payload includes `device_id`, `device_name`, `client_type` and client version
-metadata. Response may include `spotify_configured`, `ask_dj_supported`,
-`ask_dj_voice_supported` and `playback`.
+Payload includes `device_id`, `device_name`, `client_type`, `firmware:
+"windows-app"` and app/protocol version metadata. Response may include
+`spotify_configured`, `ask_dj_supported`, `ask_dj_voice_supported`,
+`voice_supported`, `ask_dj_audio_response_supported` and `playback`.
 
 HTTP `401`/`403` means stale pairing or invalid token. HTTP `426` means
 protocol mismatch and must not be treated as a token failure. At runtime the
@@ -82,6 +83,17 @@ Pair/status/command/Ask DJ responses may include this backend summary:
 }
 ```
 
+`music_backend_error` is either `null` or a safe object with `code` and
+user-facing `message`. The app never expects raw backend exceptions, Spotify
+OAuth tokens, Home Assistant long-lived tokens or Music Assistant secrets in
+that field.
+
+Backend-specific playback actions carry `music_backend_revision`. The client
+forwards this revision with the action payload and treats
+`stale_backend_action` as a prompt to refresh or ask Ask DJ again. Backend
+capability gaps use `unsupported_backend_capability` and should be shown as a
+clear unavailable-feature message, without phantom Spotify UI.
+
 ## Ask DJ
 
 Text requests:
@@ -111,7 +123,10 @@ POST /api/djconnect/ask_dj/history/clear
 ```
 
 Text and voice requests include `client_type`, `device_id`, `device_name`,
-`client_id` and `client_message_id`. The app persists `history_revision` and
+`client_id`, `client_message_id`, `audio_response`, app/protocol version
+metadata and optional numeric `mood`. The server derives the canonical mood
+zone: `chill` for `0`-`24`, `groove` for `25`-`59`, `energy` for `60`-`84`
+and `party` for `85`-`100`. The app persists `history_revision` and
 `clear_revision` as sync cursors.
 History is Home Assistant user scoped and limited by the backend to 1000
 messages per HA user.
@@ -146,7 +161,7 @@ present. Playback actions are backend-owned. Spotify Direct actions may contain
 to Home Assistant intact through `/api/djconnect/command`.
 
 Response `text`, `dj_text` or `message` is rendered as the main answer.
-`images[]`, `sources[]`, `items[]`, `playback_actions[]` and
+`images[]`, `sources[]`, `links[]`, `items[]`, `playback_actions[]` and
 `confirmation_actions[]` are rendered only when they are explicitly present on
 the response or message. The client must not reuse previous album art/media,
 show a TTS replay button without `audio_url`, expose raw Spotify URIs/backend

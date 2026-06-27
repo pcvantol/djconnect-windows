@@ -109,6 +109,9 @@ the contract, model and privacy helper source files directly and cover:
 - Ask DJ technical track analysis v2 and v1 fallback presentation without prose
   parsing or stale media/action reuse;
 - history revision, trim metadata and recent item deserialization;
+- Ask DJ mood/app metadata, response `links[]` alongside `sources[]`, safe
+  backend error objects, stale backend actions and unsupported backend
+  capabilities;
 - confirmation playback action deserialization;
 - generic command payloads without removed Spotify override fields;
 - shared redaction for tokens, Authorization headers, pairing codes, bootstrap

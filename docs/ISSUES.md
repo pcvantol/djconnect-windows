@@ -3,8 +3,10 @@
 ## P1
 
 - Live Home Assistant `3.2.x` validation is still needed for local pairing,
-  remote fallback, Queue, Playlists, Ask DJ actions, Feedback issue URL prefill
-  and redacted diagnostics copy flows.
+  remote fallback, Queue, Playlists, Ask DJ actions, Ask DJ links/sources,
+  mood/audio-response behavior, stale backend action rejection, Music Assistant
+  unsupported-capability fallback, Feedback issue URL prefill and redacted
+  diagnostics copy flows.
 - Mac Catalyst artifacts still depend on an Xcode 26.4.x toolchain. The
   `v3.1.9` GitHub Actions CI and public unsigned Windows publication completed
   successfully. Validate the `3.2.0` upgrade after push. Mac Catalyst jobs
@@ -13,8 +15,9 @@
   `MD_APPLE_SDK_ROOT` and `DEVELOPER_DIR` pointed at
   `/Applications/Xcode_26.4.1.app`; one later local no-restore build hung in
   tooling/bundling and was stopped.
-- Tests cover command payloads and privacy helpers, but stale-pairing handling
-  still needs focused coverage.
+- Tests cover command payloads, backend summary/error parsing, stale backend
+  action and unsupported capability contracts and privacy helpers, but
+  stale-pairing handling still needs focused coverage.
 
 ## P2
 
