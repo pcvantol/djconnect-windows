@@ -33,16 +33,23 @@ public sealed class DJConnectApiClient
 
     public FastPathDiagnostics FastPathDiagnostics => _webSocketFastPath.Diagnostics;
 
-    public void Configure(string homeAssistantUrl, string? token, bool enableLocalWebSocketFastPath = false)
+    public void Configure(
+        string homeAssistantUrl,
+        string? token,
+        bool enableLocalWebSocketFastPath = false,
+        string? haWebSocketAuthToken = null)
     {
         _homeAssistantUrl = homeAssistantUrl.TrimEnd('/');
         _deviceToken = token;
-        _webSocketFastPathEnabled = enableLocalWebSocketFastPath && IsLocalHttpUrl(_homeAssistantUrl) && !string.IsNullOrWhiteSpace(token);
+        _webSocketFastPathEnabled = enableLocalWebSocketFastPath
+            && IsLocalHttpUrl(_homeAssistantUrl)
+            && !string.IsNullOrWhiteSpace(token)
+            && !string.IsNullOrWhiteSpace(haWebSocketAuthToken);
         _httpClient.BaseAddress = new Uri(homeAssistantUrl.TrimEnd('/') + "/");
         _httpClient.DefaultRequestHeaders.Authorization = string.IsNullOrWhiteSpace(token)
             ? null
             : new AuthenticationHeaderValue("Bearer", token);
-        _webSocketFastPath.Configure(_homeAssistantUrl, token, _webSocketFastPathEnabled);
+        _webSocketFastPath.Configure(_homeAssistantUrl, haWebSocketAuthToken, _webSocketFastPathEnabled);
     }
 
     public async Task<PairingResponse> PairAsync(PairingPayload payload, CancellationToken cancellationToken)
@@ -595,6 +602,11 @@ public sealed class HomeAssistantWebSocketFastPath : IDJConnectWebSocketFastPath
             throw new InvalidOperationException("capability detection failed");
         }
 
+        if (!CapabilitiesEnableWebSocket(response.RootElement))
+        {
+            throw new InvalidOperationException("websocket capability disabled");
+        }
+
         var commands = ExtractCommands(response.RootElement);
         if (commands.Count == 0)
         {
@@ -626,6 +638,23 @@ public sealed class HomeAssistantWebSocketFastPath : IDJConnectWebSocketFastPath
             .Where(item => !string.IsNullOrWhiteSpace(item))
             .Select(item => item!)
             .ToArray();
+    }
+
+    private static bool CapabilitiesEnableWebSocket(JsonElement root)
+    {
+        var result = root.TryGetProperty("result", out var resultElement) ? resultElement : root;
+        if (!result.TryGetProperty("websocket_supported", out var supported) || supported.ValueKind != JsonValueKind.True)
+        {
+            return false;
+        }
+
+        if (!result.TryGetProperty("transports", out var transports) || transports.ValueKind != JsonValueKind.Object)
+        {
+            return false;
+        }
+
+        return transports.TryGetProperty("websocket", out var websocket)
+            && websocket.ValueKind == JsonValueKind.True;
     }
 
     private static T? ReadResult<T>(JsonElement root)

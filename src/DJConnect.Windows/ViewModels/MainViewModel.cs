@@ -2890,7 +2890,7 @@ public sealed class MainViewModel : ObservableObject
         _connectionMode = state.Mode;
         if (!string.IsNullOrWhiteSpace(state.ActiveUrl))
         {
-            _apiClient.Configure(state.ActiveUrl, Token, state.Mode == HomeAssistantConnectionMode.Local);
+            ConfigureApiClientForTransport(state.ActiveUrl, state.Mode);
         }
 
         RaiseTransportProperties();
@@ -2900,14 +2900,34 @@ public sealed class MainViewModel : ObservableObject
     private void ConfigureClient()
     {
         var activeUrl = _transportManager.Current.ActiveUrl ?? HomeAssistantUrl;
-        _apiClient.Configure(activeUrl, Token, _transportManager.Current.Mode == HomeAssistantConnectionMode.Local);
+        ConfigureApiClientForTransport(activeUrl, _transportManager.Current.Mode);
     }
 
     private void ConfigureClient(string activeUrl)
     {
-        _apiClient.Configure(activeUrl, Token, enableLocalWebSocketFastPath: true);
+        ConfigureApiClientForTransport(activeUrl, HomeAssistantConnectionMode.Local);
         _connectionMode = HomeAssistantConnectionMode.Local;
         RaiseTransportProperties();
+    }
+
+    private void ConfigureApiClientForTransport(string activeUrl, HomeAssistantConnectionMode mode)
+    {
+        var enableFastPath = mode == HomeAssistantConnectionMode.Local
+            && IsWebSocketFastPathOptInEnabled();
+        _apiClient.Configure(activeUrl, Token, enableFastPath, HomeAssistantWebSocketAuthToken());
+    }
+
+    private static bool IsWebSocketFastPathOptInEnabled()
+    {
+        var value = Environment.GetEnvironmentVariable("DJCONNECT_ENABLE_HA_WEBSOCKET_FAST_PATH");
+        return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string? HomeAssistantWebSocketAuthToken()
+    {
+        return Environment.GetEnvironmentVariable("DJCONNECT_HA_WEBSOCKET_TOKEN");
     }
 
     private void ApplyVersionCompatibility(StatusResponse response)

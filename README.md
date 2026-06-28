@@ -104,12 +104,13 @@ Key screens and flows mirrored from macOS and extended for desktop:
   `POST /api/djconnect/ask_dj/history/clear`, with client mood values,
   `audio_response` preference, `links[]`/`sources[]` rendering and bounded
   history trim metadata.
-- Local fast path: when connected to a reachable local Home Assistant URL, the
-  app may use Home Assistant's native `/api/websocket` for latency-sensitive
-  DJConnect commands, Ask DJ messages and Track Insight after capability
-  detection. HTTP remains the canonical fallback and is always used for remote
-  sessions, pairing, status, history, voice, push, image proxy and TTS/audio
-  URLs.
+- Local fast path: HTTP remains the safe default. A Home Assistant native
+  `/api/websocket` fast path for latency-sensitive DJConnect commands, Ask DJ
+  messages and Track Insight is available only behind explicit live-test opt-in,
+  only for local Home Assistant URLs and only when the client has a valid Home
+  Assistant websocket auth token plus DJConnect capabilities confirming
+  websocket support. Remote sessions, pairing, status, history, voice, push,
+  image proxy and TTS/audio URLs stay on HTTP.
 - Playback actions: follow-up confirmations and Play Now actions go through
   `POST /api/djconnect/command`.
 - Recent played answers: compact list rendering from returned `items[]`.

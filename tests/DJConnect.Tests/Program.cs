@@ -51,6 +51,7 @@ var tests = new (string Name, Action Run)[]
     ("Protocol 3.2 parses safe backend error object", Protocol32ParsesSafeBackendErrorObject),
     ("Backend-aware actions preserve Music Assistant value", BackendAwareActionsPreserveMusicAssistantValue),
     ("Backend-aware actions carry backend revision", BackendAwareActionsCarryBackendRevision),
+    ("WebSocket fast path stays disabled without HA auth token", WebSocketFastPathStaysDisabledWithoutHaAuthToken),
     ("WebSocket fast path detects capabilities", WebSocketFastPathDetectsCapabilities),
     ("WebSocket command success skips HTTP", WebSocketCommandSuccessSkipsHttp),
     ("WebSocket missing capability falls back to HTTP", WebSocketMissingCapabilityFallsBackToHttp),
@@ -1163,11 +1164,27 @@ static void WebSocketFastPathDetectsCapabilities()
 {
     var fastPath = new FakeFastPath(["djconnect/command", "djconnect/ask_dj/message"]);
     var client = NewClientWithFastPath(fastPath, new FakeHttpHandler("{}"));
-    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
 
     AssertTrue(client.FastPathDiagnostics.WebSocketConnected, "configured local websocket should report connected fake fast path");
     AssertEqual(2, client.FastPathDiagnostics.WebSocketCommands.Count);
     AssertTrue(client.FastPathDiagnostics.WebSocketCommands.Contains("djconnect/command"), "capabilities must include command route");
+}
+
+static void WebSocketFastPathStaysDisabledWithoutHaAuthToken()
+{
+    var fastPath = new FakeFastPath(["djconnect/command"]);
+    var http = new FakeHttpHandler("""{"success":true,"message":"http default"}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+
+    var response = client.RunCommandAsync(TestIdentity(), "play", CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "HTTP should remain the safe default without HA websocket auth");
+    AssertEqual("http default", response.Message);
+    AssertEqual(0, fastPath.Attempts);
+    AssertEqual(1, http.RequestCount);
+    AssertTrue(!client.FastPathDiagnostics.WebSocketConnected, "fast path should stay disconnected without HA auth token");
 }
 
 static void WebSocketCommandSuccessSkipsHttp()
@@ -1176,7 +1193,7 @@ static void WebSocketCommandSuccessSkipsHttp()
         .WithResponse("djconnect/command", new CommandResponse(true, "ws ok", "ws ok", null));
     var http = new FakeHttpHandler("""{"success":true,"message":"http ok"}""");
     var client = NewClientWithFastPath(fastPath, http);
-    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
 
     var response = client.RunCommandAsync(TestIdentity(), "play", CancellationToken.None).GetAwaiter().GetResult();
 
@@ -1191,7 +1208,7 @@ static void WebSocketMissingCapabilityFallsBackToHttp()
     var fastPath = new FakeFastPath(["djconnect/ask_dj/message"]);
     var http = new FakeHttpHandler("""{"success":true,"message":"http ok"}""");
     var client = NewClientWithFastPath(fastPath, http);
-    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
 
     var response = client.RunCommandAsync(TestIdentity(), "pause", CancellationToken.None).GetAwaiter().GetResult();
 
@@ -1216,7 +1233,7 @@ static void WebSocketAskDJMessageSuccessUsesRevisions()
     var fastPath = new FakeFastPath(["djconnect/ask_dj/message"]).WithResponse("djconnect/ask_dj/message", askResponse);
     var http = new FakeHttpHandler("""{"success":true,"history_revision":1}""");
     var client = NewClientWithFastPath(fastPath, http);
-    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
 
     var response = client.SendAskDJMessageAsync(TestAskRequest("Tell me about this track"), CancellationToken.None).GetAwaiter().GetResult();
 
@@ -1249,7 +1266,7 @@ static void WebSocketTrackInsightSuccessRendersMusicDna()
     var fastPath = new FakeFastPath(["djconnect/track_insight"]).WithResponse("djconnect/track_insight", trackInsight);
     var http = new FakeHttpHandler("""{"success":false,"error":"http_should_not_run"}""");
     var client = NewClientWithFastPath(fastPath, http);
-    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
 
     var response = client.GetTrackInsightAsync(TestTrackInsightRequest(), CancellationToken.None).GetAwaiter().GetResult();
 
@@ -1263,7 +1280,7 @@ static void WebSocketTimeoutFallsBackToHttpExactlyOnce()
     var fastPath = new FakeFastPath(["djconnect/command"]) { Error = "timeout" };
     var http = new FakeHttpHandler("""{"success":true,"message":"http fallback"}""");
     var client = NewClientWithFastPath(fastPath, http);
-    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
 
     var response = client.RunCommandAsync(TestIdentity(), "next", CancellationToken.None).GetAwaiter().GetResult();
 
@@ -1278,7 +1295,7 @@ static void WebSocketAuthErrorFallsBackToHttp()
     var fastPath = new FakeFastPath(["djconnect/ask_dj/message"]) { Error = "auth" };
     var http = new FakeHttpHandler("""{"success":true,"message":"http ask"}""");
     var client = NewClientWithFastPath(fastPath, http);
-    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
 
     var response = client.SendAskDJMessageAsync(TestAskRequest("Analyze this track"), CancellationToken.None).GetAwaiter().GetResult();
 
@@ -1310,13 +1327,14 @@ static void WebSocketPayloadIncludesIdentityAndTokenWithoutDiagnosticLeaks()
     var fastPath = new FakeFastPath(["djconnect/ask_dj/message"])
         .WithResponse("djconnect/ask_dj/message", askResponse);
     var client = NewClientWithFastPath(fastPath, new FakeHttpHandler("""{"success":true}"""));
-    client.Configure("http://192.168.1.2:8123", "secret-device-token-xyz", enableLocalWebSocketFastPath: true);
+    client.Configure("http://192.168.1.2:8123", "secret-device-token-xyz", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
 
     _ = client.SendAskDJMessageAsync(TestAskRequest("raw prompt should not be logged"), CancellationToken.None).GetAwaiter().GetResult();
 
     AssertEqual("windows", fastPath.LastPayload!["client_type"]);
     AssertEqual("djconnect-windows-ABC123DEF456", fastPath.LastPayload["device_id"]);
     AssertEqual("secret-device-token-xyz", fastPath.LastPayload["device_token"]);
+    AssertEqual("ha-ws-token", fastPath.HaWebSocketAuthToken);
     var diagnostics = client.FastPathDiagnostics;
     AssertTrue(!diagnostics.LastWebSocketError.Contains("secret-device-token", StringComparison.Ordinal), "diagnostics must not include device token");
     AssertTrue(!diagnostics.LastWebSocketError.Contains("raw prompt", StringComparison.OrdinalIgnoreCase), "diagnostics must not include raw prompt");
@@ -1426,7 +1444,9 @@ sealed class FakeFastPath : IDJConnectWebSocketFastPath
     public int Attempts { get; private set; }
     public List<string> Routes { get; } = [];
     public Dictionary<string, object?>? LastPayload { get; private set; }
-    public FastPathDiagnostics Diagnostics => new("websocket", true, Error, DateTimeOffset.UtcNow, _commands.ToArray());
+    public string? HaWebSocketAuthToken { get; private set; }
+    public bool Enabled { get; private set; }
+    public FastPathDiagnostics Diagnostics => new(Enabled ? "websocket" : "http", Enabled, Error, Enabled ? DateTimeOffset.UtcNow : null, Enabled ? _commands.ToArray() : []);
 
     public FakeFastPath WithResponse<T>(string route, T response)
     {
@@ -1436,6 +1456,8 @@ sealed class FakeFastPath : IDJConnectWebSocketFastPath
 
     public void Configure(string homeAssistantUrl, string? token, bool enabled)
     {
+        HaWebSocketAuthToken = token;
+        Enabled = enabled;
     }
 
     public Task<FastPathResult<T>> TrySendAsync<T>(
@@ -1447,6 +1469,11 @@ sealed class FakeFastPath : IDJConnectWebSocketFastPath
         Attempts++;
         Routes.Add(route);
         LastPayload = new Dictionary<string, object?>(payload);
+
+        if (!Enabled)
+        {
+            return Task.FromResult(FastPathResult<T>.Miss("disabled"));
+        }
 
         if (!string.IsNullOrWhiteSpace(Error))
         {

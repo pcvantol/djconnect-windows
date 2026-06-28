@@ -210,25 +210,31 @@ backend-returned action. Removed Spotify override fields such as
 
 ## Local WebSocket Fast Path
 
-HTTP remains the canonical DJConnect transport. When the runtime transport is a
-reachable local Home Assistant URL, the client may use Home Assistant's native
-`/api/websocket` as an optional fast path for latency-sensitive operations.
-Remote/Nabu Casa sessions stay on HTTP.
+HTTP remains the canonical DJConnect transport and the safe default. The client
+must not enable Home Assistant's native `/api/websocket` fast path by default.
+It is a live-test opt-in only, limited to local Home Assistant URLs and only
+when a valid Home Assistant websocket auth token/mechanism is available.
+Remote/Nabu Casa sessions stay on HTTP unless explicitly supported later.
 
-The client uses the Home Assistant websocket auth flow, then sends
-`djconnect/capabilities`. WebSocket is used only when capability detection
-succeeds and `commands[]` contains the required route:
+The client first uses the Home Assistant websocket auth flow. The paired
+DJConnect `device_token` must not be assumed to authenticate `/api/websocket`.
+After Home Assistant auth succeeds, the client sends `djconnect/capabilities`.
+WebSocket is used only when capability detection succeeds, the response has
+`websocket_supported: true`, `transports.websocket: true` and `commands[]`
+contains the required route:
 
 - `djconnect/command`;
 - `djconnect/ask_dj/message`;
 - `djconnect/track_insight`.
 
-WebSocket payloads still include DJConnect identity and auth fields:
+DJConnect websocket payloads still include DJConnect identity and auth fields:
 `device_token`, `device_id`, `client_id`, `device_name` and canonical
-`client_type`. Any websocket error, timeout, disconnect, auth failure, protocol
-mismatch or missing capability falls back immediately to the existing HTTP flow
-for the current action. WebSocket transport failures must not clear pairing or
-be treated as stale pairing.
+`client_type`. The `device_token` is sent inside DJConnect payloads only after
+Home Assistant websocket auth has succeeded. Any websocket error, timeout,
+disconnect, auth failure, protocol mismatch, malformed result or missing
+capability falls back immediately to the existing HTTP flow for the current
+action. WebSocket transport failures must not clear pairing or be treated as
+stale pairing.
 
 These remain HTTP-only:
 
