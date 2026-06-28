@@ -27,7 +27,8 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate workflow YAML
-        run: ruby -e 'require "yaml"; Dir[".github/workflows/*.{yml,yaml}"].each { |f| YAML.load_file(f); puts "ok #{f}" }'
+        run: |
+          ruby -e 'require "yaml"; Dir[".github/workflows/*.{yml,yaml}"].each { |f| YAML.load_file(f); puts "ok #{f}" }'
 
       - name: Scan for accidental secret material
         shell: bash
