@@ -12,7 +12,10 @@
     <Compile Include="..\..\src\DJConnect.Windows\Models\ClientIdentity.cs" Link="Models\ClientIdentity.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Models\VersionCompatibility.cs" Link="Models\VersionCompatibility.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\DJConnectApiClient.cs" Link="Services\DJConnectApiClient.cs" />
+    <Compile Include="..\..\src\DJConnect.Windows\Services\DJConnectTransportOptions.cs" Link="Services\DJConnectTransportOptions.cs" />
+    <Compile Include="..\..\src\DJConnect.Windows\Services\DJConnectWebSocketPayloadFactory.cs" Link="Services\DJConnectWebSocketPayloadFactory.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\DiagnosticRedactor.cs" Link="Services\DiagnosticRedactor.cs" />
+    <Compile Include="..\..\src\DJConnect.Windows\Services\FastPathDiagnosticsFormatter.cs" Link="Services\FastPathDiagnosticsFormatter.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\HomeAssistantTransportManager.cs" Link="Services\HomeAssistantTransportManager.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\MonkeyTestMode.cs" Link="Services\MonkeyTestMode.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\PairingCodeGenerator.cs" Link="Services\PairingCodeGenerator.cs" />

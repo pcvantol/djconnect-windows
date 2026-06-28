@@ -51,6 +51,8 @@ var tests = new (string Name, Action Run)[]
     ("Protocol 3.2 parses safe backend error object", Protocol32ParsesSafeBackendErrorObject),
     ("Backend-aware actions preserve Music Assistant value", BackendAwareActionsPreserveMusicAssistantValue),
     ("Backend-aware actions carry backend revision", BackendAwareActionsCarryBackendRevision),
+    ("Transport options require local HA websocket auth opt-in", TransportOptionsRequireLocalHaWebSocketAuthOptIn),
+    ("Fast path diagnostics formatter renders safe summary", FastPathDiagnosticsFormatterRendersSafeSummary),
     ("WebSocket fast path stays disabled without HA auth token", WebSocketFastPathStaysDisabledWithoutHaAuthToken),
     ("WebSocket fast path detects capabilities", WebSocketFastPathDetectsCapabilities),
     ("WebSocket command success skips HTTP", WebSocketCommandSuccessSkipsHttp),
@@ -1158,6 +1160,31 @@ static void BackendAwareActionsCarryBackendRevision()
 
     AssertTrue(serialized.Contains("\"music_backend_revision\":7"), "backend revision must be forwarded when HA includes it");
     AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "action payload must include Windows client type");
+}
+
+static void TransportOptionsRequireLocalHaWebSocketAuthOptIn()
+{
+    var disabled = new DJConnectTransportOptions(false, "ha-ws-token");
+    var missingToken = new DJConnectTransportOptions(true, null);
+    var enabled = new DJConnectTransportOptions(true, "ha-ws-token");
+
+    AssertTrue(!disabled.AllowsWebSocketFastPath(HomeAssistantConnectionMode.Local), "feature flag must gate websocket");
+    AssertTrue(!missingToken.AllowsWebSocketFastPath(HomeAssistantConnectionMode.Local), "HA websocket auth token must be required");
+    AssertTrue(!enabled.AllowsWebSocketFastPath(HomeAssistantConnectionMode.Remote), "remote sessions must stay HTTP by default");
+    AssertTrue(enabled.AllowsWebSocketFastPath(HomeAssistantConnectionMode.Local), "local opt-in with HA auth token should allow websocket");
+}
+
+static void FastPathDiagnosticsFormatterRendersSafeSummary()
+{
+    var diagnostics = new FastPathDiagnostics("http", false, "timeout", null, ["djconnect/command"]);
+    var body = new System.Text.StringBuilder();
+
+    FastPathDiagnosticsFormatter.AppendTo(body, diagnostics);
+
+    AssertEqual("http fallback", FastPathDiagnosticsFormatter.AboutText(diagnostics));
+    AssertTrue(body.ToString().Contains("- Fast path transport: http"), "diagnostic export should include transport");
+    AssertTrue(body.ToString().Contains("- WebSocket commands: djconnect/command"), "diagnostic export should include capabilities");
+    AssertTrue(!body.ToString().Contains("token", StringComparison.OrdinalIgnoreCase), "diagnostic formatter must not introduce token fields");
 }
 
 static void WebSocketFastPathDetectsCapabilities()

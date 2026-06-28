@@ -15,19 +15,29 @@ public sealed class DJConnectApiClient
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly HttpClient _httpClient;
     private readonly IDJConnectWebSocketFastPath _webSocketFastPath;
+    private readonly DJConnectWebSocketPayloadFactory _webSocketPayloadFactory;
     private string _homeAssistantUrl = "";
     private string? _deviceToken;
     private bool _webSocketFastPathEnabled;
 
     public DJConnectApiClient(HttpClient httpClient)
-        : this(httpClient, new HomeAssistantWebSocketFastPath())
+        : this(httpClient, new HomeAssistantWebSocketFastPath(), new DJConnectWebSocketPayloadFactory())
     {
     }
 
     public DJConnectApiClient(HttpClient httpClient, IDJConnectWebSocketFastPath webSocketFastPath)
+        : this(httpClient, webSocketFastPath, new DJConnectWebSocketPayloadFactory())
+    {
+    }
+
+    public DJConnectApiClient(
+        HttpClient httpClient,
+        IDJConnectWebSocketFastPath webSocketFastPath,
+        DJConnectWebSocketPayloadFactory webSocketPayloadFactory)
     {
         _httpClient = httpClient;
         _webSocketFastPath = webSocketFastPath;
+        _webSocketPayloadFactory = webSocketPayloadFactory;
         _httpClient.Timeout = TimeSpan.FromSeconds(15);
     }
 
@@ -39,17 +49,26 @@ public sealed class DJConnectApiClient
         bool enableLocalWebSocketFastPath = false,
         string? haWebSocketAuthToken = null)
     {
-        _homeAssistantUrl = homeAssistantUrl.TrimEnd('/');
-        _deviceToken = token;
-        _webSocketFastPathEnabled = enableLocalWebSocketFastPath
+        Configure(new DJConnectClientConfiguration(
+            homeAssistantUrl,
+            token,
+            enableLocalWebSocketFastPath,
+            haWebSocketAuthToken));
+    }
+
+    public void Configure(DJConnectClientConfiguration configuration)
+    {
+        _homeAssistantUrl = configuration.HomeAssistantUrl.TrimEnd('/');
+        _deviceToken = configuration.DeviceToken;
+        _webSocketFastPathEnabled = configuration.EnableLocalWebSocketFastPath
             && IsLocalHttpUrl(_homeAssistantUrl)
-            && !string.IsNullOrWhiteSpace(token)
-            && !string.IsNullOrWhiteSpace(haWebSocketAuthToken);
-        _httpClient.BaseAddress = new Uri(homeAssistantUrl.TrimEnd('/') + "/");
-        _httpClient.DefaultRequestHeaders.Authorization = string.IsNullOrWhiteSpace(token)
+            && !string.IsNullOrWhiteSpace(configuration.DeviceToken)
+            && !string.IsNullOrWhiteSpace(configuration.HomeAssistantWebSocketAuthToken);
+        _httpClient.BaseAddress = new Uri(configuration.HomeAssistantUrl.TrimEnd('/') + "/");
+        _httpClient.DefaultRequestHeaders.Authorization = string.IsNullOrWhiteSpace(configuration.DeviceToken)
             ? null
-            : new AuthenticationHeaderValue("Bearer", token);
-        _webSocketFastPath.Configure(_homeAssistantUrl, haWebSocketAuthToken, _webSocketFastPathEnabled);
+            : new AuthenticationHeaderValue("Bearer", configuration.DeviceToken);
+        _webSocketFastPath.Configure(_homeAssistantUrl, configuration.HomeAssistantWebSocketAuthToken, _webSocketFastPathEnabled);
     }
 
     public async Task<PairingResponse> PairAsync(PairingPayload payload, CancellationToken cancellationToken)
@@ -73,7 +92,7 @@ public sealed class DJConnectApiClient
 
     public async Task<AskDJMessageResponse> SendAskDJMessageAsync(AskDJRequest request, CancellationToken cancellationToken)
     {
-        var fastPathPayload = BuildAskDJWebSocketPayload(request);
+        var fastPathPayload = _webSocketPayloadFactory.BuildAskDJ(request, _deviceToken);
         var fastPath = await TryWebSocketAsync<AskDJMessageResponse>("djconnect/ask_dj/message", fastPathPayload, TimeSpan.FromSeconds(15), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
         {
@@ -86,7 +105,7 @@ public sealed class DJConnectApiClient
 
     public async Task<TrackInsightResponse> GetTrackInsightAsync(TrackInsightRequest request, CancellationToken cancellationToken)
     {
-        var fastPathPayload = BuildTrackInsightWebSocketPayload(request);
+        var fastPathPayload = _webSocketPayloadFactory.BuildTrackInsight(request, _deviceToken);
         var fastPath = await TryWebSocketAsync<TrackInsightResponse>("djconnect/track_insight", fastPathPayload, TimeSpan.FromSeconds(15), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
         {
@@ -139,7 +158,7 @@ public sealed class DJConnectApiClient
             : action.Command;
         var payload = BuildActionCommandPayload(identity, command, ActionValueFor(action));
         payload["action"] = action;
-        var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", BuildCommandWebSocketPayload(payload), TimeSpan.FromSeconds(2), cancellationToken);
+        var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", _webSocketPayloadFactory.BuildCommand(payload, _deviceToken), TimeSpan.FromSeconds(2), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
         {
             return fastPath.Value;
@@ -168,7 +187,7 @@ public sealed class DJConnectApiClient
 
         var payload = BuildActionCommandPayload(identity, "ask_dj_message", ActionValueFor(action));
         payload["action"] = action;
-        var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", BuildCommandWebSocketPayload(payload), TimeSpan.FromSeconds(2), cancellationToken);
+        var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", _webSocketPayloadFactory.BuildCommand(payload, _deviceToken), TimeSpan.FromSeconds(2), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
         {
             return fastPath.Value;
@@ -186,7 +205,7 @@ public sealed class DJConnectApiClient
     public async Task<CommandResponse> RunCommandAsync(ClientIdentity identity, string command, object? args, CancellationToken cancellationToken)
     {
         var payload = BuildCommandPayload(identity, command, args);
-        var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", BuildCommandWebSocketPayload(payload), TimeSpan.FromSeconds(CommandTimeoutSeconds(command)), cancellationToken);
+        var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", _webSocketPayloadFactory.BuildCommand(payload, _deviceToken), TimeSpan.FromSeconds(CommandTimeoutSeconds(command)), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
         {
             return fastPath.Value;
@@ -232,65 +251,6 @@ public sealed class DJConnectApiClient
         if (args is not null)
         {
             payload["args"] = args;
-        }
-
-        return payload;
-    }
-
-    private Dictionary<string, object?> BuildAskDJWebSocketPayload(AskDJRequest request)
-    {
-        var payload = new Dictionary<string, object?>
-        {
-            ["device_id"] = request.DeviceId,
-            ["client_id"] = request.ClientId,
-            ["device_name"] = request.DeviceName,
-            ["client_type"] = request.ClientType,
-            ["device_token"] = _deviceToken,
-            ["client_message_id"] = request.ClientMessageId,
-            ["text"] = request.Text,
-            ["mood"] = request.Mood,
-            ["audio_response"] = request.AudioResponse
-        };
-
-        if (request.Metadata?.TryGetValue("music_dna_key", out var musicDnaKey) == true && musicDnaKey is not null)
-        {
-            payload["music_dna_key"] = musicDnaKey;
-        }
-
-        return payload;
-    }
-
-    private Dictionary<string, object?> BuildTrackInsightWebSocketPayload(TrackInsightRequest request)
-    {
-        return new Dictionary<string, object?>
-        {
-            ["device_id"] = request.DeviceId,
-            ["client_id"] = request.DeviceId,
-            ["device_name"] = request.DeviceName,
-            ["client_type"] = request.ClientType,
-            ["device_token"] = _deviceToken,
-            ["title"] = request.Title,
-            ["artist"] = request.Artist,
-            ["album"] = request.Album,
-            ["entity_id"] = request.EntityId,
-            ["player_id"] = request.PlayerId,
-            ["music_backend"] = request.MusicBackend,
-            ["locale"] = request.Locale,
-            ["force_refresh"] = request.ForceRefresh,
-            ["include_visual_profile"] = request.IncludeVisualProfile
-        };
-    }
-
-    private Dictionary<string, object?> BuildCommandWebSocketPayload(Dictionary<string, object?> httpPayload)
-    {
-        var payload = new Dictionary<string, object?>(httpPayload)
-        {
-            ["device_token"] = _deviceToken
-        };
-
-        if (payload.TryGetValue("args", out var args) && args is not null && !payload.ContainsKey("value"))
-        {
-            payload["value"] = args;
         }
 
         return payload;

@@ -1,0 +1,81 @@
+using DJConnect.Windows.Models;
+
+namespace DJConnect.Windows.Services;
+
+public sealed class DJConnectWebSocketPayloadFactory
+{
+    public Dictionary<string, object?> BuildAskDJ(AskDJRequest request, string? deviceToken)
+    {
+        var payload = BuildIdentityEnvelope(
+            request.DeviceId,
+            request.ClientId,
+            request.DeviceName,
+            request.ClientType,
+            deviceToken);
+
+        payload["client_message_id"] = request.ClientMessageId;
+        payload["text"] = request.Text;
+        payload["mood"] = request.Mood;
+        payload["audio_response"] = request.AudioResponse;
+
+        if (request.Metadata?.TryGetValue("music_dna_key", out var musicDnaKey) == true && musicDnaKey is not null)
+        {
+            payload["music_dna_key"] = musicDnaKey;
+        }
+
+        return payload;
+    }
+
+    public Dictionary<string, object?> BuildTrackInsight(TrackInsightRequest request, string? deviceToken)
+    {
+        var payload = BuildIdentityEnvelope(
+            request.DeviceId,
+            request.DeviceId,
+            request.DeviceName,
+            request.ClientType,
+            deviceToken);
+
+        payload["title"] = request.Title;
+        payload["artist"] = request.Artist;
+        payload["album"] = request.Album;
+        payload["entity_id"] = request.EntityId;
+        payload["player_id"] = request.PlayerId;
+        payload["music_backend"] = request.MusicBackend;
+        payload["locale"] = request.Locale;
+        payload["force_refresh"] = request.ForceRefresh;
+        payload["include_visual_profile"] = request.IncludeVisualProfile;
+        return payload;
+    }
+
+    public Dictionary<string, object?> BuildCommand(Dictionary<string, object?> httpPayload, string? deviceToken)
+    {
+        var payload = new Dictionary<string, object?>(httpPayload)
+        {
+            ["device_token"] = deviceToken
+        };
+
+        if (payload.TryGetValue("args", out var args) && args is not null && !payload.ContainsKey("value"))
+        {
+            payload["value"] = args;
+        }
+
+        return payload;
+    }
+
+    private static Dictionary<string, object?> BuildIdentityEnvelope(
+        string deviceId,
+        string? clientId,
+        string deviceName,
+        string clientType,
+        string? deviceToken)
+    {
+        return new Dictionary<string, object?>
+        {
+            ["device_id"] = deviceId,
+            ["client_id"] = string.IsNullOrWhiteSpace(clientId) ? deviceId : clientId,
+            ["device_name"] = deviceName,
+            ["client_type"] = clientType,
+            ["device_token"] = deviceToken
+        };
+    }
+}

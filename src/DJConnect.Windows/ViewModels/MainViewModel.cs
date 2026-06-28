@@ -17,6 +17,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly CredentialStore _credentialStore = new();
     private readonly DJConnectApiClient _apiClient = new(new HttpClient());
     private readonly HomeAssistantTransportManager _transportManager = new();
+    private readonly DJConnectTransportOptions _transportOptions = DJConnectTransportOptions.FromEnvironment();
     private AppSettings _settings = new();
     private ClientIdentity _identity = ClientIdentity.CreateOrLoad(null);
     private string _homeAssistantUrl = DJConnectContract.DefaultHomeAssistantUrl;
@@ -854,10 +855,7 @@ public sealed class MainViewModel : ObservableObject
     {
         get
         {
-            var diagnostics = _apiClient.FastPathDiagnostics;
-            return diagnostics.WebSocketConnected
-                ? "websocket fast path"
-                : diagnostics.FastPathTransport == "websocket" ? "websocket" : "http fallback";
+            return FastPathDiagnosticsFormatter.AboutText(_apiClient.FastPathDiagnostics);
         }
     }
     public string ConnectionModeText => IsDemoMode ? "Demo" : _connectionMode switch
@@ -2861,12 +2859,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void AppendFastPathDiagnostics(StringBuilder body)
     {
-        var diagnostics = _apiClient.FastPathDiagnostics;
-        body.AppendLine($"- Fast path transport: {diagnostics.FastPathTransport}");
-        body.AppendLine($"- WebSocket connected: {diagnostics.WebSocketConnected.ToString().ToLowerInvariant()}");
-        body.AppendLine($"- Last WebSocket error: {diagnostics.LastWebSocketError}");
-        body.AppendLine($"- Last capability refresh: {diagnostics.LastCapabilityRefresh?.ToString("u") ?? "never"}");
-        body.AppendLine($"- WebSocket commands: {string.Join(", ", diagnostics.WebSocketCommands)}");
+        FastPathDiagnosticsFormatter.AppendTo(body, _apiClient.FastPathDiagnostics);
     }
 
     private Task EnsureLocalClientApiAsync()
@@ -2912,22 +2905,11 @@ public sealed class MainViewModel : ObservableObject
 
     private void ConfigureApiClientForTransport(string activeUrl, HomeAssistantConnectionMode mode)
     {
-        var enableFastPath = mode == HomeAssistantConnectionMode.Local
-            && IsWebSocketFastPathOptInEnabled();
-        _apiClient.Configure(activeUrl, Token, enableFastPath, HomeAssistantWebSocketAuthToken());
-    }
-
-    private static bool IsWebSocketFastPathOptInEnabled()
-    {
-        var value = Environment.GetEnvironmentVariable("DJCONNECT_ENABLE_HA_WEBSOCKET_FAST_PATH");
-        return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static string? HomeAssistantWebSocketAuthToken()
-    {
-        return Environment.GetEnvironmentVariable("DJCONNECT_HA_WEBSOCKET_TOKEN");
+        _apiClient.Configure(new DJConnectClientConfiguration(
+            activeUrl,
+            Token,
+            _transportOptions.AllowsWebSocketFastPath(mode),
+            _transportOptions.HomeAssistantWebSocketAuthToken));
     }
 
     private void ApplyVersionCompatibility(StatusResponse response)
