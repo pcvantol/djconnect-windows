@@ -857,13 +857,17 @@
 
                             <VerticalStackLayout Grid.Column="1" Spacing="14">
                                 <Label Text="STATUS" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                                <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                <Grid ColumnDefinitions="170,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
                                     <Label Text="Pairing" TextColor="{StaticResource TextSecondary}" />
                                     <Label Grid.Column="1" Text="{Binding AboutPairingStatusText}" TextColor="{StaticResource TextPrimary}" />
                                     <Label Grid.Row="1" Text="Backend" TextColor="{StaticResource TextSecondary}" />
                                     <Label Grid.Row="1" Grid.Column="1" Text="{Binding AboutBackendAvailabilityText}" TextColor="{StaticResource TextPrimary}" />
                                     <Label Grid.Row="2" Text="Demo mode" TextColor="{StaticResource TextSecondary}" />
                                     <Label Grid.Row="2" Grid.Column="1" Text="{Binding AboutDemoModeText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="3" Text="Connectie" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding AboutConnectionTypeText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="4" Text="Fast path" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="4" Grid.Column="1" Text="{Binding AboutFastPathText}" TextColor="{StaticResource TextPrimary}" />
                                 </Grid>
                             </VerticalStackLayout>
                         </Grid>

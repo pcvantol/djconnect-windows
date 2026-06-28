@@ -849,6 +849,17 @@ public sealed class MainViewModel : ObservableObject
     public string AboutPairingStatusText => IsPaired ? "paired" : IsPairingOverlayVisible ? "pairing" : "unpaired";
     public string AboutBackendAvailabilityText => _backendAvailable ? "available" : "unavailable";
     public string AboutDemoModeText => IsDemoMode ? "true" : "false";
+    public string AboutConnectionTypeText => ConnectionModeText;
+    public string AboutFastPathText
+    {
+        get
+        {
+            var diagnostics = _apiClient.FastPathDiagnostics;
+            return diagnostics.WebSocketConnected
+                ? "websocket fast path"
+                : diagnostics.FastPathTransport == "websocket" ? "websocket" : "http fallback";
+        }
+    }
     public string ConnectionModeText => IsDemoMode ? "Demo" : _connectionMode switch
     {
         HomeAssistantConnectionMode.Local => "Local",
@@ -4213,6 +4224,8 @@ public sealed class MainViewModel : ObservableObject
     private void RaiseTransportProperties()
     {
         OnPropertyChanged(nameof(ConnectionModeText));
+        OnPropertyChanged(nameof(AboutConnectionTypeText));
+        OnPropertyChanged(nameof(AboutFastPathText));
         OnPropertyChanged(nameof(RemoteSupportText));
         OnPropertyChanged(nameof(MusicBackendNameText));
         OnPropertyChanged(nameof(MusicBackendStatusText));
