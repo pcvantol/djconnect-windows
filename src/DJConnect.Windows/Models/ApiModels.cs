@@ -173,7 +173,9 @@ public sealed record AskDJMessage(
     [property: JsonIgnore] bool IsFailed = false,
     [property: JsonPropertyName("intent")] AskDJIntent? Intent = null,
     [property: JsonPropertyName("action")] string? Action = null,
-    [property: JsonPropertyName("analysis")] AskDJTrackAnalysis? Analysis = null,
+    [property: JsonPropertyName("type")] string? Type = null,
+    [property: JsonPropertyName("open_screen")] string? OpenScreen = null,
+    [property: JsonPropertyName("track_insight")] TrackInsightResult? TrackInsightData = null,
     [property: JsonPropertyName("links")] IReadOnlyList<AskDJSource>? Links = null)
 {
     public string DisplayText => Text ?? Message ?? "";
@@ -187,10 +189,12 @@ public sealed record AskDJMessage(
     public bool HasImages => (Images?.Count ?? 0) > 0;
     public bool HasSources => (Sources?.Count ?? 0) > 0 || (Links?.Count ?? 0) > 0;
     public IReadOnlyList<AskDJSource> DisplaySources => AskDJSourceCollection.SourcesAndLinks(Sources, Links);
-    public bool IsTechnicalTrackAnalysis => string.Equals(Intent?.Intent, "technical_track_analysis", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(Action, "track_analysis", StringComparison.OrdinalIgnoreCase);
-    public TechnicalTrackAnalysisPresentation? TechnicalAnalysis => TechnicalTrackAnalysisPresentation.From(this);
-    public bool HasTechnicalAnalysis => TechnicalAnalysis?.HasContent == true;
+    public bool IsTrackInsight => string.Equals(Intent?.Intent, "track_insight", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Action, "track_insight", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(Type, "track_insight", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(OpenScreen, "track_insight", StringComparison.OrdinalIgnoreCase);
+    public TrackInsightPresentation? TrackInsight => TrackInsightPresentation.From(TrackInsightData, this);
+    public bool HasTrackInsight => TrackInsight?.HasContent == true;
     public string BubbleAlignment => IsUser ? "End" : "Start";
     public string BubbleBackground => IsSystem ? "#24304D" : IsUser ? "#5539D7" : "#222852";
     public string RoleLabel => IsSystem ? (Origin ?? "system") : IsUser ? "Jij" : "Ask DJ";
@@ -234,7 +238,9 @@ public sealed record AskDJMessageResponse(
     [property: JsonPropertyName("sources")] IReadOnlyList<AskDJSource>? Sources,
     [property: JsonPropertyName("intent")] AskDJIntent? Intent,
     [property: JsonPropertyName("action")] string? Action,
-    [property: JsonPropertyName("analysis")] AskDJTrackAnalysis? Analysis,
+    [property: JsonPropertyName("type")] string? Type,
+    [property: JsonPropertyName("open_screen")] string? OpenScreen,
+    [property: JsonPropertyName("track_insight")] TrackInsightResult? TrackInsightData,
     [property: JsonPropertyName("text")] string? Text,
     [property: JsonPropertyName("dj_text")] string? DjText,
     [property: JsonPropertyName("message")] string? Message,
@@ -252,51 +258,100 @@ public sealed record AskDJMessageResponse(
     [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null,
     [property: JsonPropertyName("links")] IReadOnlyList<AskDJSource>? Links = null);
 
+public sealed record TrackInsightRequest(
+    [property: JsonPropertyName("device_id")] string DeviceId,
+    [property: JsonPropertyName("device_name")] string DeviceName,
+    [property: JsonPropertyName("client_type")] string ClientType,
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("artist")] string? Artist,
+    [property: JsonPropertyName("album")] string? Album,
+    [property: JsonPropertyName("entity_id")] string? EntityId = null,
+    [property: JsonPropertyName("player_id")] string? PlayerId = null,
+    [property: JsonPropertyName("music_backend")] string? MusicBackend = null,
+    [property: JsonPropertyName("locale")] string? Locale = null,
+    [property: JsonPropertyName("force_refresh")] bool ForceRefresh = false,
+    [property: JsonPropertyName("include_visual_profile")] bool IncludeVisualProfile = true);
+
+public sealed record TrackInsightResponse(
+    [property: JsonPropertyName("success")] bool Success,
+    [property: JsonPropertyName("track_insight")] TrackInsightResult? TrackInsight,
+    [property: JsonPropertyName("error")] string? Error = null,
+    [property: JsonPropertyName("message")] string? Message = null);
+
 public sealed record AskDJIntent(
     [property: JsonPropertyName("intent")] string? Intent,
     [property: JsonPropertyName("name")] string? Name = null,
     [property: JsonPropertyName("confidence")] string? Confidence = null,
     [property: JsonPropertyName("source")] string? Source = null);
 
-public sealed record AskDJTrackAnalysis(
+public sealed record TrackInsightResult(
+    [property: JsonPropertyName("track")] TrackInsightTrack? Track,
     [property: JsonPropertyName("contract_version")] int? ContractVersion,
     [property: JsonPropertyName("mode")] string? Mode,
     [property: JsonPropertyName("source")] string? Source,
     [property: JsonPropertyName("confidence")] string? Confidence,
-    [property: JsonPropertyName("sections")] IReadOnlyList<AskDJAnalysisSection>? Sections,
-    [property: JsonPropertyName("timeline")] IReadOnlyList<AskDJAnalysisTimelineEntry>? Timeline,
-    [property: JsonPropertyName("dj_tips")] IReadOnlyList<AskDJAnalysisTip>? DjTips,
-    [property: JsonPropertyName("providers")] IReadOnlyList<TrackAnalysisProviderStatus>? Providers,
-    [property: JsonPropertyName("metadata")] TrackAnalysisMetadata? Metadata,
-    [property: JsonPropertyName("limitations")] IReadOnlyList<AskDJAnalysisLimitation>? Limitations,
-    [property: JsonPropertyName("measured")] AskDJMeasuredAnalysis? Measured = null,
-    [property: JsonPropertyName("inferred")] AskDJMeasuredAnalysis? Inferred = null);
+    [property: JsonPropertyName("analysis")] TrackInsightAnalysis? Analysis,
+    [property: JsonPropertyName("sections")] IReadOnlyList<TrackInsightSection>? Sections,
+    [property: JsonPropertyName("timeline")] IReadOnlyList<TrackInsightTimelineEntry>? Timeline,
+    [property: JsonPropertyName("dj_tips")] IReadOnlyList<TrackInsightTip>? DjTips,
+    [property: JsonPropertyName("providers")] IReadOnlyList<TrackInsightProviderStatus>? Providers,
+    [property: JsonPropertyName("metadata")] TrackInsightMetadata? Metadata,
+    [property: JsonPropertyName("music_dna")] TrackInsightMusicDna? MusicDna,
+    [property: JsonPropertyName("visual_profile")] TrackInsightVisualProfile? VisualProfile,
+    [property: JsonPropertyName("cache")] TrackInsightCache? Cache,
+    [property: JsonPropertyName("limitations")] IReadOnlyList<TrackInsightLimitation>? Limitations);
 
-public sealed record TrackAnalysisMetadata(
+public sealed record TrackInsightTrack(
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("artist")] string? Artist,
+    [property: JsonPropertyName("album")] string? Album);
+
+public sealed record TrackInsightAnalysis(
+    [property: JsonPropertyName("sections")] IReadOnlyList<TrackInsightSection>? Sections,
+    [property: JsonPropertyName("timeline")] IReadOnlyList<TrackInsightTimelineEntry>? Timeline,
+    [property: JsonPropertyName("dj_tips")] IReadOnlyList<TrackInsightTip>? DjTips,
+    [property: JsonPropertyName("limitations")] IReadOnlyList<TrackInsightLimitation>? Limitations,
+    [property: JsonPropertyName("providers")] IReadOnlyList<TrackInsightProviderStatus>? Providers);
+
+public sealed record TrackInsightMusicDna(
+    [property: JsonPropertyName("match_percent")] int? MatchPercent,
+    [property: JsonPropertyName("why_it_fits")] string? WhyItFits,
+    [property: JsonPropertyName("summary")] string? Summary);
+
+public sealed record TrackInsightVisualProfile(
+    [property: JsonPropertyName("vibe")] string? Vibe,
+    [property: JsonPropertyName("palette")] IReadOnlyList<string>? Palette,
+    [property: JsonPropertyName("motion")] string? Motion);
+
+public sealed record TrackInsightCache(
+    [property: JsonPropertyName("hit")] bool? Hit,
+    [property: JsonPropertyName("generated_at")] DateTimeOffset? GeneratedAt);
+
+public sealed record TrackInsightMetadata(
     [property: JsonPropertyName("musicbrainz_recording_id")] string? MusicBrainzRecordingId,
     [property: JsonPropertyName("match_score")] int? MatchScore,
     [property: JsonPropertyName("recording_title")] string? RecordingTitle,
     [property: JsonPropertyName("artist")] string? Artist,
     [property: JsonPropertyName("first_release_date")] string? FirstReleaseDate,
-    [property: JsonPropertyName("release")] TrackAnalysisMetadataRelease? Release,
+    [property: JsonPropertyName("release")] TrackInsightMetadataRelease? Release,
     [property: JsonPropertyName("genres")] IReadOnlyList<string>? Genres,
     [property: JsonPropertyName("tags")] IReadOnlyList<string>? Tags,
     [property: JsonPropertyName("listenbrainz_listen_count")] int? ListenBrainzListenCount);
 
-public sealed record TrackAnalysisMetadataRelease(
+public sealed record TrackInsightMetadataRelease(
     [property: JsonPropertyName("title")] string? Title,
     [property: JsonPropertyName("date")] string? Date,
     [property: JsonPropertyName("country")] string? Country,
     [property: JsonPropertyName("status")] string? Status);
 
-public sealed record TrackAnalysisProviderStatus(
+public sealed record TrackInsightProviderStatus(
     [property: JsonPropertyName("provider_id")] string? ProviderId,
     [property: JsonPropertyName("display_name")] string? DisplayName,
     [property: JsonPropertyName("status")] string? Status,
     [property: JsonPropertyName("requires_config")] bool? RequiresConfig,
     [property: JsonPropertyName("reason")] string? Reason);
 
-public sealed record AskDJAnalysisSection(
+public sealed record TrackInsightSection(
     [property: JsonPropertyName("id")] string? Id,
     [property: JsonPropertyName("kind")] string? Kind,
     [property: JsonPropertyName("title")] string? Title,
@@ -306,9 +361,9 @@ public sealed record AskDJAnalysisSection(
     [property: JsonPropertyName("text")] string? Text,
     [property: JsonPropertyName("source")] string? Source,
     [property: JsonPropertyName("confidence")] string? Confidence,
-    [property: JsonPropertyName("items")] IReadOnlyList<AskDJAnalysisMetric>? Items);
+    [property: JsonPropertyName("items")] IReadOnlyList<TrackInsightMetric>? Items);
 
-public sealed record AskDJAnalysisMetric(
+public sealed record TrackInsightMetric(
     [property: JsonPropertyName("id")] string? Id,
     [property: JsonPropertyName("kind")] string? Kind,
     [property: JsonPropertyName("label")] string? Label,
@@ -318,7 +373,7 @@ public sealed record AskDJAnalysisMetric(
     [property: JsonPropertyName("source")] string? Source,
     [property: JsonPropertyName("confidence")] string? Confidence);
 
-public sealed record AskDJAnalysisTimelineEntry(
+public sealed record TrackInsightTimelineEntry(
     [property: JsonPropertyName("id")] string? Id,
     [property: JsonPropertyName("kind")] string? Kind,
     [property: JsonPropertyName("label")] string? Label,
@@ -330,7 +385,7 @@ public sealed record AskDJAnalysisTimelineEntry(
     [property: JsonPropertyName("source")] string? Source,
     [property: JsonPropertyName("confidence")] string? Confidence);
 
-public sealed record AskDJAnalysisTip(
+public sealed record TrackInsightTip(
     [property: JsonPropertyName("id")] string? Id,
     [property: JsonPropertyName("kind")] string? Kind,
     [property: JsonPropertyName("title")] string? Title,
@@ -339,7 +394,7 @@ public sealed record AskDJAnalysisTip(
     [property: JsonPropertyName("source")] string? Source,
     [property: JsonPropertyName("confidence")] string? Confidence);
 
-public sealed record AskDJAnalysisLimitation(
+public sealed record TrackInsightLimitation(
     [property: JsonPropertyName("id")] string? Id,
     [property: JsonPropertyName("kind")] string? Kind,
     [property: JsonPropertyName("text")] string? Text,
@@ -347,24 +402,15 @@ public sealed record AskDJAnalysisLimitation(
     [property: JsonPropertyName("source")] string? Source,
     [property: JsonPropertyName("confidence")] string? Confidence);
 
-public sealed record AskDJMeasuredAnalysis(
-    [property: JsonPropertyName("sections")] IReadOnlyList<AskDJAnalysisTimelineEntry>? Sections,
-    [property: JsonPropertyName("items")] IReadOnlyList<AskDJAnalysisMetric>? Items,
-    [property: JsonPropertyName("bpm")] JsonElement? Bpm,
-    [property: JsonPropertyName("key")] JsonElement? Key,
-    [property: JsonPropertyName("energy")] JsonElement? Energy,
-    [property: JsonPropertyName("source")] string? Source = null,
-    [property: JsonPropertyName("confidence")] string? Confidence = null);
-
-public sealed record TechnicalTrackAnalysisPresentation(
+public sealed record TrackInsightPresentation(
     string Header,
     string MetaLabel,
-    IReadOnlyList<TechnicalAnalysisRow> Sections,
-    IReadOnlyList<TechnicalAnalysisRow> Context,
-    IReadOnlyList<TechnicalAnalysisRow> Timeline,
-    IReadOnlyList<TechnicalAnalysisRow> Tips,
-    IReadOnlyList<TechnicalAnalysisRow> Limitations,
-    IReadOnlyList<TechnicalAnalysisRow> ProviderDiagnostics)
+    IReadOnlyList<TrackInsightRow> Sections,
+    IReadOnlyList<TrackInsightRow> Context,
+    IReadOnlyList<TrackInsightRow> Timeline,
+    IReadOnlyList<TrackInsightRow> Tips,
+    IReadOnlyList<TrackInsightRow> Limitations,
+    IReadOnlyList<TrackInsightRow> ProviderDiagnostics)
 {
     public bool HasSections => Sections.Count > 0;
     public bool HasContext => Context.Count > 0;
@@ -375,40 +421,71 @@ public sealed record TechnicalTrackAnalysisPresentation(
     public bool HasContent => HasSections || HasContext || HasTimeline || HasTips || HasLimitations || HasProviderDiagnostics;
     public bool IsUnavailable => Header.Contains("niet beschikbaar", StringComparison.OrdinalIgnoreCase);
 
-    public static TechnicalTrackAnalysisPresentation? From(AskDJMessage message)
+    public static TrackInsightPresentation? From(TrackInsightResult? insight, AskDJMessage? message = null)
     {
-        if (!message.IsTechnicalTrackAnalysis || message.Analysis is null)
+        if (insight is null || (message is not null && !message.IsTrackInsight))
         {
             return null;
         }
 
-        var analysis = message.Analysis;
+        var analysis = insight;
+        var detail = insight.Analysis;
         var meta = JoinNonEmpty(
             analysis.ContractVersion.HasValue ? $"contract v{analysis.ContractVersion}" : null,
             LabelWithPrefix("bron", analysis.Source),
             LabelWithPrefix("confidence", analysis.Confidence));
 
-        var sections = new List<TechnicalAnalysisRow>();
-        var context = new List<TechnicalAnalysisRow>();
-        var timeline = new List<TechnicalAnalysisRow>();
-        var tips = new List<TechnicalAnalysisRow>();
-        var limitations = new List<TechnicalAnalysisRow>();
-        var providerDiagnostics = new List<TechnicalAnalysisRow>();
+        var sections = new List<TrackInsightRow>();
+        var context = new List<TrackInsightRow>();
+        var timeline = new List<TrackInsightRow>();
+        var tips = new List<TrackInsightRow>();
+        var limitations = new List<TrackInsightRow>();
+        var providerDiagnostics = new List<TrackInsightRow>();
 
-        if ((analysis.Sections?.Count ?? 0) > 0 || (analysis.Timeline?.Count ?? 0) > 0 || (analysis.DjTips?.Count ?? 0) > 0)
+        var analysisSections = detail?.Sections ?? analysis.Sections;
+        var analysisTimeline = detail?.Timeline ?? analysis.Timeline;
+        var analysisTips = detail?.DjTips ?? analysis.DjTips;
+        var analysisLimitations = detail?.Limitations ?? analysis.Limitations;
+        var analysisProviders = detail?.Providers ?? analysis.Providers;
+
+        var trackTitle = JoinNonEmpty(analysis.Track?.Title, analysis.Track?.Artist);
+        if (!string.IsNullOrWhiteSpace(trackTitle))
         {
-            sections.AddRange((analysis.Sections ?? []).Where(section => !IsMetadataContextSection(section)).Select(SectionRow));
-            context.AddRange((analysis.Sections ?? []).Where(IsMetadataContextSection).Select(MetadataContextSectionRow));
-            timeline.AddRange((analysis.Timeline ?? []).Select(TimelineRow));
-            tips.AddRange((analysis.DjTips ?? []).Select(TipRow));
-            limitations.AddRange((analysis.Limitations ?? []).Select(LimitationRow));
+            sections.Add(new TrackInsightRow("Track", analysis.Track?.Album ?? "", trackTitle, ""));
         }
-        else
+
+        if (analysis.MusicDna is not null)
         {
-            sections.AddRange(MeasuredRows("Gemeten", analysis.Measured));
-            sections.AddRange(MeasuredRows("Ingeschat", analysis.Inferred));
-            limitations.AddRange((analysis.Limitations ?? []).Select(LimitationRow));
+            var match = analysis.MusicDna.MatchPercent.HasValue ? $"{analysis.MusicDna.MatchPercent.Value}%" : "";
+            context.Add(new TrackInsightRow("Music DNA Match", "Music DNA", match, ""));
+            if (!string.IsNullOrWhiteSpace(analysis.MusicDna.WhyItFits ?? analysis.MusicDna.Summary))
+            {
+                context.Add(new TrackInsightRow("Why it fits you", "Music DNA", analysis.MusicDna.WhyItFits ?? analysis.MusicDna.Summary ?? "", ""));
+            }
         }
+
+        if (analysis.VisualProfile is not null)
+        {
+            var visual = JoinNonEmpty(
+                LabelWithPrefix("Vibe", analysis.VisualProfile.Vibe),
+                LabelWithPrefix("Motion", analysis.VisualProfile.Motion),
+                LabelWithPrefix("Palette", JoinNonEmpty(analysis.VisualProfile.Palette?.ToArray() ?? [])));
+            if (!string.IsNullOrWhiteSpace(visual))
+            {
+                context.Add(new TrackInsightRow("Vibe", "Rendering hints", visual, ""));
+            }
+        }
+
+        if (analysis.Cache is not null)
+        {
+            context.Add(new TrackInsightRow("Cache", analysis.Cache.Hit == true ? "hit" : "fresh", analysis.Cache.GeneratedAt?.ToString("u") ?? "", ""));
+        }
+
+        sections.AddRange((analysisSections ?? []).Where(section => !IsMetadataContextSection(section)).Select(SectionRow));
+        context.AddRange((analysisSections ?? []).Where(IsMetadataContextSection).Select(MetadataContextSectionRow));
+        timeline.AddRange((analysisTimeline ?? []).Select(TimelineRow));
+        tips.AddRange((analysisTips ?? []).Select(TipRow));
+        limitations.AddRange((analysisLimitations ?? []).Select(LimitationRow));
 
         if (analysis.Metadata is not null)
         {
@@ -416,42 +493,15 @@ public sealed record TechnicalTrackAnalysisPresentation(
         }
 
         var header = string.Equals(analysis.Mode, "unavailable", StringComparison.OrdinalIgnoreCase)
-            ? "Technische analyse niet beschikbaar"
-            : "Technische analyse";
+            ? "Track Insight niet beschikbaar"
+            : "Track Insight";
 
-        providerDiagnostics.AddRange((analysis.Providers ?? []).Select(ProviderRow));
+        providerDiagnostics.AddRange((analysisProviders ?? []).Select(ProviderRow));
 
-        return new TechnicalTrackAnalysisPresentation(header, meta, sections, context, timeline, tips, limitations, providerDiagnostics);
+        return new TrackInsightPresentation(header, meta, sections, context, timeline, tips, limitations, providerDiagnostics);
     }
 
-    private static IEnumerable<TechnicalAnalysisRow> MeasuredRows(string group, AskDJMeasuredAnalysis? measured)
-    {
-        if (measured is null)
-        {
-            yield break;
-        }
-
-        foreach (var item in measured.Items ?? [])
-        {
-            yield return MetricRow(group, item, measured.Source, measured.Confidence);
-        }
-
-        foreach (var item in new[] { ("BPM", measured.Bpm), ("Key", measured.Key), ("Energy", measured.Energy) })
-        {
-            var value = DisplayJson(item.Item2);
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                yield return new TechnicalAnalysisRow(group, item.Item1, value, SourceConfidenceLabel(measured.Source, measured.Confidence));
-            }
-        }
-
-        foreach (var section in measured.Sections ?? [])
-        {
-            yield return TimelineRow(section);
-        }
-    }
-
-    private static TechnicalAnalysisRow SectionRow(AskDJAnalysisSection section)
+    private static TrackInsightRow SectionRow(TrackInsightSection section)
     {
         var detail = FirstNonEmpty(section.Summary, section.Text, DisplayJson(section.Value));
         if (string.IsNullOrWhiteSpace(detail) && (section.Items?.Count ?? 0) > 0)
@@ -459,20 +509,20 @@ public sealed record TechnicalTrackAnalysisPresentation(
             detail = string.Join(" · ", section.Items!.Select(item => $"{FirstNonEmpty(item.Label, item.Title, item.Id, item.Kind)} {DisplayJson(item.Value)} {item.Unit}".Trim()).Where(value => !string.IsNullOrWhiteSpace(value)));
         }
 
-        return new TechnicalAnalysisRow(
+        return new TrackInsightRow(
             FirstNonEmpty(section.Title, section.Label, Humanize(section.Id), Humanize(section.Kind), "Analyse"),
             FirstNonEmpty(Humanize(section.Kind), section.Id),
             detail,
             SourceConfidenceLabel(section.Source, section.Confidence));
     }
 
-    private static bool IsMetadataContextSection(AskDJAnalysisSection section)
+    private static bool IsMetadataContextSection(TrackInsightSection section)
     {
         return string.Equals(section.Id, "metadata_context", StringComparison.OrdinalIgnoreCase)
             || string.Equals(section.Source, "metabrainz_metadata", StringComparison.OrdinalIgnoreCase);
     }
 
-    private static TechnicalAnalysisRow MetadataContextSectionRow(AskDJAnalysisSection section)
+    private static TrackInsightRow MetadataContextSectionRow(TrackInsightSection section)
     {
         var detail = FirstNonEmpty(section.Summary, section.Text, DisplayJson(section.Value));
         if (string.IsNullOrWhiteSpace(detail) && (section.Items?.Count ?? 0) > 0)
@@ -480,104 +530,104 @@ public sealed record TechnicalTrackAnalysisPresentation(
             detail = string.Join(" · ", section.Items!.Select(item => $"{FirstNonEmpty(item.Label, item.Title, Humanize(item.Id), Humanize(item.Kind))}: {DisplayJson(item.Value)} {item.Unit}".Trim()).Where(value => !string.IsNullOrWhiteSpace(value)));
         }
 
-        return new TechnicalAnalysisRow(
+        return new TrackInsightRow(
             FirstNonEmpty(section.Title, section.Label, "MusicBrainz / ListenBrainz"),
             "Open metadata",
             detail,
             SourceConfidenceLabel(section.Source, section.Confidence));
     }
 
-    private static IEnumerable<TechnicalAnalysisRow> MetadataRows(TrackAnalysisMetadata metadata, string? fallbackSource, string? fallbackConfidence)
+    private static IEnumerable<TrackInsightRow> MetadataRows(TrackInsightMetadata metadata, string? fallbackSource, string? fallbackConfidence)
     {
         var meta = SourceConfidenceLabel("metabrainz_metadata", fallbackConfidence);
         var identity = JoinNonEmpty(metadata.RecordingTitle, metadata.Artist);
         if (!string.IsNullOrWhiteSpace(identity))
         {
-            yield return new TechnicalAnalysisRow("MusicBrainz / ListenBrainz", "Context", identity, meta);
+            yield return new TrackInsightRow("MusicBrainz / ListenBrainz", "Context", identity, meta);
         }
 
         if (!string.IsNullOrWhiteSpace(metadata.MusicBrainzRecordingId))
         {
-            yield return new TechnicalAnalysisRow("Recording ID", "MusicBrainz", metadata.MusicBrainzRecordingId, meta);
+            yield return new TrackInsightRow("Recording ID", "MusicBrainz", metadata.MusicBrainzRecordingId, meta);
         }
 
         var releaseDetail = JoinNonEmpty(metadata.Release?.Title, metadata.Release?.Date, metadata.Release?.Country, metadata.Release?.Status);
         if (!string.IsNullOrWhiteSpace(releaseDetail))
         {
-            yield return new TechnicalAnalysisRow("Release", "Open metadata", releaseDetail, meta);
+            yield return new TrackInsightRow("Release", "Open metadata", releaseDetail, meta);
         }
 
         if (!string.IsNullOrWhiteSpace(metadata.FirstReleaseDate))
         {
-            yield return new TechnicalAnalysisRow("First release", "Open metadata", metadata.FirstReleaseDate, meta);
+            yield return new TrackInsightRow("First release", "Open metadata", metadata.FirstReleaseDate, meta);
         }
 
         var genres = JoinNonEmpty(metadata.Genres?.ToArray() ?? []);
         if (!string.IsNullOrWhiteSpace(genres))
         {
-            yield return new TechnicalAnalysisRow("Genres", "Open metadata", genres, meta);
+            yield return new TrackInsightRow("Genres", "Open metadata", genres, meta);
         }
 
         var tags = JoinNonEmpty(metadata.Tags?.ToArray() ?? []);
         if (!string.IsNullOrWhiteSpace(tags))
         {
-            yield return new TechnicalAnalysisRow("Tags", "Open metadata", tags, meta);
+            yield return new TrackInsightRow("Tags", "Open metadata", tags, meta);
         }
 
         if (metadata.ListenBrainzListenCount.HasValue)
         {
-            yield return new TechnicalAnalysisRow("ListenBrainz", "Public listens", metadata.ListenBrainzListenCount.Value.ToString(), meta);
+            yield return new TrackInsightRow("ListenBrainz", "Public listens", metadata.ListenBrainzListenCount.Value.ToString(), meta);
         }
 
         if (metadata.MatchScore.HasValue)
         {
-            yield return new TechnicalAnalysisRow("Match score", "Open metadata", metadata.MatchScore.Value.ToString(), meta);
+            yield return new TrackInsightRow("Match score", "Open metadata", metadata.MatchScore.Value.ToString(), meta);
         }
     }
 
-    private static TechnicalAnalysisRow MetricRow(string group, AskDJAnalysisMetric metric, string? fallbackSource, string? fallbackConfidence)
+    private static TrackInsightRow MetricRow(string group, TrackInsightMetric metric, string? fallbackSource, string? fallbackConfidence)
     {
-        return new TechnicalAnalysisRow(
+        return new TrackInsightRow(
             group,
             FirstNonEmpty(metric.Label, metric.Title, Humanize(metric.Id), Humanize(metric.Kind), "Metric"),
             $"{DisplayJson(metric.Value)} {metric.Unit}".Trim(),
             SourceConfidenceLabel(metric.Source ?? fallbackSource, metric.Confidence ?? fallbackConfidence));
     }
 
-    private static TechnicalAnalysisRow TimelineRow(AskDJAnalysisTimelineEntry entry)
+    private static TrackInsightRow TimelineRow(TrackInsightTimelineEntry entry)
     {
-        return new TechnicalAnalysisRow(
+        return new TrackInsightRow(
             FirstNonEmpty(entry.Label, entry.Title, Humanize(entry.Kind), Humanize(entry.Id), "Segment"),
             JoinNonEmpty(entry.Start ?? entry.StartTime, entry.End ?? entry.EndTime),
             "",
             SourceConfidenceLabel(entry.Source, entry.Confidence));
     }
 
-    private static TechnicalAnalysisRow TipRow(AskDJAnalysisTip tip)
+    private static TrackInsightRow TipRow(TrackInsightTip tip)
     {
-        return new TechnicalAnalysisRow(
+        return new TrackInsightRow(
             FirstNonEmpty(tip.Title, tip.Label, Humanize(tip.Kind), "DJ tip"),
             tip.Text ?? "",
             "",
             SourceConfidenceLabel(tip.Source, tip.Confidence));
     }
 
-    private static TechnicalAnalysisRow LimitationRow(AskDJAnalysisLimitation limitation)
+    private static TrackInsightRow LimitationRow(TrackInsightLimitation limitation)
     {
-        return new TechnicalAnalysisRow(
+        return new TrackInsightRow(
             FirstNonEmpty(Humanize(limitation.Kind), limitation.Id, "Beperking"),
             limitation.Text ?? limitation.Message ?? "",
             "",
             SourceConfidenceLabel(limitation.Source, limitation.Confidence));
     }
 
-    private static TechnicalAnalysisRow ProviderRow(TrackAnalysisProviderStatus provider)
+    private static TrackInsightRow ProviderRow(TrackInsightProviderStatus provider)
     {
         var requiresConfig = provider.RequiresConfig.HasValue
             ? $"config: {(provider.RequiresConfig.Value ? "required" : "not required")}"
             : null;
 
-        return new TechnicalAnalysisRow(
+        return new TrackInsightRow(
             FirstNonEmpty(provider.DisplayName, Humanize(provider.ProviderId), "Unknown"),
             FirstNonEmpty(provider.Status, "Unknown"),
             "",
@@ -634,7 +684,7 @@ public sealed record TechnicalTrackAnalysisPresentation(
     }
 }
 
-public sealed record TechnicalAnalysisRow(string Title, string Subtitle, string Detail, string Meta)
+public sealed record TrackInsightRow(string Title, string Subtitle, string Detail, string Meta)
 {
     public bool HasSubtitle => !string.IsNullOrWhiteSpace(Subtitle);
     public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);

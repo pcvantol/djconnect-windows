@@ -9,7 +9,7 @@ Logs, Privacy, Feedback, Crash report, Demo Mode and compact legal/about
 sections.
 
 Home Assistant remains the trusted backend. The desktop app does not store
-Spotify credentials, Spotify OAuth tokens, DJ Memory or Ask DJ server history as
+Spotify credentials, Spotify OAuth tokens, Music DNA or Ask DJ server history as
 the source of truth. The only app-owned credential is the DJConnect bearer token
 issued by Home Assistant, stored through Windows Credential Manager on Windows
 and Keychain on macOS. Diagnostics, feedback and crash-report text are generated
@@ -18,7 +18,7 @@ automatically.
 
 ## Current Version
 
-- Desktop app: `3.2.1`
+- Desktop app: `3.2.2`
 - Home Assistant protocol line: `3.2.x`
 - Current local `client_type`: `windows`
 
@@ -48,6 +48,9 @@ API contracts rather than copying SwiftUI or Apple-specific code.
 - [docs/ARCHITECTURE_DECISIONS.md](docs/ARCHITECTURE_DECISIONS.md): stack and
   design decisions.
 - [docs/API_CONTRACT.md](docs/API_CONTRACT.md): Home Assistant endpoint shapes.
+- [docs/TRACK_INSIGHT_PLATFORM.md](docs/TRACK_INSIGHT_PLATFORM.md): Windows
+  Track Insight product architecture, navigation, shared engine, demo mode and
+  visualizer roadmap.
 - [docs/NON_FUNCTIONAL_REQUIREMENTS.md](docs/NON_FUNCTIONAL_REQUIREMENTS.md):
   security, privacy, lifecycle, accessibility and performance acceptance
   requirements.
@@ -101,9 +104,19 @@ Key screens and flows mirrored from macOS and extended for desktop:
   `POST /api/djconnect/ask_dj/history/clear`, with client mood values,
   `audio_response` preference, `links[]`/`sources[]` rendering and bounded
   history trim metadata.
+- Local fast path: when connected to a reachable local Home Assistant URL, the
+  app may use Home Assistant's native `/api/websocket` for latency-sensitive
+  DJConnect commands, Ask DJ messages and Track Insight after capability
+  detection. HTTP remains the canonical fallback and is always used for remote
+  sessions, pairing, status, history, voice, push, image proxy and TTS/audio
+  URLs.
 - Playback actions: follow-up confirmations and Play Now actions go through
   `POST /api/djconnect/command`.
 - Recent played answers: compact list rendering from returned `items[]`.
+- Track Insight: first-class Windows feature with direct Now Playing entry,
+  Ask DJ deep-link/hydration, Music DNA Match rendering and a dedicated
+  navigation/visualizer roadmap in
+  [docs/TRACK_INSIGHT_PLATFORM.md](docs/TRACK_INSIGHT_PLATFORM.md).
 - Now Playing/status: Home Assistant status and generic playback commands.
 - Queue and Playlists: backend-owned collections normalized locally, capped at
   100 rendered items, deterministic dedupe and generic start commands.
@@ -199,7 +212,7 @@ packs when first installed.
 - Do not log or commit bearer tokens, passwords, OAuth tokens or other secrets.
 - Spotify OAuth, refresh tokens and backend-specific music credentials remain
   in Home Assistant.
-- Ask DJ Memory and history remain server-side in Home Assistant.
+- Ask Music DNA and history remain server-side in Home Assistant.
 - Local app settings are non-secret JSON under the user's application data
   folder. The DJConnect bearer token is stored in Windows Credential Manager or
   macOS Keychain.

@@ -18,7 +18,7 @@ The app must not store as source of truth:
 
 - Spotify credentials or OAuth tokens;
 - Home Assistant long-lived access tokens;
-- DJ Memory;
+- Music DNA;
 - Ask DJ server history;
 - raw audio recordings;
 - full prompts or secret-bearing backend responses.

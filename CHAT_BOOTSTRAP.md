@@ -107,8 +107,8 @@ Belangrijke regels:
 - Dit is een .NET MAUI desktop app voor Windows en macOS.
 - Huidige desktop app release: `3.2.1` in werkboom.
 - Home Assistant blijft eigenaar van pairing, Spotify OAuth/backend playback,
-  Ask DJ history, DJ Memory, Assist/TTS en command execution.
-- De app bewaart geen Spotify credentials, OAuth tokens, DJ Memory of Ask DJ
+  Ask DJ history, Music DNA, Assist/TTS en command execution.
+- De app bewaart geen Spotify credentials, OAuth tokens, Music DNA of Ask DJ
   server history als bron van waarheid.
 - Het enige app-owned credential is de DJConnect bearer token in Windows
   Credential Manager of macOS Keychain.
@@ -116,7 +116,7 @@ Belangrijke regels:
   contract open punt; documenteer benodigde backend/doc updates apart tenzij de
   gebruiker expliciet vraagt om cross-repo wijzigingen.
 - Device ID conventie is momenteel `djconnect-windows-XXXXXXXXXXXX`.
-- Pairing/status, Spotify OAuth/backend playback, Ask DJ history, memory,
+- Pairing/status, Spotify OAuth/backend playback, Ask DJ history, Music DNA,
   OTA/status en Assist/TTS blijven via Home Assistant integration lopen.
 - Ask DJ gebruikt server-side endpoints:
   - `POST /api/djconnect/ask_dj/message`

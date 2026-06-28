@@ -2,7 +2,7 @@
 
 ## Current Status
 
-DJConnect desktop `3.2.1` has been scaffolded as a .NET MAUI app targeting
+DJConnect desktop `3.2.2` has been scaffolded as a .NET MAUI app targeting
 Windows and macOS. It includes:
 
 - local Home Assistant app-pairing through `/api/djconnect/pair`;
@@ -10,7 +10,7 @@ Windows and macOS. It includes:
 - stable `windows` client identity constants;
 - typed API client for pairing, status, Ask DJ history/message/clear and
   command actions;
-- Ask DJ timeline, technical track analysis, action and recent-played rendering;
+- Ask DJ timeline, Track Insight, action and recent-played rendering;
 - Ask DJ mood values, optional audio-response mode, `links[]`/`sources[]`,
   stale backend action and unsupported backend capability handling aligned with
   the Home Assistant `3.2.x` contract;
@@ -40,7 +40,7 @@ Windows and macOS. It includes:
   unsupported-capability fallbacks, stale backend action rejection and Ask DJ
   links/sources rendering.
 - GitHub Actions CI and public unsigned Windows publication passed for
-  `v3.1.9`. The `3.2.1` upgrade still needs CI/release validation after push.
+  `v3.1.9`. The `3.2.2` upgrade still needs CI/release validation after push.
   Mac Catalyst release artifacts continue to skip on hosted runners
   without the required Xcode 26.4.x toolchain.
 - Public unsigned release automation exists; signed Windows installers,

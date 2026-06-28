@@ -1,6 +1,8 @@
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Net.WebSockets;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DJConnect.Windows.Contracts;
@@ -12,19 +14,35 @@ public sealed class DJConnectApiClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private readonly HttpClient _httpClient;
+    private readonly IDJConnectWebSocketFastPath _webSocketFastPath;
+    private string _homeAssistantUrl = "";
+    private string? _deviceToken;
+    private bool _webSocketFastPathEnabled;
 
     public DJConnectApiClient(HttpClient httpClient)
+        : this(httpClient, new HomeAssistantWebSocketFastPath())
+    {
+    }
+
+    public DJConnectApiClient(HttpClient httpClient, IDJConnectWebSocketFastPath webSocketFastPath)
     {
         _httpClient = httpClient;
+        _webSocketFastPath = webSocketFastPath;
         _httpClient.Timeout = TimeSpan.FromSeconds(15);
     }
 
-    public void Configure(string homeAssistantUrl, string? token)
+    public FastPathDiagnostics FastPathDiagnostics => _webSocketFastPath.Diagnostics;
+
+    public void Configure(string homeAssistantUrl, string? token, bool enableLocalWebSocketFastPath = false)
     {
+        _homeAssistantUrl = homeAssistantUrl.TrimEnd('/');
+        _deviceToken = token;
+        _webSocketFastPathEnabled = enableLocalWebSocketFastPath && IsLocalHttpUrl(_homeAssistantUrl) && !string.IsNullOrWhiteSpace(token);
         _httpClient.BaseAddress = new Uri(homeAssistantUrl.TrimEnd('/') + "/");
         _httpClient.DefaultRequestHeaders.Authorization = string.IsNullOrWhiteSpace(token)
             ? null
             : new AuthenticationHeaderValue("Bearer", token);
+        _webSocketFastPath.Configure(_homeAssistantUrl, token, _webSocketFastPathEnabled);
     }
 
     public async Task<PairingResponse> PairAsync(PairingPayload payload, CancellationToken cancellationToken)
@@ -48,8 +66,28 @@ public sealed class DJConnectApiClient
 
     public async Task<AskDJMessageResponse> SendAskDJMessageAsync(AskDJRequest request, CancellationToken cancellationToken)
     {
+        var fastPathPayload = BuildAskDJWebSocketPayload(request);
+        var fastPath = await TryWebSocketAsync<AskDJMessageResponse>("djconnect/ask_dj/message", fastPathPayload, TimeSpan.FromSeconds(15), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/ask_dj/message", request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<AskDJMessageResponse>(response, cancellationToken);
+    }
+
+    public async Task<TrackInsightResponse> GetTrackInsightAsync(TrackInsightRequest request, CancellationToken cancellationToken)
+    {
+        var fastPathPayload = BuildTrackInsightWebSocketPayload(request);
+        var fastPath = await TryWebSocketAsync<TrackInsightResponse>("djconnect/track_insight", fastPathPayload, TimeSpan.FromSeconds(15), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
+        var response = await _httpClient.PostAsJsonAsync("api/djconnect/track_insight", request, JsonOptions, cancellationToken);
+        return await ReadJsonAsync<TrackInsightResponse>(response, cancellationToken);
     }
 
     public async Task<AskDJMessageResponse> SendAskDJVoiceAsync(
@@ -94,6 +132,12 @@ public sealed class DJConnectApiClient
             : action.Command;
         var payload = BuildActionCommandPayload(identity, command, ActionValueFor(action));
         payload["action"] = action;
+        var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", BuildCommandWebSocketPayload(payload), TimeSpan.FromSeconds(2), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/command", payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<CommandResponse>(response, cancellationToken);
     }
@@ -117,6 +161,12 @@ public sealed class DJConnectApiClient
 
         var payload = BuildActionCommandPayload(identity, "ask_dj_message", ActionValueFor(action));
         payload["action"] = action;
+        var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", BuildCommandWebSocketPayload(payload), TimeSpan.FromSeconds(2), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/command", payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<CommandResponse>(response, cancellationToken);
     }
@@ -129,8 +179,35 @@ public sealed class DJConnectApiClient
     public async Task<CommandResponse> RunCommandAsync(ClientIdentity identity, string command, object? args, CancellationToken cancellationToken)
     {
         var payload = BuildCommandPayload(identity, command, args);
+        var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", BuildCommandWebSocketPayload(payload), TimeSpan.FromSeconds(CommandTimeoutSeconds(command)), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/command", payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<CommandResponse>(response, cancellationToken);
+    }
+
+    private async Task<FastPathResult<T>> TryWebSocketAsync<T>(
+        string route,
+        Dictionary<string, object?> payload,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        if (!_webSocketFastPathEnabled)
+        {
+            return FastPathResult<T>.Miss("disabled");
+        }
+
+        try
+        {
+            return await _webSocketFastPath.TrySendAsync<T>(route, payload, timeout, cancellationToken);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            return FastPathResult<T>.Miss(ex.GetType().Name);
+        }
     }
 
     public static Dictionary<string, object?> BuildCommandPayload(ClientIdentity identity, string command, object? args = null, string? clientMessageId = null)
@@ -151,6 +228,101 @@ public sealed class DJConnectApiClient
         }
 
         return payload;
+    }
+
+    private Dictionary<string, object?> BuildAskDJWebSocketPayload(AskDJRequest request)
+    {
+        var payload = new Dictionary<string, object?>
+        {
+            ["device_id"] = request.DeviceId,
+            ["client_id"] = request.ClientId,
+            ["device_name"] = request.DeviceName,
+            ["client_type"] = request.ClientType,
+            ["device_token"] = _deviceToken,
+            ["client_message_id"] = request.ClientMessageId,
+            ["text"] = request.Text,
+            ["mood"] = request.Mood,
+            ["audio_response"] = request.AudioResponse
+        };
+
+        if (request.Metadata?.TryGetValue("music_dna_key", out var musicDnaKey) == true && musicDnaKey is not null)
+        {
+            payload["music_dna_key"] = musicDnaKey;
+        }
+
+        return payload;
+    }
+
+    private Dictionary<string, object?> BuildTrackInsightWebSocketPayload(TrackInsightRequest request)
+    {
+        return new Dictionary<string, object?>
+        {
+            ["device_id"] = request.DeviceId,
+            ["client_id"] = request.DeviceId,
+            ["device_name"] = request.DeviceName,
+            ["client_type"] = request.ClientType,
+            ["device_token"] = _deviceToken,
+            ["title"] = request.Title,
+            ["artist"] = request.Artist,
+            ["album"] = request.Album,
+            ["entity_id"] = request.EntityId,
+            ["player_id"] = request.PlayerId,
+            ["music_backend"] = request.MusicBackend,
+            ["locale"] = request.Locale,
+            ["force_refresh"] = request.ForceRefresh,
+            ["include_visual_profile"] = request.IncludeVisualProfile
+        };
+    }
+
+    private Dictionary<string, object?> BuildCommandWebSocketPayload(Dictionary<string, object?> httpPayload)
+    {
+        var payload = new Dictionary<string, object?>(httpPayload)
+        {
+            ["device_token"] = _deviceToken
+        };
+
+        if (payload.TryGetValue("args", out var args) && args is not null && !payload.ContainsKey("value"))
+        {
+            payload["value"] = args;
+        }
+
+        return payload;
+    }
+
+    private static int CommandTimeoutSeconds(string command)
+    {
+        return command is "status" or "devices" or "queue" or "playlists" ? 5 : 2;
+    }
+
+    private static bool IsLocalHttpUrl(string url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))
+        {
+            return false;
+        }
+
+        if (uri.Scheme is not ("http" or "https"))
+        {
+            return false;
+        }
+
+        var host = uri.Host;
+        return host.Equals("localhost", StringComparison.OrdinalIgnoreCase)
+            || host.Equals("127.0.0.1", StringComparison.OrdinalIgnoreCase)
+            || host.Equals("::1", StringComparison.OrdinalIgnoreCase)
+            || host.EndsWith(".local", StringComparison.OrdinalIgnoreCase)
+            || host.StartsWith("192.168.", StringComparison.OrdinalIgnoreCase)
+            || host.StartsWith("10.", StringComparison.OrdinalIgnoreCase)
+            || IsPrivate172(host);
+    }
+
+    private static bool IsPrivate172(string host)
+    {
+        var parts = host.Split('.');
+        return parts.Length == 4
+            && parts[0] == "172"
+            && int.TryParse(parts[1], out var second)
+            && second is >= 16 and <= 31;
     }
 
     public static Dictionary<string, object?> BuildStatusPayload(ClientIdentity identity)
@@ -250,6 +422,299 @@ public sealed class DJConnectApiClient
         [property: JsonPropertyName("message")] string? Message,
         [property: JsonPropertyName("ha_version")] string? HaVersion,
         [property: JsonPropertyName("ha_major_minor")] string? HaMajorMinor);
+}
+
+public sealed record FastPathDiagnostics(
+    string FastPathTransport,
+    bool WebSocketConnected,
+    string LastWebSocketError,
+    DateTimeOffset? LastCapabilityRefresh,
+    IReadOnlyList<string> WebSocketCommands);
+
+public sealed record FastPathResult<T>(bool Success, T? Value, string? Error)
+{
+    public static FastPathResult<T> Hit(T value) => new(true, value, null);
+    public static FastPathResult<T> Miss(string? error) => new(false, default, error);
+}
+
+public interface IDJConnectWebSocketFastPath
+{
+    FastPathDiagnostics Diagnostics { get; }
+    void Configure(string homeAssistantUrl, string? token, bool enabled);
+    Task<FastPathResult<T>> TrySendAsync<T>(
+        string route,
+        Dictionary<string, object?> payload,
+        TimeSpan timeout,
+        CancellationToken cancellationToken);
+}
+
+public sealed class HomeAssistantWebSocketFastPath : IDJConnectWebSocketFastPath, IDisposable
+{
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+    };
+
+    private readonly SemaphoreSlim _gate = new(1, 1);
+    private ClientWebSocket? _socket;
+    private string _homeAssistantUrl = "";
+    private string? _token;
+    private bool _enabled;
+    private int _nextId = 1;
+    private HashSet<string> _commands = new(StringComparer.OrdinalIgnoreCase);
+    private DateTimeOffset? _lastCapabilityRefresh;
+    private DateTimeOffset? _unhealthyUntil;
+    private string _lastError = "";
+
+    public FastPathDiagnostics Diagnostics => new(
+        _lastError.Length == 0 && IsConnected ? "websocket" : "http",
+        IsConnected,
+        _lastError,
+        _lastCapabilityRefresh,
+        _commands.Order(StringComparer.OrdinalIgnoreCase).ToArray());
+
+    private bool IsConnected => _socket?.State == WebSocketState.Open;
+
+    public void Configure(string homeAssistantUrl, string? token, bool enabled)
+    {
+        if (!string.Equals(_homeAssistantUrl, homeAssistantUrl, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(_token, token, StringComparison.Ordinal))
+        {
+            CloseSocket();
+            _commands.Clear();
+            _lastCapabilityRefresh = null;
+            _lastError = "";
+        }
+
+        _homeAssistantUrl = homeAssistantUrl;
+        _token = token;
+        _enabled = enabled;
+        if (!enabled)
+        {
+            CloseSocket();
+        }
+    }
+
+    public async Task<FastPathResult<T>> TrySendAsync<T>(
+        string route,
+        Dictionary<string, object?> payload,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        if (!_enabled || string.IsNullOrWhiteSpace(_homeAssistantUrl) || string.IsNullOrWhiteSpace(_token))
+        {
+            return FastPathResult<T>.Miss("disabled");
+        }
+
+        if (_unhealthyUntil is not null && DateTimeOffset.UtcNow < _unhealthyUntil)
+        {
+            return FastPathResult<T>.Miss("backoff");
+        }
+
+        await _gate.WaitAsync(cancellationToken);
+        try
+        {
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            timeoutCts.CancelAfter(timeout);
+
+            await EnsureConnectedAsync(timeoutCts.Token);
+            if (!_commands.Contains(route))
+            {
+                return FastPathResult<T>.Miss("missing capability");
+            }
+
+            payload["id"] = _nextId++;
+            payload["type"] = route;
+            await SendJsonAsync(payload, timeoutCts.Token);
+            using var response = await ReceiveJsonAsync(timeoutCts.Token);
+            var value = ReadResult<T>(response.RootElement);
+            _lastError = "";
+            return value is null ? FastPathResult<T>.Miss("empty response") : FastPathResult<T>.Hit(value);
+        }
+        catch (Exception ex) when (ex is WebSocketException or IOException or JsonException or InvalidOperationException or TaskCanceledException)
+        {
+            MarkUnhealthy(ex.GetType().Name);
+            return FastPathResult<T>.Miss(_lastError);
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private async Task EnsureConnectedAsync(CancellationToken cancellationToken)
+    {
+        if (IsConnected && _commands.Count > 0)
+        {
+            return;
+        }
+
+        CloseSocket();
+        _socket = new ClientWebSocket();
+        await _socket.ConnectAsync(WebSocketUri(_homeAssistantUrl), cancellationToken);
+
+        using var authRequired = await ReceiveJsonAsync(cancellationToken);
+        var authType = authRequired.RootElement.TryGetProperty("type", out var authTypeElement)
+            ? authTypeElement.GetString()
+            : "";
+        if (!string.Equals(authType, "auth_required", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("unexpected websocket auth state");
+        }
+
+        await SendJsonAsync(new Dictionary<string, object?>
+        {
+            ["type"] = "auth",
+            ["access_token"] = _token
+        }, cancellationToken);
+
+        using var authResponse = await ReceiveJsonAsync(cancellationToken);
+        var responseType = authResponse.RootElement.TryGetProperty("type", out var responseTypeElement)
+            ? responseTypeElement.GetString()
+            : "";
+        if (!string.Equals(responseType, "auth_ok", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("websocket auth failed");
+        }
+
+        await RefreshCapabilitiesAsync(cancellationToken);
+    }
+
+    private async Task RefreshCapabilitiesAsync(CancellationToken cancellationToken)
+    {
+        var id = _nextId++;
+        await SendJsonAsync(new Dictionary<string, object?>
+        {
+            ["id"] = id,
+            ["type"] = "djconnect/capabilities"
+        }, cancellationToken);
+
+        using var response = await ReceiveJsonAsync(cancellationToken);
+        if (!IsSuccessfulResult(response.RootElement))
+        {
+            throw new InvalidOperationException("capability detection failed");
+        }
+
+        var commands = ExtractCommands(response.RootElement);
+        if (commands.Count == 0)
+        {
+            throw new InvalidOperationException("capability detection returned no commands");
+        }
+
+        _commands = new HashSet<string>(commands, StringComparer.OrdinalIgnoreCase);
+        _lastCapabilityRefresh = DateTimeOffset.UtcNow;
+    }
+
+    private static bool IsSuccessfulResult(JsonElement root)
+    {
+        return root.TryGetProperty("success", out var success)
+            && success.ValueKind == JsonValueKind.True;
+    }
+
+    private static IReadOnlyList<string> ExtractCommands(JsonElement root)
+    {
+        var result = root.TryGetProperty("result", out var resultElement) ? resultElement : root;
+        if (!result.TryGetProperty("commands", out var commands) || commands.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        return commands
+            .EnumerateArray()
+            .Where(item => item.ValueKind == JsonValueKind.String)
+            .Select(item => item.GetString())
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Select(item => item!)
+            .ToArray();
+    }
+
+    private static T? ReadResult<T>(JsonElement root)
+    {
+        if (!IsSuccessfulResult(root))
+        {
+            return default;
+        }
+
+        var result = root.TryGetProperty("result", out var resultElement) ? resultElement : root;
+        return result.Deserialize<T>(JsonOptions);
+    }
+
+    private async Task SendJsonAsync(object payload, CancellationToken cancellationToken)
+    {
+        if (_socket is null)
+        {
+            throw new InvalidOperationException("websocket is not connected");
+        }
+
+        var json = JsonSerializer.Serialize(payload, JsonOptions);
+        var bytes = Encoding.UTF8.GetBytes(json);
+        await _socket.SendAsync(bytes, WebSocketMessageType.Text, true, cancellationToken);
+    }
+
+    private async Task<JsonDocument> ReceiveJsonAsync(CancellationToken cancellationToken)
+    {
+        if (_socket is null)
+        {
+            throw new InvalidOperationException("websocket is not connected");
+        }
+
+        using var stream = new MemoryStream();
+        var buffer = new byte[8192];
+        WebSocketReceiveResult result;
+        do
+        {
+            result = await _socket.ReceiveAsync(buffer, cancellationToken);
+            if (result.MessageType == WebSocketMessageType.Close)
+            {
+                throw new WebSocketException("websocket closed");
+            }
+
+            stream.Write(buffer, 0, result.Count);
+        }
+        while (!result.EndOfMessage);
+
+        stream.Position = 0;
+        return await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken);
+    }
+
+    private void MarkUnhealthy(string error)
+    {
+        _lastError = error;
+        _unhealthyUntil = DateTimeOffset.UtcNow.AddSeconds(15);
+        CloseSocket();
+    }
+
+    private void CloseSocket()
+    {
+        try
+        {
+            _socket?.Dispose();
+        }
+        catch
+        {
+            // Best effort: websocket failures must never affect HTTP fallback.
+        }
+        finally
+        {
+            _socket = null;
+        }
+    }
+
+    private static Uri WebSocketUri(string homeAssistantUrl)
+    {
+        var builder = new UriBuilder(homeAssistantUrl.TrimEnd('/'))
+        {
+            Scheme = homeAssistantUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase) ? "wss" : "ws",
+            Path = "api/websocket"
+        };
+        return builder.Uri;
+    }
+
+    public void Dispose()
+    {
+        CloseSocket();
+        _gate.Dispose();
+    }
 }
 
 public sealed class DJConnectVersionMismatchException : Exception

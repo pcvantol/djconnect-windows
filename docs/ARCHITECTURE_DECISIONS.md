@@ -35,7 +35,7 @@ platform credential store.
 Rationale:
 
 - Home Assistant owns Spotify OAuth and backend playback credentials.
-- DJ Memory and Ask DJ history are server-side.
+- Music DNA and Ask DJ history are server-side.
 - Windows Credential Manager and macOS Keychain are the appropriate local
   stores for the one app-owned credential.
 

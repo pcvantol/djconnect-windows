@@ -12,19 +12,18 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ request serializes server-side message contract", AskDJRequestSerializesServerSideContract),
     ("Ask DJ response deserializes exchange messages", AskDJResponseDeserializesExchangeMessages),
     ("Ask DJ response deserializes media sources links and dj text", AskDJResponseDeserializesMediaSourcesLinksAndDjText),
-    ("Ask DJ technical track analysis v2 renders sections timeline and tips", AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips),
-    ("Ask DJ technical track analysis renders MetaBrainz metadata context separately", AskDJTechnicalTrackAnalysisRendersMetaBrainzMetadataContextSeparately),
-    ("Ask DJ technical track analysis without metadata remains compatible", AskDJTechnicalTrackAnalysisWithoutMetadataRemainsCompatible),
-    ("Ask DJ technical track analysis providers render as diagnostics", AskDJTechnicalTrackAnalysisProvidersRenderAsDiagnostics),
-    ("Ask DJ technical track analysis MetaBrainz provider statuses remain diagnostics", AskDJTechnicalTrackAnalysisMetaBrainzProviderStatusesRemainDiagnostics),
-    ("Ask DJ technical track analysis without providers remains compatible", AskDJTechnicalTrackAnalysisWithoutProvidersRemainsCompatible),
-    ("Ask DJ technical track analysis tolerates unknown providers", AskDJTechnicalTrackAnalysisToleratesUnknownProviders),
-    ("Ask DJ technical track analysis unavailable renders skipped provider diagnostics", AskDJTechnicalTrackAnalysisUnavailableRendersSkippedProviderDiagnostics),
-    ("Ask DJ technical track analysis v2 without timeline renders sections", AskDJTechnicalTrackAnalysisV2WithoutTimelineRendersSections),
-    ("Ask DJ technical track analysis unavailable renders limitations", AskDJTechnicalTrackAnalysisUnavailableRendersLimitations),
-    ("Ask DJ technical track analysis v1 fallback renders measured inferred and limitations", AskDJTechnicalTrackAnalysisV1FallbackRendersMeasuredInferredAndLimitations),
-    ("Ask DJ technical track analysis renders unknown values generically", AskDJTechnicalTrackAnalysisRendersUnknownValuesGenerically),
-    ("Ask DJ technical track analysis without playback actions has no stale buttons", AskDJTechnicalTrackAnalysisWithoutPlaybackActionsHasNoStaleButtons),
+    ("Ask DJ track insight v2 renders sections timeline and tips", AskDJTrackInsightV2RendersSectionsTimelineAndTips),
+    ("Ask DJ track insight renders MetaBrainz metadata context separately", AskDJTrackInsightRendersMetaBrainzMetadataContextSeparately),
+    ("Ask DJ track insight without metadata remains compatible", AskDJTrackInsightWithoutMetadataRemainsCompatible),
+    ("Ask DJ track insight providers render as diagnostics", AskDJTrackInsightProvidersRenderAsDiagnostics),
+    ("Ask DJ track insight MetaBrainz provider statuses remain diagnostics", AskDJTrackInsightMetaBrainzProviderStatusesRemainDiagnostics),
+    ("Ask DJ track insight without providers remains compatible", AskDJTrackInsightWithoutProvidersRemainsCompatible),
+    ("Ask DJ track insight tolerates unknown providers", AskDJTrackInsightToleratesUnknownProviders),
+    ("Ask DJ track insight unavailable renders skipped provider diagnostics", AskDJTrackInsightUnavailableRendersSkippedProviderDiagnostics),
+    ("Ask DJ track insight v2 without timeline renders sections", AskDJTrackInsightV2WithoutTimelineRendersSections),
+    ("Ask DJ track insight unavailable renders limitations", AskDJTrackInsightUnavailableRendersLimitations),
+    ("Ask DJ track insight renders unknown values generically", AskDJTrackInsightRendersUnknownValuesGenerically),
+    ("Ask DJ track insight without playback actions has no stale buttons", AskDJTrackInsightWithoutPlaybackActionsHasNoStaleButtons),
     ("Ask DJ message presentation supports system audio and confirmations", AskDJMessagePresentationSupportsSystemAudioAndConfirmations),
     ("Ask DJ history deserializes revisions trim metadata and recent items", AskDJHistoryDeserializesRevisionsTrimMetadataAndRecentItems),
     ("Playback action deserializes confirmation command", PlaybackActionDeserializesConfirmationCommand),
@@ -52,6 +51,15 @@ var tests = new (string Name, Action Run)[]
     ("Protocol 3.2 parses safe backend error object", Protocol32ParsesSafeBackendErrorObject),
     ("Backend-aware actions preserve Music Assistant value", BackendAwareActionsPreserveMusicAssistantValue),
     ("Backend-aware actions carry backend revision", BackendAwareActionsCarryBackendRevision),
+    ("WebSocket fast path detects capabilities", WebSocketFastPathDetectsCapabilities),
+    ("WebSocket command success skips HTTP", WebSocketCommandSuccessSkipsHttp),
+    ("WebSocket missing capability falls back to HTTP", WebSocketMissingCapabilityFallsBackToHttp),
+    ("WebSocket Ask DJ message success uses revisions", WebSocketAskDJMessageSuccessUsesRevisions),
+    ("WebSocket Track Insight success renders Music DNA", WebSocketTrackInsightSuccessRendersMusicDna),
+    ("WebSocket timeout falls back to HTTP exactly once", WebSocketTimeoutFallsBackToHttpExactlyOnce),
+    ("WebSocket auth error falls back to HTTP", WebSocketAuthErrorFallsBackToHttp),
+    ("Remote connection stays HTTP", RemoteConnectionStaysHttp),
+    ("WebSocket payload includes identity and token without diagnostic leaks", WebSocketPayloadIncludesIdentityAndTokenWithoutDiagnosticLeaks),
     ("Backend error responses deserialize stale and unsupported contracts", BackendErrorResponsesDeserializeStaleAndUnsupportedContracts),
     ("Protocol 3.2 keeps app local API and mDNS inactive", Protocol32KeepsAppLocalApiAndMdnsInactive)
 };
@@ -127,7 +135,7 @@ static void StatusPayloadSerializesAppProtocolMetadata()
 
     AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "status must include Windows client type");
     AssertTrue(serialized.Contains("\"firmware\":\"windows-app\""), "status must identify the app surface as firmware metadata for HA compatibility");
-    AssertTrue(serialized.Contains("\"app_version\":\"3.2.1\""), "status must include app version");
+    AssertTrue(serialized.Contains("\"app_version\":\"3.2.2\""), "status must include app version");
     AssertTrue(serialized.Contains("\"protocol_version\":\"3.2\""), "status must include protocol line");
 }
 
@@ -156,7 +164,7 @@ static void AskDJRequestSerializesServerSideContract()
     AssertEqual("Welke nummers hoorde ik net?", root.GetProperty("message").GetString());
     AssertEqual("auto", root.GetProperty("audio_response").GetString());
     AssertEqual(72, root.GetProperty("mood").GetInt32());
-    AssertEqual("3.2.1", root.GetProperty("app_version").GetString());
+    AssertEqual("3.2.2", root.GetProperty("app_version").GetString());
     AssertEqual("3.2", root.GetProperty("protocol_version").GetString());
 }
 
@@ -221,12 +229,12 @@ static void AskDJResponseDeserializesMediaSourcesLinksAndDjText()
     const string json = """
     {
       "success": true,
-      "dj_text": "Dit komt uit DJConnect Memory.",
+      "dj_text": "Dit komt uit Music DNA.",
       "images": [
         { "image_url": "https://example.invalid/cover.jpg", "title": "Cover" }
       ],
       "sources": [
-        { "id": "djconnect_memory", "label": "djconnect_memory" },
+        { "id": "djconnect_music_dna", "label": "djconnect_music_dna" },
         { "source": "metabrainz_metadata" }
       ],
       "links": [
@@ -238,9 +246,9 @@ static void AskDJResponseDeserializesMediaSourcesLinksAndDjText()
     var response = JsonSerializer.Deserialize<AskDJMessageResponse>(json, JsonOptions());
 
     AssertNotNull(response);
-    AssertEqual("Dit komt uit DJConnect Memory.", response!.DjText);
+    AssertEqual("Dit komt uit Music DNA.", response!.DjText);
     AssertEqual("https://example.invalid/cover.jpg", response.Images![0].DisplayUrl);
-    AssertEqual("djconnect_memory", response.Sources![0].DisplayLabel);
+    AssertEqual("djconnect_music_dna", response.Sources![0].DisplayLabel);
     AssertEqual("metabrainz_metadata", response.Sources![1].DisplayLabel);
     AssertEqual("Concertagenda", response.Links![0].DisplayLabel);
     AssertEqual("https://example.invalid/show", response.Links![0].DisplayUrl);
@@ -250,31 +258,38 @@ static void AskDJResponseDeserializesMediaSourcesLinksAndDjText()
     AssertEqual(3, message.DisplaySources.Count);
 }
 
-static void AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips()
+static void AskDJTrackInsightV2RendersSectionsTimelineAndTips()
 {
     const string json = """
     {
       "id": "analysis-1",
       "role": "assistant",
-      "text": "Technische analyse staat hieronder.",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "text": "Track Insight staat hieronder.",
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "mode": "available",
         "source": "measured",
         "confidence": "high",
-        "sections": [
-          { "id": "rhythm_bpm", "kind": "metric", "title": "Rhythm / BPM", "value": 128, "source": "measured", "confidence": "high" }
-        ],
-        "timeline": [
-          { "kind": "intro", "label": "Intro", "start": "0:00", "end": "0:16", "source": "measured", "confidence": "high" }
-        ],
-        "dj_tips": [
-          { "kind": "mix", "text": "Mix op de eerste phrase.", "source": "inferred", "confidence": "medium" }
-        ],
-        "limitations": [
-          { "text": "Geen stems beschikbaar.", "source": "local_fallback", "confidence": "low" }
-        ]
+        "track": { "title": "Blue Monday", "artist": "New Order", "album": "Blue Monday" },
+        "analysis": {
+          "sections": [
+            { "id": "rhythm_bpm", "kind": "metric", "title": "Rhythm / BPM", "value": 128, "source": "measured", "confidence": "high" }
+          ],
+          "timeline": [
+            { "kind": "intro", "label": "Intro", "start": "0:00", "end": "0:16", "source": "measured", "confidence": "high" }
+          ],
+          "dj_tips": [
+            { "kind": "mix", "text": "Mix op de eerste phrase.", "source": "inferred", "confidence": "medium" }
+          ],
+          "limitations": [
+            { "text": "Geen stems beschikbaar.", "source": "local_fallback", "confidence": "low" }
+          ]
+        },
+        "music_dna": {
+          "match_percent": 86,
+          "why_it_fits": "This expands your Music DNA."
+        }
       }
     }
     """;
@@ -282,27 +297,28 @@ static void AskDJTechnicalTrackAnalysisV2RendersSectionsTimelineAndTips()
     var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
 
     AssertNotNull(message);
-    AssertTrue(message!.IsTechnicalTrackAnalysis, "technical intent must be detected");
-    AssertTrue(message.HasTechnicalAnalysis, "analysis card must be available");
-    AssertEqual(1, message.TechnicalAnalysis!.Sections.Count);
-    AssertEqual(1, message.TechnicalAnalysis.Timeline.Count);
-    AssertEqual(1, message.TechnicalAnalysis.Tips.Count);
-    AssertEqual(1, message.TechnicalAnalysis.Limitations.Count);
-    AssertTrue(message.TechnicalAnalysis.Sections[0].Meta.Contains("bron: measured", StringComparison.Ordinal), "source must be visible");
-    AssertTrue(message.TechnicalAnalysis.Tips[0].Meta.Contains("confidence: medium", StringComparison.Ordinal), "confidence must be visible");
+    AssertTrue(message!.IsTrackInsight, "track insight intent must be detected");
+    AssertTrue(message.HasTrackInsight, "track insight card must be available");
+    AssertEqual(2, message.TrackInsight!.Sections.Count);
+    AssertEqual(1, message.TrackInsight.Timeline.Count);
+    AssertEqual(1, message.TrackInsight.Tips.Count);
+    AssertEqual(1, message.TrackInsight.Limitations.Count);
+    AssertTrue(message.TrackInsight.Context.Any(row => row.Title == "Music DNA Match" && row.Detail == "86%"), "Music DNA match must be visible");
+    AssertTrue(message.TrackInsight.Sections[1].Meta.Contains("bron: measured", StringComparison.Ordinal), "source must be visible");
+    AssertTrue(message.TrackInsight.Tips[0].Meta.Contains("confidence: medium", StringComparison.Ordinal), "confidence must be visible");
 }
 
-static void AskDJTechnicalTrackAnalysisRendersMetaBrainzMetadataContextSeparately()
+static void AskDJTrackInsightRendersMetaBrainzMetadataContextSeparately()
 {
     const string json = """
     {
       "id": "analysis-metabrainz",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
+      "intent": { "intent": "track_insight" },
       "sources": [
         { "source": "metabrainz_metadata" }
       ],
-      "analysis": {
+      "track_insight": {
         "contract_version": 2,
         "mode": "available",
         "source": "measured",
@@ -345,29 +361,29 @@ static void AskDJTechnicalTrackAnalysisRendersMetaBrainzMetadataContextSeparatel
     var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
 
     AssertNotNull(message);
-    AssertEqual("0f4c2f62-2f7a-4f1d-a91d-01f3d3c00001", message!.Analysis!.Metadata!.MusicBrainzRecordingId);
-    AssertEqual(97, message.Analysis.Metadata.MatchScore);
-    AssertEqual("Blue Monday", message.Analysis.Metadata.Release!.Title);
+    AssertEqual("0f4c2f62-2f7a-4f1d-a91d-01f3d3c00001", message!.TrackInsightData!.Metadata!.MusicBrainzRecordingId);
+    AssertEqual(97, message.TrackInsightData.Metadata.MatchScore);
+    AssertEqual("Blue Monday", message.TrackInsightData.Metadata.Release!.Title);
     AssertEqual("metabrainz_metadata", message.Sources![0].DisplayLabel);
-    AssertEqual(2, message.TechnicalAnalysis!.Sections.Count);
-    AssertTrue(!message.TechnicalAnalysis.Sections.Any(row => row.Title.Contains("MusicBrainz", StringComparison.OrdinalIgnoreCase)), "metadata context must not render as measured section");
-    AssertTrue(message.TechnicalAnalysis.HasContext, "metadata context should render in the context block");
-    AssertTrue(message.TechnicalAnalysis.Context.Any(row => row.Title.Contains("MusicBrainz", StringComparison.OrdinalIgnoreCase)), "context block should label MusicBrainz / ListenBrainz");
-    AssertTrue(message.TechnicalAnalysis.Context.Any(row => row.Detail.Contains("12345", StringComparison.Ordinal)), "ListenBrainz listen count should be visible as context");
-    AssertEqual(1, message.TechnicalAnalysis.Timeline.Count);
-    AssertTrue(!message.TechnicalAnalysis.Timeline.Any(row => row.Title.Contains("MusicBrainz", StringComparison.OrdinalIgnoreCase)), "metadata context must not create fake timeline labels");
-    AssertEqual(1, message.TechnicalAnalysis.Limitations.Count);
-    AssertTrue(message.TechnicalAnalysis.Limitations[0].Subtitle.Contains("contextual", StringComparison.OrdinalIgnoreCase), "metadata caveat should stay visible");
+    AssertEqual(2, message.TrackInsight!.Sections.Count);
+    AssertTrue(!message.TrackInsight.Sections.Any(row => row.Title.Contains("MusicBrainz", StringComparison.OrdinalIgnoreCase)), "metadata context must not render as measured section");
+    AssertTrue(message.TrackInsight.HasContext, "metadata context should render in the context block");
+    AssertTrue(message.TrackInsight.Context.Any(row => row.Title.Contains("MusicBrainz", StringComparison.OrdinalIgnoreCase)), "context block should label MusicBrainz / ListenBrainz");
+    AssertTrue(message.TrackInsight.Context.Any(row => row.Detail.Contains("12345", StringComparison.Ordinal)), "ListenBrainz listen count should be visible as context");
+    AssertEqual(1, message.TrackInsight.Timeline.Count);
+    AssertTrue(!message.TrackInsight.Timeline.Any(row => row.Title.Contains("MusicBrainz", StringComparison.OrdinalIgnoreCase)), "metadata context must not create fake timeline labels");
+    AssertEqual(1, message.TrackInsight.Limitations.Count);
+    AssertTrue(message.TrackInsight.Limitations[0].Subtitle.Contains("contextual", StringComparison.OrdinalIgnoreCase), "metadata caveat should stay visible");
 }
 
-static void AskDJTechnicalTrackAnalysisWithoutMetadataRemainsCompatible()
+static void AskDJTrackInsightWithoutMetadataRemainsCompatible()
 {
     const string json = """
     {
       "id": "analysis-no-metadata",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "sections": [
           { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
@@ -379,19 +395,19 @@ static void AskDJTechnicalTrackAnalysisWithoutMetadataRemainsCompatible()
     var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
 
     AssertNotNull(message);
-    AssertTrue(message!.Analysis!.Metadata is null, "missing metadata must remain optional");
-    AssertEqual(1, message.TechnicalAnalysis!.Sections.Count);
-    AssertEqual(0, message.TechnicalAnalysis.Context.Count);
+    AssertTrue(message!.TrackInsightData!.Metadata is null, "missing metadata must remain optional");
+    AssertEqual(1, message.TrackInsight!.Sections.Count);
+    AssertEqual(0, message.TrackInsight.Context.Count);
 }
 
-static void AskDJTechnicalTrackAnalysisProvidersRenderAsDiagnostics()
+static void AskDJTrackInsightProvidersRenderAsDiagnostics()
 {
     const string json = """
     {
       "id": "analysis-providers",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "mode": "available",
         "sections": [
@@ -415,24 +431,24 @@ static void AskDJTechnicalTrackAnalysisProvidersRenderAsDiagnostics()
     var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
 
     AssertNotNull(message);
-    AssertEqual(3, message!.Analysis!.Providers!.Count);
-    AssertEqual(1, message.TechnicalAnalysis!.Sections.Count);
-    AssertEqual(1, message.TechnicalAnalysis.Timeline.Count);
-    AssertEqual(1, message.TechnicalAnalysis.Tips.Count);
-    AssertEqual(3, message.TechnicalAnalysis.ProviderDiagnostics.Count);
-    AssertEqual("Spotify measured", message.TechnicalAnalysis.ProviderDiagnostics[0].Title);
-    AssertEqual("used", message.TechnicalAnalysis.ProviderDiagnostics[0].Subtitle);
-    AssertTrue(!message.TechnicalAnalysis.Sections.Any(row => row.Title.Contains("Spotify", StringComparison.OrdinalIgnoreCase)), "providers must not replace normal analysis UI blocks");
+    AssertEqual(3, message!.TrackInsightData!.Providers!.Count);
+    AssertEqual(1, message.TrackInsight!.Sections.Count);
+    AssertEqual(1, message.TrackInsight.Timeline.Count);
+    AssertEqual(1, message.TrackInsight.Tips.Count);
+    AssertEqual(3, message.TrackInsight.ProviderDiagnostics.Count);
+    AssertEqual("Spotify measured", message.TrackInsight.ProviderDiagnostics[0].Title);
+    AssertEqual("used", message.TrackInsight.ProviderDiagnostics[0].Subtitle);
+    AssertTrue(!message.TrackInsight.Sections.Any(row => row.Title.Contains("Spotify", StringComparison.OrdinalIgnoreCase)), "providers must not replace normal analysis UI blocks");
 }
 
-static void AskDJTechnicalTrackAnalysisMetaBrainzProviderStatusesRemainDiagnostics()
+static void AskDJTrackInsightMetaBrainzProviderStatusesRemainDiagnostics()
 {
     const string usedJson = """
     {
       "id": "analysis-metabrainz-provider-used",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "sections": [
           { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
@@ -448,8 +464,8 @@ static void AskDJTechnicalTrackAnalysisMetaBrainzProviderStatusesRemainDiagnosti
     {
       "id": "analysis-metabrainz-provider-skipped",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "sections": [
           { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
@@ -465,8 +481,8 @@ static void AskDJTechnicalTrackAnalysisMetaBrainzProviderStatusesRemainDiagnosti
     {
       "id": "analysis-metabrainz-provider-error",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "sections": [
           { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
@@ -485,22 +501,22 @@ static void AskDJTechnicalTrackAnalysisMetaBrainzProviderStatusesRemainDiagnosti
     AssertNotNull(used);
     AssertNotNull(skipped);
     AssertNotNull(error);
-    AssertEqual("used", used!.TechnicalAnalysis!.ProviderDiagnostics[0].Subtitle);
-    AssertEqual("skipped", skipped!.TechnicalAnalysis!.ProviderDiagnostics[0].Subtitle);
-    AssertTrue(skipped.TechnicalAnalysis.ProviderDiagnostics[0].Meta.Contains("rate_limited", StringComparison.Ordinal), "rate limit reason should stay diagnostic");
-    AssertEqual("error", error!.TechnicalAnalysis!.ProviderDiagnostics[0].Subtitle);
-    AssertEqual(1, error.TechnicalAnalysis.Sections.Count);
-    AssertEqual(0, error.TechnicalAnalysis.Context.Count);
+    AssertEqual("used", used!.TrackInsight!.ProviderDiagnostics[0].Subtitle);
+    AssertEqual("skipped", skipped!.TrackInsight!.ProviderDiagnostics[0].Subtitle);
+    AssertTrue(skipped.TrackInsight.ProviderDiagnostics[0].Meta.Contains("rate_limited", StringComparison.Ordinal), "rate limit reason should stay diagnostic");
+    AssertEqual("error", error!.TrackInsight!.ProviderDiagnostics[0].Subtitle);
+    AssertEqual(1, error.TrackInsight.Sections.Count);
+    AssertEqual(0, error.TrackInsight.Context.Count);
 }
 
-static void AskDJTechnicalTrackAnalysisWithoutProvidersRemainsCompatible()
+static void AskDJTrackInsightWithoutProvidersRemainsCompatible()
 {
     const string json = """
     {
       "id": "analysis-no-providers",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "sections": [
           { "id": "energy_curve", "summary": "Rustige intro, hoge piek na de break." }
@@ -512,19 +528,19 @@ static void AskDJTechnicalTrackAnalysisWithoutProvidersRemainsCompatible()
     var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
 
     AssertNotNull(message);
-    AssertTrue(message!.Analysis!.Providers is null, "missing providers must deserialize as optional metadata");
-    AssertEqual(1, message.TechnicalAnalysis!.Sections.Count);
-    AssertEqual(0, message.TechnicalAnalysis.ProviderDiagnostics.Count);
+    AssertTrue(message!.TrackInsightData!.Providers is null, "missing providers must deserialize as optional metadata");
+    AssertEqual(1, message.TrackInsight!.Sections.Count);
+    AssertEqual(0, message.TrackInsight.ProviderDiagnostics.Count);
 }
 
-static void AskDJTechnicalTrackAnalysisToleratesUnknownProviders()
+static void AskDJTrackInsightToleratesUnknownProviders()
 {
     const string json = """
     {
       "id": "analysis-unknown-provider",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "sections": [
           { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 126 }
@@ -544,21 +560,21 @@ static void AskDJTechnicalTrackAnalysisToleratesUnknownProviders()
     var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
 
     AssertNotNull(message);
-    AssertEqual("future provider", message!.TechnicalAnalysis!.ProviderDiagnostics[0].Title);
-    AssertEqual("deferred", message.TechnicalAnalysis.ProviderDiagnostics[0].Subtitle);
-    AssertTrue(message.TechnicalAnalysis.ProviderDiagnostics[0].Meta.Contains("reason:", StringComparison.Ordinal), "unknown reasons can remain diagnostic metadata");
-    AssertTrue(!message.TechnicalAnalysis.ProviderDiagnostics[0].Meta.Contains("secret-provider-token", StringComparison.Ordinal), "provider diagnostics must redact accidental secrets");
-    AssertTrue(!message.TechnicalAnalysis.ProviderDiagnostics[0].Meta.Contains("raw_prompt", StringComparison.OrdinalIgnoreCase), "unknown provider fields must be ignored");
+    AssertEqual("future provider", message!.TrackInsight!.ProviderDiagnostics[0].Title);
+    AssertEqual("deferred", message.TrackInsight.ProviderDiagnostics[0].Subtitle);
+    AssertTrue(message.TrackInsight.ProviderDiagnostics[0].Meta.Contains("reason:", StringComparison.Ordinal), "unknown reasons can remain diagnostic metadata");
+    AssertTrue(!message.TrackInsight.ProviderDiagnostics[0].Meta.Contains("secret-provider-token", StringComparison.Ordinal), "provider diagnostics must redact accidental secrets");
+    AssertTrue(!message.TrackInsight.ProviderDiagnostics[0].Meta.Contains("raw_prompt", StringComparison.OrdinalIgnoreCase), "unknown provider fields must be ignored");
 }
 
-static void AskDJTechnicalTrackAnalysisUnavailableRendersSkippedProviderDiagnostics()
+static void AskDJTrackInsightUnavailableRendersSkippedProviderDiagnostics()
 {
     const string json = """
     {
       "id": "analysis-unavailable-providers",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "mode": "unavailable",
         "providers": [
@@ -573,22 +589,22 @@ static void AskDJTechnicalTrackAnalysisUnavailableRendersSkippedProviderDiagnost
     var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
 
     AssertNotNull(message);
-    AssertTrue(message!.TechnicalAnalysis!.IsUnavailable, "unavailable mode should still be visible");
-    AssertEqual(0, message.TechnicalAnalysis.Sections.Count);
-    AssertEqual(0, message.TechnicalAnalysis.Timeline.Count);
-    AssertEqual(0, message.TechnicalAnalysis.Tips.Count);
-    AssertEqual(3, message.TechnicalAnalysis.ProviderDiagnostics.Count);
-    AssertTrue(message.HasTechnicalAnalysis, "provider diagnostics may keep the diagnostic analysis card visible");
+    AssertTrue(message!.TrackInsight!.IsUnavailable, "unavailable mode should still be visible");
+    AssertEqual(0, message.TrackInsight.Sections.Count);
+    AssertEqual(0, message.TrackInsight.Timeline.Count);
+    AssertEqual(0, message.TrackInsight.Tips.Count);
+    AssertEqual(3, message.TrackInsight.ProviderDiagnostics.Count);
+    AssertTrue(message.HasTrackInsight, "provider diagnostics may keep the diagnostic track insight card visible");
 }
 
-static void AskDJTechnicalTrackAnalysisV2WithoutTimelineRendersSections()
+static void AskDJTrackInsightV2WithoutTimelineRendersSections()
 {
     const string json = """
     {
       "id": "analysis-2",
       "role": "assistant",
-      "action": "track_analysis",
-      "analysis": {
+      "action": "track_insight",
+      "track_insight": {
         "contract_version": 2,
         "sections": [
           { "id": "energy_curve", "summary": "Rustige intro, hoge piek na de break.", "source": "inferred", "confidence": "low" }
@@ -603,21 +619,21 @@ static void AskDJTechnicalTrackAnalysisV2WithoutTimelineRendersSections()
     var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
 
     AssertNotNull(message);
-    AssertTrue(message!.IsTechnicalTrackAnalysis, "track_analysis action must be detected");
-    AssertEqual(1, message.TechnicalAnalysis!.Sections.Count);
-    AssertEqual(0, message.TechnicalAnalysis.Timeline.Count);
-    AssertEqual("energy curve", message.TechnicalAnalysis.Sections[0].Title);
-    AssertTrue(message.TechnicalAnalysis.Sections[0].Meta.Contains("confidence: low", StringComparison.Ordinal), "low confidence must stay visible");
+    AssertTrue(message!.IsTrackInsight, "track_insight action must be detected");
+    AssertEqual(1, message.TrackInsight!.Sections.Count);
+    AssertEqual(0, message.TrackInsight.Timeline.Count);
+    AssertEqual("energy curve", message.TrackInsight.Sections[0].Title);
+    AssertTrue(message.TrackInsight.Sections[0].Meta.Contains("confidence: low", StringComparison.Ordinal), "low confidence must stay visible");
 }
 
-static void AskDJTechnicalTrackAnalysisUnavailableRendersLimitations()
+static void AskDJTrackInsightUnavailableRendersLimitations()
 {
     const string json = """
     {
       "id": "analysis-unavailable",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "mode": "unavailable",
         "source": "unavailable",
@@ -632,54 +648,19 @@ static void AskDJTechnicalTrackAnalysisUnavailableRendersLimitations()
     var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
 
     AssertNotNull(message);
-    AssertTrue(message!.TechnicalAnalysis!.IsUnavailable, "unavailable mode should render a fallback card");
-    AssertEqual(0, message.TechnicalAnalysis.Sections.Count);
-    AssertEqual(1, message.TechnicalAnalysis.Limitations.Count);
+    AssertTrue(message!.TrackInsight!.IsUnavailable, "unavailable mode should render a fallback card");
+    AssertEqual(0, message.TrackInsight.Sections.Count);
+    AssertEqual(1, message.TrackInsight.Limitations.Count);
 }
 
-static void AskDJTechnicalTrackAnalysisV1FallbackRendersMeasuredInferredAndLimitations()
-{
-    const string json = """
-    {
-      "id": "analysis-v1",
-      "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
-        "measured": {
-          "bpm": 124,
-          "sections": [
-            { "label": "Intro", "start": "0:00", "end": "0:20", "source": "measured" }
-          ]
-        },
-        "inferred": {
-          "key": "Am",
-          "confidence": "low"
-        },
-        "limitations": [
-          { "message": "Structure labels are estimates.", "confidence": "low" }
-        ]
-      }
-    }
-    """;
-
-    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
-
-    AssertNotNull(message);
-    AssertTrue(message!.HasTechnicalAnalysis, "v1 fallback must render");
-    AssertTrue(message.TechnicalAnalysis!.Sections.Any(row => row.Title == "Gemeten" && row.Subtitle == "BPM"), "measured bpm must render");
-    AssertTrue(message.TechnicalAnalysis.Sections.Any(row => row.Title == "Ingeschat" && row.Subtitle == "Key"), "inferred key must render");
-    AssertTrue(message.TechnicalAnalysis.Sections.Any(row => row.Title == "Intro" && row.Subtitle.Contains("0:00", StringComparison.Ordinal)), "measured sections are the only v1 timestamps");
-    AssertEqual(1, message.TechnicalAnalysis.Limitations.Count);
-}
-
-static void AskDJTechnicalTrackAnalysisRendersUnknownValuesGenerically()
+static void AskDJTrackInsightRendersUnknownValuesGenerically()
 {
     const string json = """
     {
       "id": "analysis-unknown",
       "role": "assistant",
-      "intent": { "intent": "technical_track_analysis" },
-      "analysis": {
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
         "contract_version": 2,
         "sections": [
           { "id": "spectral_flux_magic", "kind": "future_kind", "value": "wide", "source": "future_sensor", "confidence": "experimental" }
@@ -691,19 +672,19 @@ static void AskDJTechnicalTrackAnalysisRendersUnknownValuesGenerically()
     var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
 
     AssertNotNull(message);
-    AssertEqual("spectral flux magic", message!.TechnicalAnalysis!.Sections[0].Title);
-    AssertEqual("future kind", message.TechnicalAnalysis.Sections[0].Subtitle);
-    AssertTrue(message.TechnicalAnalysis.Sections[0].Meta.Contains("future_sensor", StringComparison.Ordinal), "unknown source must render");
+    AssertEqual("spectral flux magic", message!.TrackInsight!.Sections[0].Title);
+    AssertEqual("future kind", message.TrackInsight.Sections[0].Subtitle);
+    AssertTrue(message.TrackInsight.Sections[0].Meta.Contains("future_sensor", StringComparison.Ordinal), "unknown source must render");
 }
 
-static void AskDJTechnicalTrackAnalysisWithoutPlaybackActionsHasNoStaleButtons()
+static void AskDJTrackInsightWithoutPlaybackActionsHasNoStaleButtons()
 {
     const string json = """
     {
       "id": "analysis-no-actions",
       "role": "assistant",
-      "action": "track_analysis",
-      "analysis": {
+      "action": "track_insight",
+      "track_insight": {
         "contract_version": 2,
         "sections": [
           { "id": "instrumentation", "summary": "Sparse drums and pads." }
@@ -871,10 +852,10 @@ static void DiagnosticRedactionRemovesSecrets()
 
 static void VersionCompatibilityEnforcesAppProtocolMinor()
 {
-    var sameMinor = VersionCompatibility.Evaluate("3.2", "3.2.1", null, false, null);
+    var sameMinor = VersionCompatibility.Evaluate("3.2", "3.2.2", null, false, null);
     var olderMinor = VersionCompatibility.Evaluate("3.2", "3.1.12", null, false, null);
     var newerMinor = VersionCompatibility.Evaluate("3.2", null, "3.3", false, null);
-    var explicitMismatch = VersionCompatibility.Evaluate("3.2", "3.2.1", null, true, "version_mismatch");
+    var explicitMismatch = VersionCompatibility.Evaluate("3.2", "3.2.2", null, true, "version_mismatch");
     var devEscapeHatch = VersionCompatibility.Evaluate("3.2", "0.0.0", null, true, "version_mismatch");
 
     AssertTrue(sameMinor.IsCompatible, "patch versions may differ within the same app protocol minor");
@@ -1178,6 +1159,169 @@ static void BackendAwareActionsCarryBackendRevision()
     AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "action payload must include Windows client type");
 }
 
+static void WebSocketFastPathDetectsCapabilities()
+{
+    var fastPath = new FakeFastPath(["djconnect/command", "djconnect/ask_dj/message"]);
+    var client = NewClientWithFastPath(fastPath, new FakeHttpHandler("{}"));
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+
+    AssertTrue(client.FastPathDiagnostics.WebSocketConnected, "configured local websocket should report connected fake fast path");
+    AssertEqual(2, client.FastPathDiagnostics.WebSocketCommands.Count);
+    AssertTrue(client.FastPathDiagnostics.WebSocketCommands.Contains("djconnect/command"), "capabilities must include command route");
+}
+
+static void WebSocketCommandSuccessSkipsHttp()
+{
+    var fastPath = new FakeFastPath(["djconnect/command"])
+        .WithResponse("djconnect/command", new CommandResponse(true, "ws ok", "ws ok", null));
+    var http = new FakeHttpHandler("""{"success":true,"message":"http ok"}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+
+    var response = client.RunCommandAsync(TestIdentity(), "play", CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "websocket command response should be used");
+    AssertEqual("ws ok", response.Message);
+    AssertEqual(0, http.RequestCount);
+    AssertEqual("djconnect/command", fastPath.Routes.Single());
+}
+
+static void WebSocketMissingCapabilityFallsBackToHttp()
+{
+    var fastPath = new FakeFastPath(["djconnect/ask_dj/message"]);
+    var http = new FakeHttpHandler("""{"success":true,"message":"http ok"}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+
+    var response = client.RunCommandAsync(TestIdentity(), "pause", CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "HTTP fallback should preserve command behavior");
+    AssertEqual("http ok", response.Message);
+    AssertEqual(1, http.RequestCount);
+    AssertEqual(1, fastPath.Attempts);
+}
+
+static void WebSocketAskDJMessageSuccessUsesRevisions()
+{
+    var askResponse = JsonSerializer.Deserialize<AskDJMessageResponse>("""
+    {
+      "success": true,
+      "history_revision": 77,
+      "clear_revision": 3,
+      "messages": [
+        { "id": "assistant-1", "role": "assistant", "text": "Track Insight staat klaar." }
+      ]
+    }
+    """, JsonOptions())!;
+    var fastPath = new FakeFastPath(["djconnect/ask_dj/message"]).WithResponse("djconnect/ask_dj/message", askResponse);
+    var http = new FakeHttpHandler("""{"success":true,"history_revision":1}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+
+    var response = client.SendAskDJMessageAsync(TestAskRequest("Tell me about this track"), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual(77, response.HistoryRevision);
+    AssertEqual(3, response.ClearRevision);
+    AssertEqual(0, http.RequestCount);
+    AssertEqual("Tell me about this track", fastPath.LastPayload!["text"]);
+}
+
+static void WebSocketTrackInsightSuccessRendersMusicDna()
+{
+    var trackInsight = new TrackInsightResponse(
+        true,
+        new TrackInsightResult(
+            new TrackInsightTrack("Strobe", "deadmau5", "For Lack of a Better Name"),
+            2,
+            "available",
+            "ha",
+            "high",
+            new TrackInsightAnalysis([], null, null, null, null),
+            null,
+            null,
+            null,
+            null,
+            null,
+            new TrackInsightMusicDna(91, "This expands your Music DNA.", null),
+            new TrackInsightVisualProfile("Energetic", ["red"], "pulse"),
+            new TrackInsightCache(false, DateTimeOffset.UtcNow),
+            null));
+    var fastPath = new FakeFastPath(["djconnect/track_insight"]).WithResponse("djconnect/track_insight", trackInsight);
+    var http = new FakeHttpHandler("""{"success":false,"error":"http_should_not_run"}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+
+    var response = client.GetTrackInsightAsync(TestTrackInsightRequest(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "websocket Track Insight should return success");
+    AssertEqual(91, response.TrackInsight!.MusicDna!.MatchPercent);
+    AssertEqual(0, http.RequestCount);
+}
+
+static void WebSocketTimeoutFallsBackToHttpExactlyOnce()
+{
+    var fastPath = new FakeFastPath(["djconnect/command"]) { Error = "timeout" };
+    var http = new FakeHttpHandler("""{"success":true,"message":"http fallback"}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+
+    var response = client.RunCommandAsync(TestIdentity(), "next", CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "HTTP fallback should run after timeout");
+    AssertEqual("http fallback", response.Message);
+    AssertEqual(1, fastPath.Attempts);
+    AssertEqual(1, http.RequestCount);
+}
+
+static void WebSocketAuthErrorFallsBackToHttp()
+{
+    var fastPath = new FakeFastPath(["djconnect/ask_dj/message"]) { Error = "auth" };
+    var http = new FakeHttpHandler("""{"success":true,"message":"http ask"}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true);
+
+    var response = client.SendAskDJMessageAsync(TestAskRequest("Analyze this track"), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "HTTP fallback should run after websocket auth error");
+    AssertEqual("http ask", response.Message);
+    AssertEqual(1, http.RequestCount);
+}
+
+static void RemoteConnectionStaysHttp()
+{
+    var fastPath = new FakeFastPath(["djconnect/command"]);
+    var http = new FakeHttpHandler("""{"success":true,"message":"remote http"}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("https://example.ui.nabu.casa", "device-token-123", enableLocalWebSocketFastPath: true);
+
+    var response = client.RunCommandAsync(TestIdentity(), "previous", CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "remote sessions must keep HTTP transport");
+    AssertEqual("remote http", response.Message);
+    AssertEqual(0, fastPath.Attempts);
+    AssertEqual(1, http.RequestCount);
+}
+
+static void WebSocketPayloadIncludesIdentityAndTokenWithoutDiagnosticLeaks()
+{
+    var askResponse = JsonSerializer.Deserialize<AskDJMessageResponse>("""
+    { "success": true, "message": "ok" }
+    """, JsonOptions())!;
+    var fastPath = new FakeFastPath(["djconnect/ask_dj/message"])
+        .WithResponse("djconnect/ask_dj/message", askResponse);
+    var client = NewClientWithFastPath(fastPath, new FakeHttpHandler("""{"success":true}"""));
+    client.Configure("http://192.168.1.2:8123", "secret-device-token-xyz", enableLocalWebSocketFastPath: true);
+
+    _ = client.SendAskDJMessageAsync(TestAskRequest("raw prompt should not be logged"), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual("windows", fastPath.LastPayload!["client_type"]);
+    AssertEqual("djconnect-windows-ABC123DEF456", fastPath.LastPayload["device_id"]);
+    AssertEqual("secret-device-token-xyz", fastPath.LastPayload["device_token"]);
+    var diagnostics = client.FastPathDiagnostics;
+    AssertTrue(!diagnostics.LastWebSocketError.Contains("secret-device-token", StringComparison.Ordinal), "diagnostics must not include device token");
+    AssertTrue(!diagnostics.LastWebSocketError.Contains("raw prompt", StringComparison.OrdinalIgnoreCase), "diagnostics must not include raw prompt");
+}
+
 static void BackendErrorResponsesDeserializeStaleAndUnsupportedContracts()
 {
     const string staleJson = """
@@ -1216,6 +1360,34 @@ static void Protocol32KeepsAppLocalApiAndMdnsInactive()
 
 static JsonSerializerOptions JsonOptions() => new(JsonSerializerDefaults.Web);
 
+static ClientIdentity TestIdentity() => ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
+
+static AskDJRequest TestAskRequest(string text) => new(
+    "msg-ws-1",
+    "djconnect-windows-ABC123DEF456",
+    "djconnect-windows-ABC123DEF456",
+    "Studio PC",
+    "windows",
+    text,
+    text,
+    Mood: 72);
+
+static TrackInsightRequest TestTrackInsightRequest() => new(
+    "djconnect-windows-ABC123DEF456",
+    "Studio PC",
+    "windows",
+    "Strobe",
+    "deadmau5",
+    "For Lack of a Better Name",
+    MusicBackend: "music_assistant",
+    Locale: "en",
+    IncludeVisualProfile: true);
+
+static DJConnectApiClient NewClientWithFastPath(FakeFastPath fastPath, FakeHttpHandler http)
+{
+    return new DJConnectApiClient(new HttpClient(http), fastPath);
+}
+
 static void AssertEqual<T>(T expected, T actual)
 {
     if (!EqualityComparer<T>.Default.Equals(expected, actual))
@@ -1237,5 +1409,83 @@ static void AssertNotNull<T>(T? value)
     if (value is null)
     {
         throw new InvalidOperationException("Expected a non-null value.");
+    }
+}
+
+sealed class FakeFastPath : IDJConnectWebSocketFastPath
+{
+    private readonly HashSet<string> _commands;
+    private readonly Dictionary<string, object> _responses = new(StringComparer.OrdinalIgnoreCase);
+
+    public FakeFastPath(IEnumerable<string> commands)
+    {
+        _commands = new HashSet<string>(commands, StringComparer.OrdinalIgnoreCase);
+    }
+
+    public string Error { get; set; } = "";
+    public int Attempts { get; private set; }
+    public List<string> Routes { get; } = [];
+    public Dictionary<string, object?>? LastPayload { get; private set; }
+    public FastPathDiagnostics Diagnostics => new("websocket", true, Error, DateTimeOffset.UtcNow, _commands.ToArray());
+
+    public FakeFastPath WithResponse<T>(string route, T response)
+    {
+        _responses[route] = response!;
+        return this;
+    }
+
+    public void Configure(string homeAssistantUrl, string? token, bool enabled)
+    {
+    }
+
+    public Task<FastPathResult<T>> TrySendAsync<T>(
+        string route,
+        Dictionary<string, object?> payload,
+        TimeSpan timeout,
+        CancellationToken cancellationToken)
+    {
+        Attempts++;
+        Routes.Add(route);
+        LastPayload = new Dictionary<string, object?>(payload);
+
+        if (!string.IsNullOrWhiteSpace(Error))
+        {
+            return Task.FromResult(FastPathResult<T>.Miss(Error));
+        }
+
+        if (!_commands.Contains(route))
+        {
+            return Task.FromResult(FastPathResult<T>.Miss("missing capability"));
+        }
+
+        if (_responses.TryGetValue(route, out var response) && response is T typed)
+        {
+            return Task.FromResult(FastPathResult<T>.Hit(typed));
+        }
+
+        return Task.FromResult(FastPathResult<T>.Miss("no response"));
+    }
+}
+
+sealed class FakeHttpHandler : HttpMessageHandler
+{
+    private readonly string _json;
+
+    public FakeHttpHandler(string json)
+    {
+        _json = json;
+    }
+
+    public int RequestCount { get; private set; }
+    public string LastPath { get; private set; } = "";
+
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    {
+        RequestCount++;
+        LastPath = request.RequestUri?.PathAndQuery ?? "";
+        return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent(_json)
+        });
     }
 }

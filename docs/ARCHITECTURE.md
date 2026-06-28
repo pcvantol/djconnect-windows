@@ -10,7 +10,7 @@ Home Assistant owns:
 
 - pairing and DJConnect bearer-token lifecycle;
 - Spotify OAuth and playback backend credentials;
-- Ask DJ intent interpretation, DJ Memory and server-side chat history;
+- Ask DJ intent interpretation, Music DNA and server-side chat history;
 - playback commands and follow-up confirmation state;
 - Assist/STT/TTS and native Home Assistant entities.
 
@@ -23,7 +23,7 @@ The desktop app owns:
 - rendering Ask DJ messages, actions, recent-played lists and status.
 
 The app must never store Spotify credentials, Home Assistant long-lived access
-tokens, OAuth refresh tokens, DJ Memory or Ask DJ history as the source of
+tokens, OAuth refresh tokens, Music DNA or Ask DJ history as the source of
 truth.
 
 ## Targets
@@ -82,7 +82,7 @@ connection flow rather than in a mobile-style tab bar.
     preserves pending local user bubbles, honors `clear_revision`, prunes from
     trim metadata and renders system messages, optional audio replay,
     response-owned images/sources/items and backend-returned actions without
-    client-side intent, memory, follow-up or playback reconstruction.
+    client-side intent, Music DNA, follow-up or playback reconstruction.
 12. Playback actions and follow-up buttons are sent through
    `POST /api/djconnect/command`.
 13. Playlists render backend-provided playlist shapes (`playlists`,
@@ -108,6 +108,11 @@ connection flow rather than in a mobile-style tab bar.
   prefilled GitHub issue URL. Submission remains manual.
 - Privacy explains local data, Home Assistant-owned state, permissions and
   deletion/reset actions without exposing private identifiers.
+- Track Insight is a first-class feature rather than an Ask DJ sub-view. The
+  current Windows client supports a direct Now Playing entry point and shared
+  `track_insight` renderer; the dedicated navigation destination, demo provider
+  boundary, Auto Track Insight and visualizer roadmap are tracked in
+  [TRACK_INSIGHT_PLATFORM.md](TRACK_INSIGHT_PLATFORM.md).
 - Demo Mode is session-only. It loads local sample status, queue, playlists and
   Ask DJ responses only after explicit start, disables Home Assistant calls and
   clears demo runtime state when stopped.

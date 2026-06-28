@@ -56,7 +56,9 @@ public sealed class MainViewModel : ObservableObject
     private string _trackTitle = "";
     private string _trackArtist = "";
     private string _trackAlbum = "";
+    private string _trackInsightNotice = "";
     private string _artworkUrl = "";
+    private TrackInsightPresentation? _trackInsight;
     private double _playbackPositionMs;
     private double _playbackDurationMs = 1;
     private double _volumePercent = 42;
@@ -110,6 +112,7 @@ public sealed class MainViewModel : ObservableObject
         SeekBackwardCommand = new AsyncCommand(() => SeekRelativeAsync(-15_000), () => CanUsePlaybackFeatures);
         SeekForwardCommand = new AsyncCommand(() => SeekRelativeAsync(15_000), () => CanUsePlaybackFeatures);
         SaveCurrentTrackCommand = new AsyncCommand(SaveCurrentTrackAsync, () => CanUsePlaybackFeatures);
+        OpenTrackInsightCommand = new AsyncCommand(OpenTrackInsightAsync, () => CanUsePlaybackFeatures);
         StartDemoModeCommand = new AsyncCommand(StartDemoModeAsync);
         StopDemoModeCommand = new AsyncCommand(StopDemoModeAsync, () => IsDemoMode);
         CompleteOnboardingCommand = new AsyncCommand(CompleteOnboardingAsync);
@@ -504,6 +507,34 @@ public sealed class MainViewModel : ObservableObject
 
     public bool HasNoArtwork => !HasArtwork;
 
+    public TrackInsightPresentation? TrackInsightPanel
+    {
+        get => _trackInsight;
+        set
+        {
+            if (SetProperty(ref _trackInsight, value))
+            {
+                OnPropertyChanged(nameof(HasTrackInsightPanel));
+            }
+        }
+    }
+
+    public bool HasTrackInsightPanel => TrackInsightPanel?.HasContent == true;
+
+    public string TrackInsightNotice
+    {
+        get => _trackInsightNotice;
+        set
+        {
+            if (SetProperty(ref _trackInsightNotice, value))
+            {
+                OnPropertyChanged(nameof(HasTrackInsightNotice));
+            }
+        }
+    }
+
+    public bool HasTrackInsightNotice => !string.IsNullOrWhiteSpace(TrackInsightNotice);
+
     public double PlaybackPositionMs
     {
         get => _playbackPositionMs;
@@ -759,6 +790,8 @@ public sealed class MainViewModel : ObservableObject
         Demo mode: {IsDemoMode.ToString().ToLowerInvariant()}
         Runtime compatible: {_runtimeCompatible.ToString().ToLowerInvariant()}
         Backend available: {_backendAvailable.ToString().ToLowerInvariant()}
+        Fast path transport: {_apiClient.FastPathDiagnostics.FastPathTransport}
+        WebSocket connected: {_apiClient.FastPathDiagnostics.WebSocketConnected.ToString().ToLowerInvariant()}
         Device class: desktop
         """;
     public string FeedbackOsVersion => $"Windows {Environment.OSVersion.Version}";
@@ -1157,6 +1190,7 @@ public sealed class MainViewModel : ObservableObject
     public AsyncCommand SeekBackwardCommand { get; }
     public AsyncCommand SeekForwardCommand { get; }
     public AsyncCommand SaveCurrentTrackCommand { get; }
+    public AsyncCommand OpenTrackInsightCommand { get; }
     public AsyncCommand StartDemoModeCommand { get; }
     public AsyncCommand StopDemoModeCommand { get; }
     public AsyncCommand CompleteOnboardingCommand { get; }
@@ -1553,12 +1587,40 @@ public sealed class MainViewModel : ObservableObject
             MergeMessage(message);
         }
 
-        if (responseMessages.Count == 0 && (!string.IsNullOrWhiteSpace(response.Text ?? response.DjText ?? response.Message) || response.Analysis is not null))
+        if (responseMessages.Count == 0 && (!string.IsNullOrWhiteSpace(response.Text ?? response.DjText ?? response.Message) || response.TrackInsightData is not null))
         {
-            MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", SafeDisplayText(response.Text ?? response.DjText ?? response.Message), null, DateTimeOffset.Now, "assistant", response.PlaybackActions, response.ConfirmationActions, response.Items, response.Images, response.Sources, response.AudioUrl, ClientMessageId: clientMessageId, Intent: response.Intent, Action: response.Action, Analysis: response.Analysis, Links: response.Links));
+            var fallbackMessage = new AskDJMessage(
+                Guid.NewGuid().ToString("N"),
+                "assistant",
+                SafeDisplayText(response.Text ?? response.DjText ?? response.Message),
+                null,
+                DateTimeOffset.Now,
+                "assistant",
+                response.PlaybackActions,
+                response.ConfirmationActions,
+                response.Items,
+                response.Images,
+                response.Sources,
+                response.AudioUrl,
+                ClientMessageId: clientMessageId,
+                Intent: response.Intent,
+                Action: response.Action,
+                Type: response.Type,
+                OpenScreen: response.OpenScreen,
+                TrackInsightData: response.TrackInsightData,
+                Links: response.Links);
+            MergeMessage(fallbackMessage);
+            responseMessages = [fallbackMessage];
         }
 
         var assistantMessage = responseMessages.LastOrDefault(message => message.IsAssistant);
+        var trackInsightMessage = responseMessages.LastOrDefault(message => message.IsTrackInsight && message.TrackInsightData is not null);
+        if (trackInsightMessage?.TrackInsight is not null)
+        {
+            TrackInsightPanel = trackInsightMessage.TrackInsight;
+            TrackInsightNotice = "";
+        }
+
         ReplaceActions(assistantMessage?.PlaybackActions ?? response.PlaybackActions, assistantMessage?.ConfirmationActions ?? response.ConfirmationActions);
         ReplaceRecentItems(assistantMessage?.Items ?? response.Items);
         await SaveSettingsIfMutableAsync();
@@ -1811,6 +1873,95 @@ public sealed class MainViewModel : ObservableObject
     private async Task SaveCurrentTrackAsync()
     {
         await RunSaveCurrentTrackAsync(fromAskDJ: false);
+    }
+
+    private async Task OpenTrackInsightAsync()
+    {
+        TrackInsightNotice = "";
+        TrackInsightPanel = null;
+
+        if (!CanUsePlaybackFeatures)
+        {
+            TrackInsightNotice = !_runtimeCompatible ? L("Update vereist", "Update required") : L("Track Insight is niet bereikbaar", "Track Insight is unavailable");
+            return;
+        }
+
+        if (IsDemoMode)
+        {
+            TrackInsightPanel = TrackInsightPresentation.From(new TrackInsightResult(
+                new TrackInsightTrack(TrackTitle, TrackArtist, TrackAlbum),
+                1,
+                "available",
+                "demo",
+                "medium",
+                new TrackInsightAnalysis(
+                    [
+                        new TrackInsightSection("vibe", "mood", "Vibe", "Vibe", null, "Shimmering synth-pop with a night-drive pulse.", null, "demo", "medium", null)
+                    ],
+                    null,
+                    [
+                        new TrackInsightTip("fit", "music_dna", "Why it fits you", null, "This expands your Music DNA.", "demo", "medium")
+                    ],
+                    null,
+                    null),
+                null,
+                null,
+                null,
+                null,
+                null,
+                new TrackInsightMusicDna(84, "Matches your energetic synth-pop lane.", null),
+                new TrackInsightVisualProfile("Neon, wistful, driving", ["indigo", "cyan"], "slow pulse"),
+                new TrackInsightCache(false, DateTimeOffset.Now),
+                null));
+            TrackInsightNotice = "";
+            return;
+        }
+
+        ConfigureClient();
+        var request = new TrackInsightRequest(
+            _identity.DeviceId,
+            _identity.DeviceName,
+            _identity.ClientType,
+            string.IsNullOrWhiteSpace(_trackTitle) ? null : _trackTitle,
+            string.IsNullOrWhiteSpace(_trackArtist) ? null : _trackArtist,
+            string.IsNullOrWhiteSpace(_trackAlbum) ? null : _trackAlbum,
+            MusicBackend: _musicBackendSummary.Backend,
+            Locale: _language,
+            IncludeVisualProfile: true);
+
+        try
+        {
+            var response = await _apiClient.GetTrackInsightAsync(request, CancellationToken.None);
+            if (!response.Success)
+            {
+                TrackInsightNotice = string.Equals(response.Error, "no_track_playing", StringComparison.OrdinalIgnoreCase)
+                    ? L("Geen actieve track om te tonen.", "No active track to show.")
+                    : response.Message ?? response.Error ?? L("Track Insight is niet bereikbaar", "Track Insight is unavailable");
+                return;
+            }
+
+            TrackInsightPanel = TrackInsightPresentation.From(response.TrackInsight);
+            TrackInsightNotice = HasTrackInsightPanel ? "" : L("Geen Track Insight beschikbaar.", "No Track Insight available.");
+            AddDiagnostic("INF Track Insight loaded from Home Assistant.");
+        }
+        catch (Exception ex)
+        {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                TrackInsightNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                return;
+            }
+
+            if (ApplyVersionMismatch(ex))
+            {
+                TrackInsightNotice = L("Update vereist", "Update required");
+                AddDiagnostic("WRN Track Insight blocked by version mismatch.");
+                return;
+            }
+
+            TrackInsightNotice = L("Track Insight is niet bereikbaar", "Track Insight is unavailable");
+            AddDiagnostic("WRN Track Insight failed: " + ex.GetType().Name);
+        }
     }
 
     private async Task<CommandResponse?> RunSaveCurrentTrackAsync(bool fromAskDJ)
@@ -2560,6 +2711,7 @@ public sealed class MainViewModel : ObservableObject
         body.AppendLine($"- Demo mode: {IsDemoMode.ToString().ToLowerInvariant()}");
         body.AppendLine($"- Runtime compatible: {_runtimeCompatible.ToString().ToLowerInvariant()}");
         body.AppendLine($"- Backend available: {_backendAvailable.ToString().ToLowerInvariant()}");
+        AppendFastPathDiagnostics(body);
         body.AppendLine("- Device class: desktop");
 
         if (IncludePrivacySafeLogs)
@@ -2677,6 +2829,7 @@ public sealed class MainViewModel : ObservableObject
         body.AppendLine($"- Demo mode: {IsDemoMode.ToString().ToLowerInvariant()}");
         body.AppendLine($"- Runtime compatible: {_runtimeCompatible.ToString().ToLowerInvariant()}");
         body.AppendLine($"- Backend available: {_backendAvailable.ToString().ToLowerInvariant()}");
+        AppendFastPathDiagnostics(body);
         body.AppendLine();
         body.AppendLine("## Recent diagnostics");
         var recentLogs = DiagnosticLogLines.TakeLast(80).ToList();
@@ -2693,6 +2846,16 @@ public sealed class MainViewModel : ObservableObject
         }
 
         return RedactFeedbackText(body.ToString().TrimEnd());
+    }
+
+    private void AppendFastPathDiagnostics(StringBuilder body)
+    {
+        var diagnostics = _apiClient.FastPathDiagnostics;
+        body.AppendLine($"- Fast path transport: {diagnostics.FastPathTransport}");
+        body.AppendLine($"- WebSocket connected: {diagnostics.WebSocketConnected.ToString().ToLowerInvariant()}");
+        body.AppendLine($"- Last WebSocket error: {diagnostics.LastWebSocketError}");
+        body.AppendLine($"- Last capability refresh: {diagnostics.LastCapabilityRefresh?.ToString("u") ?? "never"}");
+        body.AppendLine($"- WebSocket commands: {string.Join(", ", diagnostics.WebSocketCommands)}");
     }
 
     private Task EnsureLocalClientApiAsync()
@@ -2716,7 +2879,7 @@ public sealed class MainViewModel : ObservableObject
         _connectionMode = state.Mode;
         if (!string.IsNullOrWhiteSpace(state.ActiveUrl))
         {
-            _apiClient.Configure(state.ActiveUrl, Token);
+            _apiClient.Configure(state.ActiveUrl, Token, state.Mode == HomeAssistantConnectionMode.Local);
         }
 
         RaiseTransportProperties();
@@ -2726,12 +2889,12 @@ public sealed class MainViewModel : ObservableObject
     private void ConfigureClient()
     {
         var activeUrl = _transportManager.Current.ActiveUrl ?? HomeAssistantUrl;
-        _apiClient.Configure(activeUrl, Token);
+        _apiClient.Configure(activeUrl, Token, _transportManager.Current.Mode == HomeAssistantConnectionMode.Local);
     }
 
     private void ConfigureClient(string activeUrl)
     {
-        _apiClient.Configure(activeUrl, Token);
+        _apiClient.Configure(activeUrl, Token, enableLocalWebSocketFastPath: true);
         _connectionMode = HomeAssistantConnectionMode.Local;
         RaiseTransportProperties();
     }
@@ -3988,6 +4151,7 @@ public sealed class MainViewModel : ObservableObject
         SeekBackwardCommand.RaiseCanExecuteChanged();
         SeekForwardCommand.RaiseCanExecuteChanged();
         SaveCurrentTrackCommand.RaiseCanExecuteChanged();
+        OpenTrackInsightCommand.RaiseCanExecuteChanged();
         RetryVersionCheckCommand.RaiseCanExecuteChanged();
     }
 

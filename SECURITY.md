@@ -22,4 +22,4 @@ Report private security issues to `security@djconnect.dev`.
 ## Scope
 
 This repo contains a desktop client. Home Assistant owns Spotify OAuth,
-backend playback, DJ Memory, Ask DJ history and Assist/TTS.
+backend playback, Music DNA, Ask DJ history and Assist/TTS.

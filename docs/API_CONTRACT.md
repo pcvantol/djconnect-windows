@@ -167,16 +167,22 @@ the response or message. The client must not reuse previous album art/media,
 show a TTS replay button without `audio_url`, expose raw Spotify URIs/backend
 IDs in visible text or infer actions from answer text.
 
-Technical track analysis responses are detected when `intent.intent` is
-`technical_track_analysis` or `action` is `track_analysis`. They are
-informational/read-only unless `playback_actions[]` is explicitly present.
-For `analysis.contract_version >= 2`, the client renders only server-provided
-`analysis.sections[]`, optional `analysis.timeline[]`, `analysis.dj_tips[]` and
-`analysis.limitations[]`, in that order, with source/confidence metadata. For
-older responses without v2 fields, the client falls back to
-`analysis.measured`, `analysis.inferred` and `analysis.limitations`. The client
-must not parse prose in `text` or `dj_text` to infer BPM, timestamps,
-song-section labels or DJ tips.
+Track Insight can be opened directly from Now Playing with
+`POST /api/djconnect/track_insight`. The client sends Home Assistant auth and
+the explicit track fields it has (`title`, `artist`, `album`, optional
+`entity_id`, `player_id`, `music_backend`, `locale`, `force_refresh` and
+`include_visual_profile`). If metadata is missing, Home Assistant resolves Now
+Playing. `no_track_playing` is rendered as an empty state.
+
+Ask DJ Track Insight responses are detected when `intent.intent`, `action`,
+`type` or `open_screen` is `track_insight`. They are informational/read-only
+unless `playback_actions[]` is explicitly present. The client renders the
+normalized `track_insight` object: `track`, `analysis`, `music_dna`,
+`visual_profile` and `cache`. Music DNA Match is read from
+`track_insight.music_dna.match_percent`. `visual_profile` is treated only as
+rendering hints; the client does not expect server-generated images or video.
+The client must not parse prose in `text` or `dj_text` to infer BPM,
+timestamps, song-section labels or DJ tips.
 
 ## Queue And Playlists
 
@@ -201,6 +207,42 @@ generic commands only:
 Queue item start follows the same pattern with `queue_item_play` or a
 backend-returned action. Removed Spotify override fields such as
 `spotify_source` and `liked_proxy_playlist_uri` must not be emitted.
+
+## Local WebSocket Fast Path
+
+HTTP remains the canonical DJConnect transport. When the runtime transport is a
+reachable local Home Assistant URL, the client may use Home Assistant's native
+`/api/websocket` as an optional fast path for latency-sensitive operations.
+Remote/Nabu Casa sessions stay on HTTP.
+
+The client uses the Home Assistant websocket auth flow, then sends
+`djconnect/capabilities`. WebSocket is used only when capability detection
+succeeds and `commands[]` contains the required route:
+
+- `djconnect/command`;
+- `djconnect/ask_dj/message`;
+- `djconnect/track_insight`.
+
+WebSocket payloads still include DJConnect identity and auth fields:
+`device_token`, `device_id`, `client_id`, `device_name` and canonical
+`client_type`. Any websocket error, timeout, disconnect, auth failure, protocol
+mismatch or missing capability falls back immediately to the existing HTTP flow
+for the current action. WebSocket transport failures must not clear pairing or
+be treated as stale pairing.
+
+These remain HTTP-only:
+
+- `/api/djconnect/pair`;
+- `/api/djconnect/status`;
+- `/api/djconnect/voice`;
+- `/api/djconnect/ask_dj/history`;
+- `/api/djconnect/ask_dj/history/clear`;
+- `/api/djconnect/ask_dj/idle_suggestion`;
+- push registration;
+- image proxy;
+- TTS/audio download URLs;
+- Spotify OAuth callback;
+- local `/api/device/*` endpoints.
 
 ## Diagnostics And User-Prepared Reports
 

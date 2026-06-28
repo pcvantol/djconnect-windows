@@ -34,7 +34,7 @@
                                 Stroke="{StaticResource Border}"
                                 StrokeThickness="1"
                                 StrokeShape="RoundRectangle 8">
-                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="20">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="20">
                                 <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="16">
                                     <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
                                         <Border WidthRequest="28"
@@ -106,9 +106,56 @@
                                     <Button Text="{Binding PlayPauseGlyph}" Command="{Binding PlayCommand}" IsEnabled="{Binding CanStartPlayback}" WidthRequest="138" HeightRequest="74" FontSize="24" />
                                     <Button Text="▶" Command="{Binding NextCommand}" IsEnabled="{Binding CanUsePlaybackFeatures}" WidthRequest="108" HeightRequest="66" />
                                     <Button Text="♡" Command="{Binding SaveCurrentTrackCommand}" IsEnabled="{Binding CanUsePlaybackFeatures}" WidthRequest="88" HeightRequest="66" />
+                                    <Button Text="Track Insight" Command="{Binding OpenTrackInsightCommand}" IsEnabled="{Binding CanUsePlaybackFeatures}" WidthRequest="156" HeightRequest="66" />
                                 </HorizontalStackLayout>
 
-                                <Grid Grid.Row="7" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                                <VerticalStackLayout Grid.Row="7" Spacing="10">
+                                    <Border IsVisible="{Binding HasTrackInsightNotice}" Padding="12" BackgroundColor="#2A2352" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                        <Label Text="{Binding TrackInsightNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                                    </Border>
+                                    <Border IsVisible="{Binding HasTrackInsightPanel}" Padding="12" BackgroundColor="#151936" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                        <VerticalStackLayout Spacing="8" BindingContext="{Binding TrackInsightPanel}">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                <Label Text="{Binding Header}" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                                                <Label Grid.Column="1" Text="{Binding MetaLabel}" TextColor="{StaticResource TextSecondary}" FontSize="11" HorizontalTextAlignment="End" />
+                                            </Grid>
+                                            <CollectionView ItemsSource="{Binding Context}" IsVisible="{Binding HasContext}">
+                                                <CollectionView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Padding="0,3" ColumnDefinitions="150,*" ColumnSpacing="10">
+                                                            <VerticalStackLayout Spacing="1">
+                                                                <Label Text="{Binding Title}" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" FontSize="13" LineBreakMode="WordWrap" />
+                                                                <Label Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="TailTruncation" />
+                                                            </VerticalStackLayout>
+                                                            <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                                                <Label Text="{Binding Detail}" IsVisible="{Binding HasDetail}" TextColor="{StaticResource TextPrimary}" FontSize="13" LineBreakMode="WordWrap" />
+                                                                <Label Text="{Binding Meta}" IsVisible="{Binding HasMeta}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="WordWrap" />
+                                                            </VerticalStackLayout>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </CollectionView.ItemTemplate>
+                                            </CollectionView>
+                                            <CollectionView ItemsSource="{Binding Sections}" IsVisible="{Binding HasSections}">
+                                                <CollectionView.ItemTemplate>
+                                                    <DataTemplate>
+                                                        <Grid Padding="0,3" ColumnDefinitions="150,*" ColumnSpacing="10">
+                                                            <VerticalStackLayout Spacing="1">
+                                                                <Label Text="{Binding Title}" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" FontSize="13" LineBreakMode="WordWrap" />
+                                                                <Label Text="{Binding Subtitle}" IsVisible="{Binding HasSubtitle}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="TailTruncation" />
+                                                            </VerticalStackLayout>
+                                                            <VerticalStackLayout Grid.Column="1" Spacing="1">
+                                                                <Label Text="{Binding Detail}" IsVisible="{Binding HasDetail}" TextColor="{StaticResource TextPrimary}" FontSize="13" LineBreakMode="WordWrap" />
+                                                                <Label Text="{Binding Meta}" IsVisible="{Binding HasMeta}" TextColor="{StaticResource TextSecondary}" FontSize="11" LineBreakMode="WordWrap" />
+                                                            </VerticalStackLayout>
+                                                        </Grid>
+                                                    </DataTemplate>
+                                                </CollectionView.ItemTemplate>
+                                            </CollectionView>
+                                        </VerticalStackLayout>
+                                    </Border>
+                                </VerticalStackLayout>
+
+                                <Grid Grid.Row="8" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                     <Label Text="🔈" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
                                     <Slider Grid.Column="1" Value="{Binding VolumePercent, Mode=TwoWay}" Minimum="0" Maximum="100" IsEnabled="{Binding CanUsePlaybackFeatures}" />
                                     <Label Grid.Column="2" Text="{Binding VolumeLabel}" TextColor="{StaticResource TextPrimary}" VerticalOptions="Center" />
@@ -171,8 +218,8 @@
                                                 <VerticalStackLayout Spacing="8">
                                                     <Label Text="{Binding RoleLabel}" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
                                                     <Label Text="{Binding DisplayText}" LineBreakMode="WordWrap" TextColor="{StaticResource TextPrimary}" />
-                                                    <Border IsVisible="{Binding HasTechnicalAnalysis}" Padding="12" BackgroundColor="#151936" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
-                                                        <VerticalStackLayout Spacing="10" BindingContext="{Binding TechnicalAnalysis}">
+                                                    <Border IsVisible="{Binding HasTrackInsight}" Padding="12" BackgroundColor="#151936" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                                        <VerticalStackLayout Spacing="10" BindingContext="{Binding TrackInsight}">
                                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
                                                                 <Label Text="{Binding Header}" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
                                                                 <Label Grid.Column="1" Text="{Binding MetaLabel}" TextColor="{StaticResource TextSecondary}" FontSize="11" HorizontalTextAlignment="End" />
