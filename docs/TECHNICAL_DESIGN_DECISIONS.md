@@ -125,4 +125,4 @@ the contract, model and privacy helper source files directly and cover:
 - queue and playlist normalization limits/dedupe;
 - onboarding, What's New, crash, wakeword, demo, monkey-test env detection,
   diagnostic preference,
-  permission flag and inactive local API/mDNS defaults.
+  permission flag and absence of local API/mDNS runtime code paths.

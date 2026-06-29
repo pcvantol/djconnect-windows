@@ -24,7 +24,8 @@ Mini-games and update/error states.
 
 ## Pairing And Discovery
 
-`shouldAdvertiseMdns` is false for the protocol `3.2.x` Windows runtime.
+Protocol `3.2.x` Windows runtime has no mDNS advertiser and no client-hosted
+local API server.
 
 Required lifecycle:
 
@@ -97,7 +98,7 @@ The local test suite guards the highest-risk NFRs:
 - crash and wakeword defaults;
 - Demo Mode defaults to session-off;
 - monkey-test mode is explicit and environment driven;
-- inactive Windows local API/mDNS runtime path.
+- absence of Windows local API/mDNS runtime code paths.
 
 Before release, run:
 

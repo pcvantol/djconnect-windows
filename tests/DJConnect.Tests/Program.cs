@@ -7,7 +7,9 @@ var tests = new (string Name, Action Run)[]
 {
     ("Client identity uses windows contract", ClientIdentityUsesWindowsContract),
     ("Client identity pads short install IDs", ClientIdentityPadsShortInstallIds),
-    ("Pairing payload serializes HA compatibility fields", PairingPayloadSerializesCompatibilityFields),
+    ("Pairing payload serializes Windows app contract", PairingPayloadSerializesWindowsAppContract),
+    ("Pairing client posts only to Home Assistant pair endpoint", PairingClientPostsOnlyToHomeAssistantPairEndpoint),
+    ("Authenticated requests include bearer token and device header", AuthenticatedRequestsIncludeBearerTokenAndDeviceHeader),
     ("Status payload serializes app protocol metadata", StatusPayloadSerializesAppProtocolMetadata),
     ("Ask DJ request serializes server-side message contract", AskDJRequestSerializesServerSideContract),
     ("Ask DJ response deserializes exchange messages", AskDJResponseDeserializesExchangeMessages),
@@ -45,7 +47,10 @@ var tests = new (string Name, Action Run)[]
     ("Diagnostic log preferences are bounded by default", DiagnosticLogPreferencesAreBoundedByDefault),
     ("Permission explanation flags default to unseen", PermissionExplanationFlagsDefaultToUnseen),
     ("Protocol 3.2 uses local-only pairing transport", Protocol32UsesLocalOnlyPairingTransport),
+    ("Protocol 3.2 requires no local device callback path", Protocol32RequiresNoLocalDeviceCallbackPath),
     ("Protocol 3.2 falls back from local to remote after pairing", Protocol32FallsBackFromLocalToRemoteAfterPairing),
+    ("Pairing response persists remote URL and API capabilities", PairingResponsePersistsRemoteUrlAndApiCapabilities),
+    ("Stale pairing errors trigger local cleanup policy", StalePairingErrorsTriggerLocalCleanupPolicy),
     ("Protocol 3.2 marks offline when no HA URL is reachable", Protocol32MarksOfflineWhenNoUrlReachable),
     ("Protocol 3.2 parses backend summary", Protocol32ParsesBackendSummary),
     ("Protocol 3.2 parses safe backend error object", Protocol32ParsesSafeBackendErrorObject),
@@ -64,7 +69,7 @@ var tests = new (string Name, Action Run)[]
     ("Remote connection stays HTTP", RemoteConnectionStaysHttp),
     ("WebSocket payload includes identity and token without diagnostic leaks", WebSocketPayloadIncludesIdentityAndTokenWithoutDiagnosticLeaks),
     ("Backend error responses deserialize stale and unsupported contracts", BackendErrorResponsesDeserializeStaleAndUnsupportedContracts),
-    ("Protocol 3.2 keeps app local API and mDNS inactive", Protocol32KeepsAppLocalApiAndMdnsInactive)
+    ("Protocol 3.2 advertises no client callback endpoint", Protocol32AdvertisesNoClientCallbackEndpoint)
 };
 
 var failed = 0;
@@ -109,15 +114,14 @@ static void ClientIdentityPadsShortInstallIds()
     AssertEqual("djconnect-windows-AB0000000000", identity.DeviceId);
 }
 
-static void PairingPayloadSerializesCompatibilityFields()
+static void PairingPayloadSerializesWindowsAppContract()
 {
     var payload = new PairingPayload(
         "djconnect-windows-ABC123DEF456",
         "Studio PC",
         "windows",
         "123456",
-        "123456",
-        "123456");
+        DJConnectContract.AppVersion);
 
     using var document = JsonSerializer.SerializeToDocument(payload);
     var root = document.RootElement;
@@ -125,9 +129,62 @@ static void PairingPayloadSerializesCompatibilityFields()
     AssertEqual("djconnect-windows-ABC123DEF456", root.GetProperty("device_id").GetString());
     AssertEqual("Studio PC", root.GetProperty("device_name").GetString());
     AssertEqual("windows", root.GetProperty("client_type").GetString());
-    AssertEqual("123456", root.GetProperty("pairing_token").GetString());
     AssertEqual("123456", root.GetProperty("pair_code").GetString());
-    AssertEqual("123456", root.GetProperty("pairing_code").GetString());
+    AssertEqual(DJConnectContract.AppVersion, root.GetProperty("app_version").GetString());
+    AssertTrue(!root.TryGetProperty("pairing_token", out _), "pairing payload must not send legacy token aliases");
+    AssertTrue(!root.TryGetProperty("pairing_code", out _), "pairing payload must not send legacy code aliases");
+}
+
+static void PairingClientPostsOnlyToHomeAssistantPairEndpoint()
+{
+    var http = new FakeHttpHandler("""
+    {
+      "success": true,
+      "client_type": "windows",
+      "device_token": "paired-device-token",
+      "ha_local_url": "http://ha-local:8123"
+    }
+    """);
+    var client = new DJConnectApiClient(new HttpClient(http));
+    client.Configure("http://ha-local:8123", null);
+
+    var response = client.PairAsync(new PairingPayload(
+        "djconnect-windows-ABC123DEF456",
+        "Studio PC",
+        "windows",
+        "123456",
+        DJConnectContract.AppVersion), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "pairing response should deserialize");
+    AssertEqual("api/djconnect/pair", http.LastPath.TrimStart('/'));
+    AssertEqual("POST", http.LastMethod);
+    AssertTrue(!http.RequestPaths.Any(path => path.Contains("/api/device/", StringComparison.OrdinalIgnoreCase)), "Windows pairing must not require a local /api/device callback");
+    AssertTrue(string.IsNullOrWhiteSpace(http.LastAuthorization), "pairing request must not use a bearer token");
+    AssertTrue(string.IsNullOrWhiteSpace(http.LastDeviceIdHeader), "pairing request must not use authenticated device header before token issue");
+    AssertTrue(http.LastBody.Contains("\"pair_code\":\"123456\""), "pairing body must send the HA pair code");
+    AssertTrue(!http.LastBody.Contains("pairing_token", StringComparison.OrdinalIgnoreCase), "pairing body must not send legacy pairing_token");
+}
+
+static void AuthenticatedRequestsIncludeBearerTokenAndDeviceHeader()
+{
+    var http = new FakeHttpHandler("""{"success":true}""");
+    var client = new DJConnectApiClient(new HttpClient(http));
+    var identity = TestIdentity();
+    client.Configure(new DJConnectClientConfiguration(
+        "http://ha-local:8123",
+        "paired-device-token",
+        false,
+        null,
+        identity.DeviceId));
+
+    var response = client.GetStatusAsync(identity, CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "status response should deserialize");
+    AssertEqual("Bearer paired-device-token", http.LastAuthorization);
+    AssertEqual(identity.DeviceId, http.LastDeviceIdHeader);
+    AssertEqual("api/djconnect/status", http.LastPath.TrimStart('/'));
+    AssertTrue(http.LastBody.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\""), "status body must include device identity");
+    AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "status body must include Windows client type");
 }
 
 static void StatusPayloadSerializesAppProtocolMetadata()
@@ -1034,6 +1091,17 @@ static void Protocol32UsesLocalOnlyPairingTransport()
     AssertTrue(remoteOnly.ActiveUrl is null, "remote URL must not be used for first pairing");
 }
 
+static void Protocol32RequiresNoLocalDeviceCallbackPath()
+{
+    var identity = TestIdentity();
+    var commandPayload = DJConnectApiClient.BuildCommandPayload(identity, "status");
+    var statusPayload = DJConnectApiClient.BuildStatusPayload(identity);
+
+    AssertTrue(!commandPayload.ContainsKey("local_url"), "Windows command payload must not advertise a callback URL");
+    AssertTrue(!statusPayload.ContainsKey("local_url"), "Windows status payload must not advertise a callback URL");
+    AssertTrue(!commandPayload.Values.OfType<string>().Any(value => value.Contains("/api/device/", StringComparison.OrdinalIgnoreCase)), "Windows command payload must not expose /api/device paths");
+}
+
 static void Protocol32FallsBackFromLocalToRemoteAfterPairing()
 {
     var manager = new HomeAssistantTransportManager((url, _) => Task.FromResult(url.StartsWith("https://", StringComparison.OrdinalIgnoreCase)));
@@ -1043,6 +1111,56 @@ static void Protocol32FallsBackFromLocalToRemoteAfterPairing()
 
     AssertEqual(HomeAssistantConnectionMode.Remote, state.Mode);
     AssertEqual("https://remote.example", state.ActiveUrl);
+}
+
+static void PairingResponsePersistsRemoteUrlAndApiCapabilities()
+{
+    const string json = """
+    {
+      "success": true,
+      "client_type": "windows",
+      "device_id": "djconnect-windows-ABC123DEF456",
+      "device_token": "secret-device-token",
+      "ha_local_url": "http://ha-local:8123",
+      "ha_remote_url": "https://example.ui.nabu.casa",
+      "api_base": "/api/djconnect",
+      "voice_path": "/api/djconnect/voice",
+      "status_path": "/api/djconnect/status",
+      "event_path": "/api/djconnect/event",
+      "ask_dj_supported": true,
+      "ask_dj_voice_supported": true,
+      "ask_dj_audio_response_supported": true,
+      "remote_supported": true
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<PairingResponse>(json, JsonOptions());
+    var manager = new HomeAssistantTransportManager((_, _) => Task.FromResult(true));
+    manager.UpdateUrls(response!.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
+
+    AssertNotNull(response);
+    AssertEqual("windows", response.ClientType);
+    AssertEqual("djconnect-windows-ABC123DEF456", response.DeviceId);
+    AssertEqual("secret-device-token", response.DeviceToken);
+    AssertEqual("http://ha-local:8123", manager.Current.LocalUrl);
+    AssertEqual("https://example.ui.nabu.casa", manager.Current.RemoteUrl);
+    AssertTrue(manager.Current.RemoteSupported, "remote URL support must persist after local pairing");
+    AssertEqual("/api/djconnect", response.ApiBase);
+    AssertEqual("/api/djconnect/voice", response.VoicePath);
+    AssertEqual("/api/djconnect/status", response.StatusPath);
+    AssertEqual("/api/djconnect/event", response.EventPath);
+    AssertTrue(response.AskDJSupported == true, "Ask DJ support must parse");
+    AssertTrue(response.AskDJVoiceSupported == true, "Ask DJ voice support must parse");
+    AssertTrue(response.AskDJAudioResponseSupported == true, "Ask DJ audio response support must parse");
+}
+
+static void StalePairingErrorsTriggerLocalCleanupPolicy()
+{
+    AssertTrue(PairingStatePolicy.RequiresLocalPairingCleanup("401 Unauthorized"), "401 must clear local pairing state");
+    AssertTrue(PairingStatePolicy.RequiresLocalPairingCleanup("403 Forbidden"), "403 must clear local pairing state");
+    AssertTrue(PairingStatePolicy.RequiresLocalPairingCleanup("not_configured"), "not_configured must clear local pairing state");
+    AssertTrue(PairingStatePolicy.RequiresLocalPairingCleanup("stale pairing token"), "stale pairing must clear local pairing state");
+    AssertTrue(!PairingStatePolicy.RequiresLocalPairingCleanup("timeout"), "network timeouts alone must not clear pairing state");
 }
 
 static void Protocol32MarksOfflineWhenNoUrlReachable()
@@ -1397,7 +1515,7 @@ static void BackendErrorResponsesDeserializeStaleAndUnsupportedContracts()
     AssertEqual("The selected music backend does not provide recent listening history.", unsupported.Message);
 }
 
-static void Protocol32KeepsAppLocalApiAndMdnsInactive()
+static void Protocol32AdvertisesNoClientCallbackEndpoint()
 {
     AssertEqual("3.2", DJConnectContract.ProtocolLine);
     AssertTrue(!DJConnectApiClient.BuildCommandPayload(ClientIdentity.CreateOrLoad("abc123def4567890"), "status").ContainsKey("local_url"), "Windows command payload must not expose a client-hosted local URL");
@@ -1532,11 +1650,25 @@ sealed class FakeHttpHandler : HttpMessageHandler
 
     public int RequestCount { get; private set; }
     public string LastPath { get; private set; } = "";
+    public string LastMethod { get; private set; } = "";
+    public string LastAuthorization { get; private set; } = "";
+    public string LastDeviceIdHeader { get; private set; } = "";
+    public string LastBody { get; private set; } = "";
+    public List<string> RequestPaths { get; } = [];
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         RequestCount++;
         LastPath = request.RequestUri?.PathAndQuery ?? "";
+        RequestPaths.Add(LastPath);
+        LastMethod = request.Method.Method;
+        LastAuthorization = request.Headers.Authorization?.ToString() ?? "";
+        LastDeviceIdHeader = request.Headers.TryGetValues("X-DJConnect-Device-ID", out var values)
+            ? values.FirstOrDefault() ?? ""
+            : "";
+        LastBody = request.Content is null
+            ? ""
+            : request.Content.ReadAsStringAsync(cancellationToken).GetAwaiter().GetResult();
         return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
         {
             Content = new StringContent(_json)

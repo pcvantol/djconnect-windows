@@ -56,9 +56,9 @@ dotnet build DJConnect.Windows.sln
 5. Keep the app open while validating status, Ask DJ, Queue, Playlists and
    command flows.
 
-The app sends the same pairing code as `pairing_token`, `pair_code` and
-`pairing_code` for compatibility with current Home Assistant integration
-builds. Remote Home Assistant URLs are used only after successful local pairing.
+The app sends the Home Assistant pairing code only as `pair_code` with
+`client_type: "windows"` and the app version. Remote Home Assistant URLs are
+used only after successful local pairing.
 
 ## Logging And Secrets
 

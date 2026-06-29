@@ -47,11 +47,11 @@ the current source-of-truth notices.
 
     private readonly WelcomeStep[] _welcomeSteps =
     [
-        new("♪", "Speelt Nu", "Bedien playback, volume en het actieve uitvoerapparaat vanaf het hoofdscherm."),
-        new("☵", "Ask DJ", "Vraag om muziek, context of een gesproken antwoord. DJConnect synchroniseert de chatgeschiedenis via Home Assistant."),
-        new("▸☰", "Wachtrij", "Bekijk wat hierna komt en start wachtrij-items wanneer Home Assistant afspeelacties teruggeeft."),
-        new("•••", "Meer en Instellingen", "Open afspeellijsten, instellingen, privacyopties en diagnostiek."),
-        new("🎮", "Mini-games", "Speel lokale mini-games terwijl DJConnect klaar blijft voor je muziekopstelling.")
+        new("♪", "Now Playing", "Speelt Nu", "Control playback, volume and the active output from the main screen.", "Bedien playback, volume en het actieve uitvoerapparaat vanaf het hoofdscherm."),
+        new("☵", "Ask DJ", "Ask DJ", "Ask for music, context or a voice reply. DJConnect keeps the chat history in sync through Home Assistant.", "Vraag om muziek, context of een gesproken antwoord. DJConnect synchroniseert de chatgeschiedenis via Home Assistant."),
+        new("〽", "Track Insight", "Track Insight", "Analyze the current track for mood, energy, genre and musical details when Home Assistant has provider data.", "Analyseer het huidige nummer op sfeer, energie, genre en muzikale details wanneer Home Assistant providerdata heeft."),
+        new("▸☰", "Queue", "Wachtrij", "See what is coming up next and start queue items when Home Assistant returns playable actions.", "Bekijk wat hierna komt en start wachtrij-items wanneer Home Assistant afspeelacties teruggeeft."),
+        new("🎮", "Mini-games", "Mini-games", "Play local mini-games while keeping DJConnect ready for your music setup.", "Speel lokale mini-games terwijl DJConnect klaar blijft voor je muziekopstelling.")
     ];
 
     private readonly MainViewModel _viewModel = new();
@@ -101,7 +101,11 @@ the current source-of-truth notices.
         InitializeComponent();
         BindingContext = _viewModel;
         MiniGameSurface.Drawable = _miniGameDrawable;
-        Loaded += async (_, _) => await _viewModel.InitializeAsync();
+        Loaded += async (_, _) =>
+        {
+            await _viewModel.InitializeAsync();
+            SetWelcomeStep(_welcomeStepIndex, animate: false);
+        };
         ShowSection(NowPlayingPanel, NowPlayingNavButton);
         SelectMiniGame(MiniGameKind.Paddle);
         SetWelcomeStep(0, animate: false);
@@ -133,9 +137,9 @@ the current source-of-truth notices.
 
     private void SelectWelcomeStepAskDJ(object sender, EventArgs e) => SetWelcomeStep(1);
 
-    private void SelectWelcomeStepQueue(object sender, EventArgs e) => SetWelcomeStep(2);
+    private void SelectWelcomeStepInsight(object sender, EventArgs e) => SetWelcomeStep(2);
 
-    private void SelectWelcomeStepMore(object sender, EventArgs e) => SetWelcomeStep(3);
+    private void SelectWelcomeStepQueue(object sender, EventArgs e) => SetWelcomeStep(3);
 
     private void SelectWelcomeStepGames(object sender, EventArgs e) => SetWelcomeStep(4);
 
@@ -228,29 +232,6 @@ the current source-of-truth notices.
         }
 
         await Launcher.Default.OpenAsync(uri);
-    }
-
-    private async void CopyClientAddressClicked(object sender, EventArgs e)
-    {
-        if (!string.IsNullOrWhiteSpace(_viewModel.ClientAddress)
-            && !_viewModel.ClientAddress.Contains("wordt gestart", StringComparison.OrdinalIgnoreCase)
-            && !_viewModel.ClientAddress.Contains("Starting", StringComparison.OrdinalIgnoreCase))
-        {
-            await Clipboard.Default.SetTextAsync(_viewModel.ClientAddress);
-        }
-
-        if (_viewModel.CopyClientAddressCommand.CanExecute(null))
-        {
-            _viewModel.CopyClientAddressCommand.Execute(null);
-        }
-    }
-
-    private async void CopyPairingCodeClicked(object sender, EventArgs e)
-    {
-        if (!string.IsNullOrWhiteSpace(_viewModel.PairingCodeDisplay))
-        {
-            await Clipboard.Default.SetTextAsync(_viewModel.PairingCodeDisplay);
-        }
     }
 
     private void SelectPaddleGame(object sender, EventArgs e) => SelectMiniGame(MiniGameKind.Paddle);
@@ -980,20 +961,29 @@ the current source-of-truth notices.
     {
         _welcomeStepIndex = Math.Clamp(index, 0, _welcomeSteps.Length - 1);
         var step = _welcomeSteps[_welcomeStepIndex];
+        var isDutch = IsDutch;
+        var title = step.Title(isDutch);
         WelcomePreviewIconLabel.Text = step.Icon;
-        WelcomePreviewTitleLabel.Text = step.Title;
-        WelcomeTitleLabel.Text = $"{step.Icon}  {step.Title}";
-        WelcomeBodyLabel.Text = step.Body;
+        WelcomePreviewTitleLabel.Text = title;
+        WelcomeTitleLabel.Text = $"{step.Icon}  {title}";
+        WelcomeBodyLabel.Text = step.Body(isDutch);
+        WelcomeSetupHintLabel.Text = isDutch
+            ? "Installatie loopt via Home Assistant. Spotify-weergave vereist Spotify Premium."
+            : "Setup runs through Home Assistant. Spotify playback requires Spotify Premium.";
+        WelcomeSkipButton.Text = isDutch ? "Overslaan" : "Skip";
         WelcomePreviousButton.IsEnabled = _welcomeStepIndex > 0;
         WelcomePreviousButton.Opacity = _welcomeStepIndex > 0 ? 1 : 0.55;
-        WelcomeNextButton.Text = _welcomeStepIndex == _welcomeSteps.Length - 1 ? "Aan de slag" : "›  Volgende";
+        WelcomePreviousButton.Text = isDutch ? "‹  Vorige" : "‹  Previous";
+        WelcomeNextButton.Text = _welcomeStepIndex == _welcomeSteps.Length - 1
+            ? (isDutch ? "Aan de slag!" : "Let's Start!")
+            : (isDutch ? "›  Volgende" : "›  Next");
 
         var buttons = new[]
         {
             WelcomeStepNowPlayingButton,
             WelcomeStepAskDjButton,
+            WelcomeStepInsightButton,
             WelcomeStepQueueButton,
-            WelcomeStepMoreButton,
             WelcomeStepGamesButton
         };
 
@@ -1028,7 +1018,15 @@ the current source-of-truth notices.
         await button.ScaleToAsync(1.0, 160, Easing.CubicIn);
     }
 
-    private sealed record WelcomeStep(string Icon, string Title, string Body);
+    private bool IsDutch => string.IsNullOrWhiteSpace(_viewModel.Language)
+        || _viewModel.Language.StartsWith("nl", StringComparison.OrdinalIgnoreCase);
+
+    private sealed record WelcomeStep(string Icon, string EnglishTitle, string DutchTitle, string EnglishBody, string DutchBody)
+    {
+        public string Title(bool isDutch) => isDutch ? DutchTitle : EnglishTitle;
+
+        public string Body(bool isDutch) => isDutch ? DutchBody : EnglishBody;
+    }
 }
 
 internal enum MiniGameKind

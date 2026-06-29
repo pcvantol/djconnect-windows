@@ -68,6 +68,12 @@ public sealed class DJConnectApiClient
         _httpClient.DefaultRequestHeaders.Authorization = string.IsNullOrWhiteSpace(configuration.DeviceToken)
             ? null
             : new AuthenticationHeaderValue("Bearer", configuration.DeviceToken);
+        _httpClient.DefaultRequestHeaders.Remove("X-DJConnect-Device-ID");
+        if (!string.IsNullOrWhiteSpace(configuration.DeviceToken) && !string.IsNullOrWhiteSpace(configuration.DeviceId))
+        {
+            _httpClient.DefaultRequestHeaders.Add("X-DJConnect-Device-ID", configuration.DeviceId);
+        }
+
         _webSocketFastPath.Configure(_homeAssistantUrl, configuration.HomeAssistantWebSocketAuthToken, _webSocketFastPathEnabled);
     }
 

@@ -25,7 +25,7 @@ public sealed class MainViewModel : ObservableObject
     private HomeAssistantConnectionMode _connectionMode = HomeAssistantConnectionMode.Offline;
     private MusicBackendSummary _musicBackendSummary = MusicBackendSummary.Empty;
     private string _token = "";
-    private string _pairingCode = "030610";
+    private string _pairingCode = "";
     private string _askDJText = "";
     private string _status = "Niet gekoppeld";
     private string _nowPlaying = "Midnight City - M83";
@@ -143,7 +143,6 @@ public sealed class MainViewModel : ObservableObject
         ContinuePermissionExplanationCommand = new AsyncCommand(ContinuePermissionExplanationAsync);
         HidePermissionExplanationCommand = new AsyncCommand(HidePermissionExplanationAsync);
         OpenPermissionSettingsCommand = new AsyncCommand(OpenPermissionSettingsAsync);
-        CopyClientAddressCommand = new AsyncCommand(CopyClientAddressAsync);
         RetryVersionCheckCommand = new AsyncCommand(RetryVersionCheckAsync, () => IsPaired || IsDemoMode);
         DismissWhatsNewCommand = new AsyncCommand(DismissWhatsNewAsync);
     }
@@ -763,13 +762,9 @@ public sealed class MainViewModel : ObservableObject
     public string BuildChannel => "debug";
     public string PlatformName => "Windows";
     public string WebsiteUrl => "https://djconnect.dev";
-    public string ClientAddress => HomeAssistantUrl;
-    public string ClientAddressDisplay => L("Windows host geen Client API meer; pairing loopt via lokale Home Assistant URL.", "Windows no longer hosts a Client API; pairing uses the local Home Assistant URL.");
-    public bool IsClientAddressAvailable => false;
     public bool IsPairable => IsPairingOverlayVisible && !IsPairingSuccessVisible && !IsOnboardingVisible && !IsDemoMode && !IsPaired;
     public bool IsPairingFormVisible => IsPairingOverlayVisible && !IsPairingSuccessVisible;
     public bool IsPairingWaitingVisible => IsPairingFormVisible && !IsPaired;
-    public string PairingCodeDisplay => IsPairable ? PairingCode : "";
     public string LegalNotice => DJConnectContract.SpotifyNotice;
 
     public string Tagline => L("Muziekbediening met karakter", "Music control with character");
@@ -883,7 +878,6 @@ public sealed class MainViewModel : ObservableObject
     public bool CanUseAskDJ => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && _connectionMode != HomeAssistantConnectionMode.Offline);
     public bool CanSendAskDJ => CanUseAskDJ && !string.IsNullOrWhiteSpace(AskDJText);
     public string AskDJPlaceholder => L("Vraag Ask DJ iets, bv. zet huidig nummer in favorieten...", "Ask DJ anything, e.g. save this track to liked songs...");
-    public bool ShouldAdvertiseMdns => false;
     public bool IsMonkeyTestMode => MonkeyTestMode.IsEnabled;
 
     public bool IsPaired
@@ -923,7 +917,6 @@ public sealed class MainViewModel : ObservableObject
                 RaiseFeedbackContextProperties();
                 EvaluateWakewordPrompt();
                 RaisePairingProperties();
-                _ = UpdateMdnsAdvertisingAsync();
             }
         }
     }
@@ -943,7 +936,6 @@ public sealed class MainViewModel : ObservableObject
                 RaiseFeedbackContextProperties();
                 EvaluateWakewordPrompt();
                 RaisePairingProperties();
-                _ = UpdateMdnsAdvertisingAsync();
             }
         }
     }
@@ -957,7 +949,6 @@ public sealed class MainViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(IsUpdateRequiredScreenVisible));
                 RaiseFeedbackContextProperties();
-                _ = UpdateMdnsAdvertisingAsync();
                 RaisePairingProperties();
                 RaiseNowPlayingStatusProperties();
             }
@@ -974,7 +965,6 @@ public sealed class MainViewModel : ObservableObject
                 RaisePairingProperties();
                 OnPropertyChanged(nameof(IsCrashReportPromptVisible));
                 EvaluateWakewordPrompt();
-                _ = UpdateMdnsAdvertisingAsync();
             }
         }
     }
@@ -1137,8 +1127,8 @@ public sealed class MainViewModel : ObservableObject
             "Notificaties zijn nodig om DJConnect-meldingen als Windows toast te tonen.",
             "Notifications are needed to show DJConnect messages as Windows toasts."),
         PermissionExplanationKind.LocalNetwork => L(
-            "Voor pairing moet Home Assistant deze app op je lokale netwerk kunnen bereiken.",
-            "For pairing, Home Assistant must be able to reach this app on your local network."),
+            "Voor pairing moet deze app Home Assistant op je lokale netwerk kunnen bereiken.",
+            "For pairing, this app must be able to reach Home Assistant on your local network."),
         _ => ""
     };
 
@@ -1162,15 +1152,14 @@ public sealed class MainViewModel : ObservableObject
             "Je kunt dit later aanpassen in Windows Privacy-instellingen.",
             "You can change this later in Windows privacy settings."),
         PermissionExplanationKind.LocalNetwork => L(
-            "Sta lokaal netwerk toe voor je privé/thuisnetwerk. Gebruik geen openbaar netwerk tenzij je weet wat je doet.",
-            "Allow local network access for your private/home network. Do not use a public network unless you know what you are doing."),
+            "Remote gebruik komt na pairing beschikbaar als Home Assistant een Nabu Casa of externe HTTPS URL aanbiedt.",
+            "Remote use becomes available after pairing if Home Assistant provides a Nabu Casa or external HTTPS URL."),
         _ => ""
     };
 
     public bool HasPermissionBodyTertiary => !string.IsNullOrWhiteSpace(PermissionBodyTertiary);
     public bool IsPermissionSettingsMode => ActivePermissionMode == PermissionExplanationMode.Settings;
     public bool IsLocalNetworkPermission => ActivePermissionKind == PermissionExplanationKind.LocalNetwork;
-    public bool CanCopyClientAddress => false;
     public string PermissionContinueText => IsPermissionSettingsMode ? L("Open Windows instellingen", "Open Windows settings") : L("Doorgaan", "Continue");
     public string PermissionSettingsText => ActivePermissionKind == PermissionExplanationKind.LocalNetwork
         ? L("Open firewall instellingen", "Open firewall settings")
@@ -1229,7 +1218,6 @@ public sealed class MainViewModel : ObservableObject
     public AsyncCommand ContinuePermissionExplanationCommand { get; }
     public AsyncCommand HidePermissionExplanationCommand { get; }
     public AsyncCommand OpenPermissionSettingsCommand { get; }
-    public AsyncCommand CopyClientAddressCommand { get; }
     public AsyncCommand RetryVersionCheckCommand { get; }
     public AsyncCommand DismissWhatsNewCommand { get; }
 
@@ -1255,10 +1243,8 @@ public sealed class MainViewModel : ObservableObject
         Token = _credentialStore.ReadToken() ?? "";
         IsPaired = !string.IsNullOrWhiteSpace(Token);
         LoadPersistedDiagnosticLogs();
-        PairingCode = string.IsNullOrWhiteSpace(_settings.PairingCode)
-            ? PairingCodeGenerator.CreateCode()
-            : _settings.PairingCode;
-        _settings.PairingCode = PairingCode;
+        PairingCode = "";
+        _settings.PairingCode = "";
         IsPairingOverlayVisible = !IsOnboardingVisible && !IsPaired;
         if (!IsOnboardingVisible && !IsPaired && !IsDemoMode)
         {
@@ -1286,7 +1272,6 @@ public sealed class MainViewModel : ObservableObject
         ConfigureClient();
         OnPropertyChanged(nameof(DeviceId));
         OnPropertyChanged(nameof(ClientType));
-        OnPropertyChanged(nameof(ClientAddress));
         OnPropertyChanged(nameof(IsCrashReportPromptVisible));
         EvaluateWakewordPrompt();
         await PrepareWhatsNewAsync();
@@ -1339,10 +1324,34 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
+        if (!IsValidHomeAssistantUrl(HomeAssistantUrl))
+        {
+            Status = L("Voer een geldige lokale Home Assistant URL in.", "Enter a valid local Home Assistant URL.");
+            Notice = Status;
+            AddDiagnostic("WRN Pairing blocked because Home Assistant URL is invalid.");
+            return;
+        }
+
+        if (!IsValidPairCode(PairingCode))
+        {
+            Status = L("Voer de 6-cijferige koppelcode uit Home Assistant in.", "Enter the 6-digit pairing code from Home Assistant.");
+            Notice = Status;
+            AddDiagnostic("WRN Pairing blocked because pair code is invalid.");
+            return;
+        }
+
+        if (!IsWindowsIdentity(_identity))
+        {
+            Status = L("Interne client-identiteit klopt niet. Herstart DJConnect.", "Internal client identity is invalid. Restart DJConnect.");
+            Notice = Status;
+            AddDiagnostic("ERR Windows client identity invariant failed.");
+            return;
+        }
+
         var pairingTransport = await _transportManager.ResolvePairingAsync(HomeAssistantUrl, CancellationToken.None);
         if (pairingTransport.Mode != HomeAssistantConnectionMode.Local || string.IsNullOrWhiteSpace(pairingTransport.ActiveUrl))
         {
-            Status = L("Pairing moet lokaal via Home Assistant op hetzelfde LAN.", "Pairing must use local Home Assistant on the same LAN.");
+            Status = L("Home Assistant is niet bereikbaar op je lokale netwerk.", "Home Assistant is unreachable on your local network.");
             Notice = Status;
             AddDiagnostic("WRN Pairing blocked because local Home Assistant URL is unreachable.");
             return;
@@ -1354,18 +1363,28 @@ public sealed class MainViewModel : ObservableObject
             _identity.DeviceName,
             _identity.ClientType,
             PairingCode.Trim(),
-            PairingCode.Trim(),
-            PairingCode.Trim());
+            DJConnectContract.AppVersion);
         var response = await _apiClient.PairAsync(payload, CancellationToken.None);
         if (!response.Success || string.IsNullOrWhiteSpace(response.DeviceToken))
         {
-            Status = response.Error ?? response.Message ?? L("Pairing niet gelukt", "Pairing failed");
+            Status = PairingErrorMessage(response.Error, response.Message);
             IsPairingOverlayVisible = true;
             AddDiagnostic("WRN Pairing failed.");
             return;
         }
 
+        if (!IsValidPairingResponse(response))
+        {
+            Status = L("Home Assistant antwoordde met een ongeldige Windows pairing response.", "Home Assistant returned an invalid Windows pairing response.");
+            Notice = Status;
+            IsPairingOverlayVisible = true;
+            AddDiagnostic("ERR Pairing response client identity invariant failed.");
+            return;
+        }
+
         Token = response.DeviceToken;
+        PairingCode = "";
+        _settings.PairingCode = "";
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
         try
@@ -2308,7 +2327,6 @@ public sealed class MainViewModel : ObservableObject
         LoadDemoData();
         LoadDemoAskDJMessages();
         AddDiagnostic("INF Demo mode started.");
-        await UpdateMdnsAdvertisingAsync();
     }
 
     private async Task StopDemoModeAsync()
@@ -2325,7 +2343,7 @@ public sealed class MainViewModel : ObservableObject
         ClearRuntimePlaybackState();
         if (!IsPaired)
         {
-            PairingCode = PairingCodeGenerator.CreateCode();
+            PairingCode = "";
             _settings.PairingCode = PairingCode;
             IsOnboardingVisible = false;
             _settings.DJConnectWelcomeSeen = true;
@@ -2343,7 +2361,6 @@ public sealed class MainViewModel : ObservableObject
 
         Status = IsPaired ? L("Gekoppeld", "Paired") : L("Niet gekoppeld", "Not paired");
         AddDiagnostic("INF Demo mode stopped.");
-        await UpdateMdnsAdvertisingAsync();
     }
 
     private async Task CompleteOnboardingAsync()
@@ -2478,7 +2495,7 @@ public sealed class MainViewModel : ObservableObject
         IsPaired = false;
         IsDemoMode = false;
         _identity = ClientIdentity.CreateOrLoad(ClientIdentity.CreateInstallId(), _settings.DeviceName);
-        PairingCode = PairingCodeGenerator.CreateCode();
+        PairingCode = "";
         _settings.InstallId = _identity.InstallId;
         _settings.PairingCode = PairingCode;
         _settings.HistoryRevision = 0;
@@ -2512,7 +2529,7 @@ public sealed class MainViewModel : ObservableObject
         RaisePlaybackStateProperties();
         RaiseSettingsStatusProperties();
         Status = L("Klaar om opnieuw te koppelen", "Ready to pair again");
-        AddDiagnostic("INF Pairing reset: identity and pair code rotated.");
+        AddDiagnostic("INF Pairing reset: identity rotated and local pair code entry cleared.");
     }
 
     private async Task CopyLogsAsync()
@@ -2862,18 +2879,6 @@ public sealed class MainViewModel : ObservableObject
         FastPathDiagnosticsFormatter.AppendTo(body, _apiClient.FastPathDiagnostics);
     }
 
-    private Task EnsureLocalClientApiAsync()
-    {
-        AddDiagnostic("INF Local Client API is disabled for protocol 3.2 Windows clients.");
-        return Task.CompletedTask;
-    }
-
-    private Task UpdateMdnsAdvertisingAsync()
-    {
-        OnPropertyChanged(nameof(ShouldAdvertiseMdns));
-        return Task.CompletedTask;
-    }
-
     private async Task<HomeAssistantTransportState> ConfigureClientAsync(bool pairingOnly)
     {
         _transportManager.UpdateUrls(HomeAssistantUrl, HomeAssistantRemoteUrl, _settings.RemoteSupported);
@@ -2909,7 +2914,8 @@ public sealed class MainViewModel : ObservableObject
             activeUrl,
             Token,
             _transportOptions.AllowsWebSocketFastPath(mode),
-            _transportOptions.HomeAssistantWebSocketAuthToken));
+            _transportOptions.HomeAssistantWebSocketAuthToken,
+            _identity.DeviceId));
     }
 
     private void ApplyVersionCompatibility(StatusResponse response)
@@ -3060,7 +3066,6 @@ public sealed class MainViewModel : ObservableObject
         IsPairingSuccessVisible = false;
         IsPairingOverlayVisible = !IsOnboardingVisible;
         await SaveSettingsIfMutableAsync();
-        await UpdateMdnsAdvertisingAsync();
         RaisePlaybackStateProperties();
         RaiseSettingsStatusProperties();
         Status = L("Opnieuw koppelen vereist", "Pair again to continue");
@@ -3070,19 +3075,68 @@ public sealed class MainViewModel : ObservableObject
 
     private static bool IsStalePairingError(string? error)
     {
-        if (string.IsNullOrWhiteSpace(error))
+        return PairingStatePolicy.RequiresLocalPairingCleanup(error);
+    }
+
+    private static bool IsValidHomeAssistantUrl(string? url)
+    {
+        if (!Uri.TryCreate(url?.Trim(), UriKind.Absolute, out var uri))
         {
             return false;
         }
 
-        return error.Contains("stale", StringComparison.OrdinalIgnoreCase)
-            || error.Contains("not_configured", StringComparison.OrdinalIgnoreCase)
-            || error.Contains("not configured", StringComparison.OrdinalIgnoreCase)
-            || error.Contains("401", StringComparison.OrdinalIgnoreCase)
-            || error.Contains("403", StringComparison.OrdinalIgnoreCase)
-            || error.Contains("Unauthorized", StringComparison.OrdinalIgnoreCase)
-            || error.Contains("Forbidden", StringComparison.OrdinalIgnoreCase)
-            || error.Contains("token is no longer accepted", StringComparison.OrdinalIgnoreCase);
+        return uri.Scheme is "http" or "https" && !string.IsNullOrWhiteSpace(uri.Host);
+    }
+
+    private static bool IsValidPairCode(string? pairCode)
+    {
+        return pairCode?.Trim() is { Length: 6 } trimmed && trimmed.All(char.IsDigit);
+    }
+
+    private static bool IsWindowsIdentity(ClientIdentity identity)
+    {
+        return string.Equals(identity.ClientType, DJConnectContract.ClientType, StringComparison.Ordinal)
+            && identity.DeviceId.StartsWith($"{DJConnectContract.DeviceIdPrefix}-", StringComparison.Ordinal);
+    }
+
+    private static bool IsValidPairingResponse(PairingResponse response)
+    {
+        if (!string.IsNullOrWhiteSpace(response.ClientType)
+            && !string.Equals(response.ClientType, DJConnectContract.ClientType, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(response.DeviceId)
+            && !response.DeviceId.StartsWith($"{DJConnectContract.DeviceIdPrefix}-", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private string PairingErrorMessage(string? error, string? message)
+    {
+        if (string.Equals(error, "not_configured", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(message, "not_configured", StringComparison.OrdinalIgnoreCase))
+        {
+            return L("DJConnect is nog niet geconfigureerd in Home Assistant.", "DJConnect is not configured in Home Assistant.");
+        }
+
+        if (string.Equals(error, "invalid_pair_code", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(error, "wrong_pair_code", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(error, "invalid_code", StringComparison.OrdinalIgnoreCase))
+        {
+            return L("De koppelcode klopt niet of is verlopen.", "The pairing code is wrong or expired.");
+        }
+
+        if (IsStalePairingError(error) || IsStalePairingError(message))
+        {
+            return L("Opnieuw koppelen vereist", "Pair again to continue");
+        }
+
+        return message ?? error ?? L("Pairing niet gelukt", "Pairing failed");
     }
 
     private string BackendActionErrorMessage(string? error, string? message)
@@ -3283,14 +3337,6 @@ public sealed class MainViewModel : ObservableObject
         IsPermissionExplanationVisible = false;
         AddDiagnostic("INF Windows settings requested for permission: " + ActivePermissionKind);
         await Task.CompletedTask;
-    }
-
-    private Task CopyClientAddressAsync()
-    {
-        PermissionNotice = L(
-            "Protocol 3.2 gebruikt geen Windows Client adres meer. Vul de lokale Home Assistant URL en koppelcode in.",
-            "Protocol 3.2 no longer uses a Windows Client address. Enter the local Home Assistant URL and pairing code.");
-        return Task.CompletedTask;
     }
 
     public void MarkPermissionDenied(PermissionExplanationKind permission)
@@ -4252,7 +4298,6 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(HasPermissionBodyTertiary));
         OnPropertyChanged(nameof(IsPermissionSettingsMode));
         OnPropertyChanged(nameof(IsLocalNetworkPermission));
-        OnPropertyChanged(nameof(CanCopyClientAddress));
         OnPropertyChanged(nameof(PermissionContinueText));
         OnPropertyChanged(nameof(PermissionSettingsText));
     }
@@ -4266,15 +4311,10 @@ public sealed class MainViewModel : ObservableObject
 
     private void RaisePairingProperties()
     {
-        OnPropertyChanged(nameof(ClientAddressDisplay));
-        OnPropertyChanged(nameof(IsClientAddressAvailable));
         OnPropertyChanged(nameof(IsPairable));
         OnPropertyChanged(nameof(IsPairingFormVisible));
         OnPropertyChanged(nameof(IsPairingWaitingVisible));
-        OnPropertyChanged(nameof(PairingCodeDisplay));
         OnPropertyChanged(nameof(PairingStatusText));
-        OnPropertyChanged(nameof(CanCopyClientAddress));
-        OnPropertyChanged(nameof(ShouldAdvertiseMdns));
     }
 }
 

@@ -8,18 +8,26 @@ public sealed record PairingPayload(
     [property: JsonPropertyName("device_id")] string DeviceId,
     [property: JsonPropertyName("device_name")] string DeviceName,
     [property: JsonPropertyName("client_type")] string ClientType,
-    [property: JsonPropertyName("pairing_token")] string PairingToken,
     [property: JsonPropertyName("pair_code")] string PairCode,
-    [property: JsonPropertyName("pairing_code")] string PairingCode);
+    [property: JsonPropertyName("app_version")] string AppVersion);
 
 public sealed record PairingResponse(
     [property: JsonPropertyName("success")] bool Success,
+    [property: JsonPropertyName("client_type")] string? ClientType,
     [property: JsonPropertyName("device_token")] string? DeviceToken,
+    [property: JsonPropertyName("device_id")] string? DeviceId,
     [property: JsonPropertyName("ha_pairing_status")] string? PairingStatus,
     [property: JsonPropertyName("message")] string? Message,
     [property: JsonPropertyName("error")] string? Error,
     [property: JsonPropertyName("ha_local_url")] string? HomeAssistantLocalUrl = null,
     [property: JsonPropertyName("ha_remote_url")] string? HomeAssistantRemoteUrl = null,
+    [property: JsonPropertyName("api_base")] string? ApiBase = null,
+    [property: JsonPropertyName("voice_path")] string? VoicePath = null,
+    [property: JsonPropertyName("status_path")] string? StatusPath = null,
+    [property: JsonPropertyName("event_path")] string? EventPath = null,
+    [property: JsonPropertyName("ask_dj_supported")] bool? AskDJSupported = null,
+    [property: JsonPropertyName("ask_dj_voice_supported")] bool? AskDJVoiceSupported = null,
+    [property: JsonPropertyName("ask_dj_audio_response_supported")] bool? AskDJAudioResponseSupported = null,
     [property: JsonPropertyName("remote_supported")] bool? RemoteSupported = null,
     [property: JsonPropertyName("music_backend")] string? MusicBackend = null,
     [property: JsonPropertyName("music_backend_name")] string? MusicBackendName = null,

@@ -29,15 +29,16 @@ Payload includes:
 - `device_id`
 - `device_name`
 - `client_type`
-- `pairing_token`
 - `pair_code`
-- `pairing_code`
+- `app_version`
 
-Response may include `device_token`, `ha_pairing_status`, `message`, `error`,
-`ha_local_url`, `ha_remote_url`, `remote_supported` and music backend summary
-fields. The app stores only the returned DJConnect bearer token. Pairing must
-use the local Home Assistant URL; remote pairing is rejected and remote URLs are
-used only after successful local pairing.
+Response may include `success`, `client_type`, `device_token`, `device_id`,
+`ha_pairing_status`, `message`, `error`, `ha_local_url`, `ha_remote_url`,
+`api_base`, endpoint paths, capability flags, `remote_supported` and music
+backend summary fields. The app stores only the returned DJConnect bearer token
+plus local/remote Home Assistant URL metadata. Pairing must use the local Home
+Assistant URL; remote pairing is rejected and remote URLs are used only after
+successful local pairing.
 
 ## Status
 
@@ -49,6 +50,8 @@ Payload includes `device_id`, `device_name`, `client_type`, `firmware:
 "windows-app"` and app/protocol version metadata. Response may include
 `spotify_configured`, `ask_dj_supported`, `ask_dj_voice_supported`,
 `voice_supported`, `ask_dj_audio_response_supported` and `playback`.
+Authenticated DJConnect requests include `Authorization: Bearer <device_token>`
+and `X-DJConnect-Device-ID: <device_id>`.
 
 HTTP `401`/`403` means stale pairing or invalid token. HTTP `426` means
 protocol mismatch and must not be treated as a token failure. At runtime the
@@ -247,8 +250,9 @@ These remain HTTP-only:
 - push registration;
 - image proxy;
 - TTS/audio download URLs;
-- Spotify OAuth callback;
-- local `/api/device/*` endpoints.
+- Spotify OAuth callback.
+
+Windows does not expose or require local `/api/device/*` endpoints.
 
 ## Diagnostics And User-Prepared Reports
 

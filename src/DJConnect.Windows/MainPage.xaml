@@ -1040,7 +1040,7 @@
                                     <Button Grid.Column="1" Text="🎙  Privacy settings" Clicked="OpenMicrophoneSettingsFromSettings" />
                                     <Label Grid.Row="1" Text="Notificaties&#10;Alleen voor meldingen indien ondersteund." TextColor="{StaticResource TextPrimary}" />
                                     <Button Grid.Row="1" Grid.Column="1" Text="🔔  Notification settings" Clicked="OpenNotificationSettingsFromPrivacy" />
-                                    <Label Grid.Row="2" Text="Lokaal netwerk/firewall&#10;Nodig voor pairing en Client API discovery." TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="2" Text="Lokaal netwerk/firewall&#10;Nodig om Home Assistant lokaal te bereiken." TextColor="{StaticResource TextPrimary}" />
                                     <Button Grid.Row="2" Grid.Column="1" Text="▧  Firewall settings" Clicked="OpenFirewallSettingsFromPrivacy" />
                                 </Grid>
                             </VerticalStackLayout>
@@ -1128,9 +1128,16 @@
             </Grid>
         </Grid>
 
-        <Grid IsVisible="{Binding IsOnboardingVisible}" BackgroundColor="#EE050717">
+        <Grid IsVisible="{Binding IsOnboardingVisible}">
+            <Grid.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#F0050717" Offset="0" />
+                    <GradientStop Color="#F0181144" Offset="0.55" />
+                    <GradientStop Color="#F0091025" Offset="1" />
+                </LinearGradientBrush>
+            </Grid.Background>
             <ScrollView>
-                <Border Padding="32" WidthRequest="760" MaximumWidthRequest="760" BackgroundColor="#282270" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" HorizontalOptions="Center" VerticalOptions="Center" Margin="24">
+                <Border Padding="32" MaximumWidthRequest="760" BackgroundColor="#282270" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8" HorizontalOptions="Center" VerticalOptions="Center" Margin="24">
                     <VerticalStackLayout Spacing="24">
                         <Border Padding="28" Background="{StaticResource CardBrush}" StrokeShape="RoundRectangle 8">
                             <HorizontalStackLayout Spacing="24">
@@ -1145,11 +1152,11 @@
                         <Border Padding="22" BackgroundColor="#3A347B" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
                             <Grid ColumnDefinitions="110,*" ColumnSpacing="26">
                                 <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
-                                    <Button x:Name="WelcomeStepNowPlayingButton" Text="♪" FontSize="30" WidthRequest="70" HeightRequest="70" Clicked="SelectWelcomeStepNowPlaying" />
-                                    <Button x:Name="WelcomeStepAskDjButton" Text="☵" FontSize="28" WidthRequest="70" HeightRequest="70" Clicked="SelectWelcomeStepAskDJ" />
-                                    <Button x:Name="WelcomeStepQueueButton" Text="▸☰" FontSize="22" WidthRequest="70" HeightRequest="70" Clicked="SelectWelcomeStepQueue" />
-                                    <Button x:Name="WelcomeStepMoreButton" Text="•••" FontSize="24" WidthRequest="70" HeightRequest="70" Clicked="SelectWelcomeStepMore" />
-                                    <Button x:Name="WelcomeStepGamesButton" Text="🎮" FontSize="26" WidthRequest="70" HeightRequest="70" Clicked="SelectWelcomeStepGames" />
+                                    <Button x:Name="WelcomeStepNowPlayingButton" Text="♪" FontSize="30" WidthRequest="70" HeightRequest="70" CornerRadius="35" Clicked="SelectWelcomeStepNowPlaying" />
+                                    <Button x:Name="WelcomeStepAskDjButton" Text="☵" FontSize="28" WidthRequest="70" HeightRequest="70" CornerRadius="35" Clicked="SelectWelcomeStepAskDJ" />
+                                    <Button x:Name="WelcomeStepInsightButton" Text="〽" FontSize="28" WidthRequest="70" HeightRequest="70" CornerRadius="35" Clicked="SelectWelcomeStepInsight" />
+                                    <Button x:Name="WelcomeStepQueueButton" Text="▸☰" FontSize="22" WidthRequest="70" HeightRequest="70" CornerRadius="35" Clicked="SelectWelcomeStepQueue" />
+                                    <Button x:Name="WelcomeStepGamesButton" Text="🎮" FontSize="26" WidthRequest="70" HeightRequest="70" CornerRadius="35" Clicked="SelectWelcomeStepGames" />
                                 </VerticalStackLayout>
 
                                 <Border Grid.Column="1" Padding="28" BackgroundColor="#2F2B68" StrokeShape="RoundRectangle 8" VerticalOptions="Center">
@@ -1168,7 +1175,7 @@
 
                         <VerticalStackLayout Spacing="12" HorizontalOptions="Center">
                             <Label x:Name="WelcomeTitleLabel" Text="♪  Speelt Nu" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" HorizontalTextAlignment="Center" />
-                            <Label x:Name="WelcomeBodyLabel" Text="Bedien playback, volume en het actieve uitvoerapparaat vanaf het hoofdscherm." WidthRequest="620" LineBreakMode="WordWrap" FontSize="18" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
+                            <Label x:Name="WelcomeBodyLabel" Text="Bedien playback, volume en het actieve uitvoerapparaat vanaf het hoofdscherm." MaximumWidthRequest="620" LineBreakMode="WordWrap" FontSize="18" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
                             <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
                                 <BoxView x:Name="WelcomeProgressDot0" WidthRequest="38" HeightRequest="10" CornerRadius="5" Color="#D536F6" />
                                 <BoxView x:Name="WelcomeProgressDot1" WidthRequest="10" HeightRequest="10" CornerRadius="5" Color="#6B638E" />
@@ -1179,8 +1186,7 @@
                         </VerticalStackLayout>
 
                         <VerticalStackLayout Spacing="6">
-                            <Label Text="Installatie loopt via Home Assistant. Spotify-weergave vereist Spotify Premium." LineBreakMode="WordWrap" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
-                            <Label Text="De Windows client vraagt niet om Spotify credentials." LineBreakMode="WordWrap" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
+                            <Label x:Name="WelcomeSetupHintLabel" Text="Installatie loopt via Home Assistant. Spotify-weergave vereist Spotify Premium." LineBreakMode="WordWrap" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="Center" />
                             <Label Text="https://djconnect.dev/start" TextColor="#D536F6" FontAttributes="Bold" HorizontalTextAlignment="Center">
                                 <Label.GestureRecognizers>
                                     <TapGestureRecognizer Tapped="OpenSetupLink" />
@@ -1188,10 +1194,10 @@
                             </Label>
                         </VerticalStackLayout>
 
-                        <Button Text="Overslaan" Command="{Binding CompleteOnboardingCommand}" HeightRequest="58" />
+                        <Button x:Name="WelcomeSkipButton" Text="Overslaan" Command="{Binding CompleteOnboardingCommand}" HeightRequest="58" CornerRadius="22" />
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="14">
-                            <Button x:Name="WelcomePreviousButton" Text="‹  Vorige" HeightRequest="58" Clicked="WelcomePrevious" />
-                            <Button x:Name="WelcomeNextButton" Grid.Column="1" Text="›  Volgende" HeightRequest="58" Clicked="WelcomeNext" />
+                            <Button x:Name="WelcomePreviousButton" Text="‹  Vorige" HeightRequest="58" CornerRadius="22" Clicked="WelcomePrevious" />
+                            <Button x:Name="WelcomeNextButton" Grid.Column="1" Text="›  Volgende" HeightRequest="58" CornerRadius="22" Clicked="WelcomeNext" />
                         </Grid>
                     </VerticalStackLayout>
                 </Border>
@@ -1206,7 +1212,7 @@
                             <Image Source="djconnect_icon.png" WidthRequest="72" HeightRequest="72" />
                             <VerticalStackLayout VerticalOptions="Center">
                                 <Label Text="DJConnect koppelen" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
-                                <Label Text="Gebruik deze gegevens in Home Assistant om deze app te koppelen." TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="Vul de lokale Home Assistant URL en de code uit Home Assistant in." TextColor="{StaticResource TextSecondary}" />
                             </VerticalStackLayout>
                         </HorizontalStackLayout>
                     </Border>
@@ -1214,7 +1220,7 @@
                     <VerticalStackLayout IsVisible="{Binding IsPairingFormVisible}" Spacing="16">
                         <Border Padding="16" BackgroundColor="#3B367D" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
                             <VerticalStackLayout Spacing="8">
-                                <Label Text="Home Assistant met de DJConnect integration is nodig. Pairing moet lokaal op hetzelfde LAN gebeuren; remote werkt pas na lokale pairing." TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                                <Label Text="Vul de lokale Home Assistant URL en de 6-cijferige koppelcode uit Home Assistant in. DJConnect stuurt daarna zelf het koppelverzoek naar Home Assistant." TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
                                 <Label Text="De Windows client vraagt niet om Spotify login of Home Assistant long-lived tokens." TextColor="{StaticResource TextSecondary}" />
                                 <Label Text="https://djconnect.dev/start" TextColor="{StaticResource Accent}" FontAttributes="Bold">
                                     <Label.GestureRecognizers>
@@ -1224,20 +1230,18 @@
                             </VerticalStackLayout>
                         </Border>
 
-                        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="12" ColumnSpacing="12">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="12">
                             <Label Text="Lokale Home Assistant URL" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                            <Button Grid.Column="1" Text="Opslaan" Command="{Binding SaveSettingsCommand}" />
-                            <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Border Grid.Row="1" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
                                 <Entry Text="{Binding HomeAssistantUrl}" BackgroundColor="#071026" TextColor="{StaticResource TextPrimary}" Placeholder="http://homeassistant.local:8123" />
                             </Border>
 
                             <Label Grid.Row="2" Text="Koppelcode" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                            <Button Grid.Row="2" Grid.Column="1" Text="⧉  Kopieer koppelcode" IsEnabled="{Binding IsPairable}" Clicked="CopyPairingCodeClicked" />
-                            <Border Grid.Row="3" Grid.ColumnSpan="2" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
-                                <Label Text="{Binding PairingCodeDisplay}" TextColor="{StaticResource TextPrimary}" FontSize="24" FontAttributes="Bold" HorizontalTextAlignment="Center" />
+                            <Border Grid.Row="3" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                <Entry Text="{Binding PairingCode}" BackgroundColor="#071026" TextColor="{StaticResource TextPrimary}" Placeholder="123456" Keyboard="Numeric" MaxLength="6" />
                             </Border>
-                            <Button Grid.Row="4" Grid.ColumnSpan="2" Text="Koppel met lokale Home Assistant" HeightRequest="58" Command="{Binding PairCommand}" />
-                            <Label Grid.Row="5" Grid.ColumnSpan="2" Text="Gebruik de code die Home Assistant tijdens DJConnect pairing toont. Remote URLs worden pas na succesvolle lokale pairing gebruikt." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                            <Button Grid.Row="4" Text="Koppelen" HeightRequest="58" Command="{Binding PairCommand}" />
+                            <Label Grid.Row="5" Text="Gebruik de code die Home Assistant tijdens DJConnect app-pairing toont. Remote URLs worden pas na succesvolle lokale pairing gebruikt." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
                         </Grid>
 
                         <Border Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">

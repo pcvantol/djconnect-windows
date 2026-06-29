@@ -34,4 +34,5 @@ public sealed record DJConnectClientConfiguration(
     string HomeAssistantUrl,
     string? DeviceToken,
     bool EnableLocalWebSocketFastPath,
-    string? HomeAssistantWebSocketAuthToken);
+    string? HomeAssistantWebSocketAuthToken,
+    string? DeviceId = null);
