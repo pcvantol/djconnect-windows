@@ -58,6 +58,8 @@ connection flow rather than in a mobile-style tab bar.
    integration.
 5. The app posts pairing data to local Home Assistant through
    `POST /api/djconnect/pair`. Remote URLs are not used for first pairing.
+   Windows does not display a client address, generate a pairing code or wait
+   for an inbound Home Assistant callback.
 6. On successful pairing, the app stores only the Home Assistant-issued
    DJConnect device token in app-private credential storage, stores non-secret
    `ha_local_url`/`ha_remote_url` metadata and enters runtime UI.

@@ -19,6 +19,5 @@
     <Compile Include="..\..\src\DJConnect.Windows\Services\HomeAssistantTransportManager.cs" Link="Services\HomeAssistantTransportManager.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\MonkeyTestMode.cs" Link="Services\MonkeyTestMode.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\PairingStatePolicy.cs" Link="Services\PairingStatePolicy.cs" />
-    <Compile Include="..\..\src\DJConnect.Windows\Services\PairingCodeGenerator.cs" Link="Services\PairingCodeGenerator.cs" />
   </ItemGroup>
 </Project>

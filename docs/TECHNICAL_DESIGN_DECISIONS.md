@@ -57,7 +57,9 @@ First launch is gated by the interactive welcome wizard. `DJConnectWelcomeSeen`
 is stored locally once the user skips or finishes it. Dismissing onboarding
 opens local Home Assistant pairing. Windows no longer starts a client-hosted
 local API or `_djconnect._tcp` advertisement; the user enters the local Home
-Assistant URL and the pairing code shown by the HA integration.
+Assistant URL and the pairing code shown by the HA integration. The client does
+not prefill, generate or copy pairing codes and does not show a Windows client
+address or inbound waiting state.
 
 Settings, Privacy, Logs, Feedback and Crash report are utility flows rather
 than backend upload surfaces. They show privacy-safe context, use explicit user

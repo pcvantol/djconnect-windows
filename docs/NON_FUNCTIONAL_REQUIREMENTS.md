@@ -83,6 +83,9 @@ Required lifecycle:
 - User-facing strings should be available in Dutch and English where the
   surrounding ViewModel localization pattern is used.
 - The pairing UI must not ask users to copy a Windows `Client adres`.
+- The pairing UI must not show a "waiting for Home Assistant" state, expose a
+  Windows callback URL, prefill an app-generated code or offer demo mode as a
+  pairing action.
 - Release notes use Dutch when locale starts with `nl`; otherwise English.
 
 ## Verification

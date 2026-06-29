@@ -37,7 +37,8 @@ var tests = new (string Name, Action Run)[]
     ("Version compatibility enforces app protocol minor", VersionCompatibilityEnforcesAppProtocolMinor),
     ("Queue normalization deduplicates and limits items", QueueNormalizationDeduplicatesAndLimitsItems),
     ("Playlist normalization supports aliases dedupe and limits", PlaylistNormalizationSupportsAliasesDedupeAndLimits),
-    ("Pairing code generator creates six digits", PairingCodeGeneratorCreatesSixDigits),
+    ("Pairing code is entered from Home Assistant", PairingCodeIsEnteredFromHomeAssistant),
+    ("Pairing UI has outbound-only copy", PairingUiHasOutboundOnlyCopy),
     ("Welcome seen flag defaults to first launch", WelcomeSeenFlagDefaultsToFirstLaunch),
     ("Whats New last seen version defaults empty", WhatsNewLastSeenVersionDefaultsEmpty),
     ("Crash report flags default to clean first launch", CrashReportFlagsDefaultToCleanFirstLaunch),
@@ -965,12 +966,27 @@ static void PlaylistNormalizationSupportsAliasesDedupeAndLimits()
     AssertEqual(normalized.Count, normalized.Select(item => item.StableId).Distinct(StringComparer.OrdinalIgnoreCase).Count());
 }
 
-static void PairingCodeGeneratorCreatesSixDigits()
+static void PairingCodeIsEnteredFromHomeAssistant()
 {
-    var code = PairingCodeGenerator.CreateCode();
+    var settings = new AppSettings();
 
-    AssertEqual(6, code.Length);
-    AssertTrue(code.All(char.IsDigit), "pairing code should contain only digits");
+    AssertEqual("", settings.PairingCode);
+}
+
+static void PairingUiHasOutboundOnlyCopy()
+{
+    var xaml = File.ReadAllText(Path.Combine("src", "DJConnect.Windows", "MainPage.xaml"));
+    var codeBehind = File.ReadAllText(Path.Combine("src", "DJConnect.Windows", "MainPage.xaml.cs"));
+    var viewModel = File.ReadAllText(Path.Combine("src", "DJConnect.Windows", "ViewModels", "MainViewModel.cs"));
+
+    AssertTrue(xaml.Contains("Vul de lokale Home Assistant URL en de 6-cijferige koppelcode", StringComparison.Ordinal), "pairing UI must ask for HA URL and HA pair code");
+    AssertTrue(xaml.Contains("Command=\"{Binding PairCommand}\"", StringComparison.Ordinal), "pairing UI must submit through PairCommand");
+    AssertTrue(!xaml.Contains("Client adres", StringComparison.OrdinalIgnoreCase), "pairing UI must not show a Windows client address");
+    AssertTrue(!xaml.Contains("Wacht op koppeling", StringComparison.OrdinalIgnoreCase), "pairing UI must not wait for an inbound Home Assistant callback");
+    AssertTrue(!xaml.Contains("Koppelgegevens voor Home Assistant", StringComparison.OrdinalIgnoreCase), "pairing UI must not present data for HA to call back to Windows");
+    AssertTrue(!xaml.Contains("Demo modus starten", StringComparison.OrdinalIgnoreCase), "pairing UI must not route users into demo mode from pairing");
+    AssertTrue(!codeBehind.Contains("CopyPairingCode", StringComparison.OrdinalIgnoreCase), "Windows must not expose copy-code actions for app-generated pairing codes");
+    AssertTrue(!viewModel.Contains("030610", StringComparison.Ordinal), "Windows must not ship a default pair code");
 }
 
 static void WelcomeSeenFlagDefaultsToFirstLaunch()

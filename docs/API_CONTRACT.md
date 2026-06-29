@@ -40,6 +40,12 @@ plus local/remote Home Assistant URL metadata. Pairing must use the local Home
 Assistant URL; remote pairing is rejected and remote URLs are used only after
 successful local pairing.
 
+The Windows pairing screen is outbound-only. It asks for the local Home
+Assistant URL and the Home Assistant-generated six-digit pairing code, then the
+user presses the pairing button. It must not show a Windows client address,
+generate/copy its own pairing code or wait for Home Assistant to call Windows
+back.
+
 ## Status
 
 ```http

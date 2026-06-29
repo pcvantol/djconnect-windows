@@ -60,6 +60,11 @@ The app sends the Home Assistant pairing code only as `pair_code` with
 `client_type: "windows"` and the app version. Remote Home Assistant URLs are
 used only after successful local pairing.
 
+The pairing screen must remain a two-field outbound form: local Home Assistant
+URL, Home Assistant pairing code and a single pairing action. Do not add a
+Windows client address, "waiting for Home Assistant" state, copy-code action or
+demo-mode shortcut to the pairing form.
+
 ## Logging And Secrets
 
 Do not add logs that include bearer tokens, Authorization headers, pairing
