@@ -1449,7 +1449,7 @@ public sealed class MainViewModel : ObservableObject
         StatusResponse statusResponse;
         try
         {
-            statusResponse = await _apiClient.GetStatusAsync(_identity, CancellationToken.None);
+            statusResponse = await _apiClient.GetStatusAsync(_identity, _language, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -1540,7 +1540,7 @@ public sealed class MainViewModel : ObservableObject
         StatusResponse response;
         try
         {
-            response = await _apiClient.GetStatusAsync(_identity, CancellationToken.None);
+            response = await _apiClient.GetStatusAsync(_identity, _language, CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -1652,7 +1652,9 @@ public sealed class MainViewModel : ObservableObject
             text,
             Mood: AskDJMoodValue(),
             AppVersion: AppVersion,
-            ProtocolVersion: DJConnectContract.ProtocolLine);
+            ProtocolVersion: DJConnectContract.ProtocolLine,
+            Language: AppStrings.NormalizeApiLocale(_language),
+            Locale: AppStrings.NormalizeApiLocale(_language));
 
         AskDJMessageResponse response;
         try
@@ -1891,7 +1893,7 @@ public sealed class MainViewModel : ObservableObject
         CommandResponse response;
         try
         {
-            response = await _apiClient.RunCommandAsync(_identity, command, CancellationToken.None);
+            response = await _apiClient.RunCommandAsync(_identity, command, _language, CancellationToken.None);
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
@@ -1971,7 +1973,7 @@ public sealed class MainViewModel : ObservableObject
         CommandResponse response;
         try
         {
-            response = await _apiClient.RunCommandAsync(_identity, command, args, CancellationToken.None);
+            response = await _apiClient.RunCommandAsync(_identity, command, args, _language, CancellationToken.None);
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
@@ -2125,7 +2127,7 @@ public sealed class MainViewModel : ObservableObject
         CommandResponse response;
         try
         {
-            response = await _apiClient.RunCommandAsync(_identity, "save_current_track", CancellationToken.None);
+            response = await _apiClient.RunCommandAsync(_identity, "save_current_track", _language, CancellationToken.None);
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
@@ -2233,7 +2235,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             ConfigureClient();
-            var response = await _apiClient.GetStatusAsync(_identity, CancellationToken.None);
+            var response = await _apiClient.GetStatusAsync(_identity, _language, CancellationToken.None);
             if (!response.Success)
             {
                 QueueNotice = P("Vm_Home_Assistant_is_unreachable_4");
@@ -2332,7 +2334,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             ConfigureClient();
-            var response = await _apiClient.GetStatusAsync(_identity, CancellationToken.None);
+            var response = await _apiClient.GetStatusAsync(_identity, _language, CancellationToken.None);
             if (!response.Success)
             {
                 ReplacePlaylistItems([]);
@@ -3334,8 +3336,8 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             response = string.Equals(action.Command, "ask_dj_message", StringComparison.OrdinalIgnoreCase)
-                ? await _apiClient.RunAskDJMessageActionAsync(_identity, action, CancellationToken.None)
-                : await _apiClient.RunPlaybackActionAsync(_identity, action, CancellationToken.None);
+                ? await _apiClient.RunAskDJMessageActionAsync(_identity, action, _language, CancellationToken.None)
+                : await _apiClient.RunPlaybackActionAsync(_identity, action, _language, CancellationToken.None);
         }
         catch (Exception ex)
         {

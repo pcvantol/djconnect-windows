@@ -150,7 +150,9 @@ public sealed record AskDJRequest(
     [property: JsonPropertyName("audio_response")] string AudioResponse = "auto",
     [property: JsonPropertyName("mood")] int? Mood = null,
     [property: JsonPropertyName("app_version")] string? AppVersion = null,
-    [property: JsonPropertyName("protocol_version")] string? ProtocolVersion = null);
+    [property: JsonPropertyName("protocol_version")] string? ProtocolVersion = null,
+    [property: JsonPropertyName("language")] string? Language = null,
+    [property: JsonPropertyName("locale")] string? Locale = null);
 
 public sealed record AskDJHistoryResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -705,7 +707,9 @@ public sealed record TrackInsightRow(string Title, string Subtitle, string Detai
 
 public sealed record AskDJVoiceRequest(
     string ClientMessageId,
-    string AudioResponse = "auto");
+    string AudioResponse = "auto",
+    string? Language = null,
+    string? Locale = null);
 
 public sealed record AskDJImage(
     [property: JsonPropertyName("url")] string? Url,

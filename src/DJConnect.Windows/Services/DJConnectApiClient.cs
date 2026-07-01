@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using DJConnect.Windows.Contracts;
 using DJConnect.Windows.Models;
+using DJConnect.Windows.Resources;
 
 namespace DJConnect.Windows.Services;
 
@@ -89,7 +90,12 @@ public sealed class DJConnectApiClient
 
     public async Task<StatusResponse> GetStatusAsync(ClientIdentity identity, CancellationToken cancellationToken)
     {
-        var payload = BuildStatusPayload(identity);
+        return await GetStatusAsync(identity, null, cancellationToken);
+    }
+
+    public async Task<StatusResponse> GetStatusAsync(ClientIdentity identity, string? language, CancellationToken cancellationToken)
+    {
+        var payload = BuildStatusPayload(identity, language);
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/status", payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<StatusResponse>(response, cancellationToken);
     }
@@ -132,6 +138,7 @@ public sealed class DJConnectApiClient
         AskDJVoiceRequest request,
         CancellationToken cancellationToken)
     {
+        var locale = AppStrings.NormalizeApiLocale(request.Language ?? request.Locale);
         using var content = new MultipartFormDataContent
         {
             { new StringContent(request.ClientMessageId), "client_message_id" },
@@ -139,13 +146,22 @@ public sealed class DJConnectApiClient
             { new StringContent(identity.DeviceId), "device_id" },
             { new StringContent(identity.DeviceName), "device_name" },
             { new StringContent(identity.ClientType), "client_type" },
-            { new StringContent(request.AudioResponse), "audio_response" }
+            { new StringContent(request.AudioResponse), "audio_response" },
+            { new StringContent(locale), "language" },
+            { new StringContent(locale), "locale" }
         };
         using var audio = new StreamContent(wavAudio);
         audio.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
         content.Add(audio, "audio", "ask-dj.wav");
 
-        var response = await _httpClient.PostAsync("api/djconnect/voice", content, cancellationToken);
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/djconnect/voice")
+        {
+            Content = content
+        };
+        httpRequest.Headers.Add("X-DJConnect-Language", locale);
+        httpRequest.Headers.Add("X-DJConnect-Locale", locale);
+
+        var response = await _httpClient.SendAsync(httpRequest, cancellationToken);
         return await ReadJsonAsync<AskDJMessageResponse>(response, cancellationToken);
     }
 
@@ -163,10 +179,15 @@ public sealed class DJConnectApiClient
 
     public async Task<CommandResponse> RunPlaybackActionAsync(ClientIdentity identity, PlaybackAction action, CancellationToken cancellationToken)
     {
+        return await RunPlaybackActionAsync(identity, action, null, cancellationToken);
+    }
+
+    public async Task<CommandResponse> RunPlaybackActionAsync(ClientIdentity identity, PlaybackAction action, string? language, CancellationToken cancellationToken)
+    {
         var command = string.IsNullOrWhiteSpace(action.Command)
             ? DefaultCommandFor(action)
             : action.Command;
-        var payload = BuildActionCommandPayload(identity, command, ActionValueFor(action));
+        var payload = BuildActionCommandPayload(identity, command, ActionValueFor(action), language: language);
         payload["action"] = action;
         var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", _webSocketPayloadFactory.BuildCommand(payload, _deviceToken), TimeSpan.FromSeconds(2), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
@@ -180,9 +201,15 @@ public sealed class DJConnectApiClient
 
     public async Task<CommandResponse> RunAskDJMessageActionAsync(ClientIdentity identity, PlaybackAction action, CancellationToken cancellationToken)
     {
+        return await RunAskDJMessageActionAsync(identity, action, null, cancellationToken);
+    }
+
+    public async Task<CommandResponse> RunAskDJMessageActionAsync(ClientIdentity identity, PlaybackAction action, string? language, CancellationToken cancellationToken)
+    {
         var prompt = ActionTextFor(action);
         if (!string.IsNullOrWhiteSpace(prompt))
         {
+            var locale = AppStrings.NormalizeApiLocale(language);
             var request = new AskDJRequest(
                 Guid.NewGuid().ToString("N"),
                 identity.DeviceId,
@@ -190,12 +217,14 @@ public sealed class DJConnectApiClient
                 identity.DeviceName,
                 identity.ClientType,
                 prompt,
-                prompt);
+                prompt,
+                Language: locale,
+                Locale: locale);
             var askResponse = await SendAskDJMessageAsync(request, cancellationToken);
             return new CommandResponse(askResponse.Success, askResponse.Text ?? askResponse.DjText ?? askResponse.Message, askResponse.Text ?? askResponse.DjText, askResponse.Error);
         }
 
-        var payload = BuildActionCommandPayload(identity, "ask_dj_message", ActionValueFor(action));
+        var payload = BuildActionCommandPayload(identity, "ask_dj_message", ActionValueFor(action), language: language);
         payload["action"] = action;
         var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", _webSocketPayloadFactory.BuildCommand(payload, _deviceToken), TimeSpan.FromSeconds(2), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
@@ -209,12 +238,22 @@ public sealed class DJConnectApiClient
 
     public async Task<CommandResponse> RunCommandAsync(ClientIdentity identity, string command, CancellationToken cancellationToken)
     {
-        return await RunCommandAsync(identity, command, null, cancellationToken);
+        return await RunCommandAsync(identity, command, null, null, cancellationToken);
+    }
+
+    public async Task<CommandResponse> RunCommandAsync(ClientIdentity identity, string command, string? language, CancellationToken cancellationToken)
+    {
+        return await RunCommandAsync(identity, command, null, language, cancellationToken);
     }
 
     public async Task<CommandResponse> RunCommandAsync(ClientIdentity identity, string command, object? args, CancellationToken cancellationToken)
     {
-        var payload = BuildCommandPayload(identity, command, args);
+        return await RunCommandAsync(identity, command, args, null, cancellationToken);
+    }
+
+    public async Task<CommandResponse> RunCommandAsync(ClientIdentity identity, string command, object? args, string? language, CancellationToken cancellationToken)
+    {
+        var payload = BuildCommandPayload(identity, command, args, language: language);
         var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", _webSocketPayloadFactory.BuildCommand(payload, _deviceToken), TimeSpan.FromSeconds(CommandTimeoutSeconds(command)), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
         {
@@ -246,7 +285,7 @@ public sealed class DJConnectApiClient
         }
     }
 
-    public static Dictionary<string, object?> BuildCommandPayload(ClientIdentity identity, string command, object? args = null, string? clientMessageId = null)
+    public static Dictionary<string, object?> BuildCommandPayload(ClientIdentity identity, string command, object? args = null, string? clientMessageId = null, string? language = null)
     {
         var payload = new Dictionary<string, object?>
         {
@@ -257,6 +296,8 @@ public sealed class DJConnectApiClient
             ["device_name"] = identity.DeviceName,
             ["client_type"] = identity.ClientType
         };
+
+        AddLanguage(payload, language);
 
         if (args is not null)
         {
@@ -302,9 +343,9 @@ public sealed class DJConnectApiClient
             && second is >= 16 and <= 31;
     }
 
-    public static Dictionary<string, object?> BuildStatusPayload(ClientIdentity identity)
+    public static Dictionary<string, object?> BuildStatusPayload(ClientIdentity identity, string? language = null)
     {
-        return new Dictionary<string, object?>
+        var payload = new Dictionary<string, object?>
         {
             ["device_id"] = identity.DeviceId,
             ["device_name"] = identity.DeviceName,
@@ -314,11 +355,13 @@ public sealed class DJConnectApiClient
             ["app_version"] = DJConnectContract.AppVersion,
             ["protocol_version"] = DJConnectContract.ProtocolLine
         };
+        AddLanguage(payload, language);
+        return payload;
     }
 
-    public static Dictionary<string, object?> BuildActionCommandPayload(ClientIdentity identity, string command, object? value = null, string? clientMessageId = null)
+    public static Dictionary<string, object?> BuildActionCommandPayload(ClientIdentity identity, string command, object? value = null, string? clientMessageId = null, string? language = null)
     {
-        var payload = BuildCommandPayload(identity, command, null, clientMessageId);
+        var payload = BuildCommandPayload(identity, command, null, clientMessageId, language);
         if (value is not null)
         {
             payload["value"] = value;
@@ -330,6 +373,18 @@ public sealed class DJConnectApiClient
         }
 
         return payload;
+    }
+
+    private static void AddLanguage(Dictionary<string, object?> payload, string? language)
+    {
+        if (string.IsNullOrWhiteSpace(language))
+        {
+            return;
+        }
+
+        var locale = AppStrings.NormalizeApiLocale(language);
+        payload["language"] = locale;
+        payload["locale"] = locale;
     }
 
     private static string DefaultCommandFor(PlaybackAction action)

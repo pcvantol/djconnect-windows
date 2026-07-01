@@ -17,6 +17,8 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["text"] = request.Text;
         payload["mood"] = request.Mood;
         payload["audio_response"] = request.AudioResponse;
+        payload["language"] = request.Language;
+        payload["locale"] = request.Locale;
 
         if (request.Metadata?.TryGetValue("music_dna_key", out var musicDnaKey) == true && musicDnaKey is not null)
         {

@@ -19,6 +19,7 @@ var tests = new (string Name, Action Run)[]
     ("Authenticated requests include bearer token and device header", AuthenticatedRequestsIncludeBearerTokenAndDeviceHeader),
     ("Status payload serializes app protocol metadata", StatusPayloadSerializesAppProtocolMetadata),
     ("Ask DJ request serializes server-side message contract", AskDJRequestSerializesServerSideContract),
+    ("Ask DJ message request includes current locale", AskDJMessageRequestIncludesCurrentLocale),
     ("Ask DJ response deserializes exchange messages", AskDJResponseDeserializesExchangeMessages),
     ("Ask DJ response deserializes media sources links and dj text", AskDJResponseDeserializesMediaSourcesLinksAndDjText),
     ("Ask DJ track insight v2 renders sections timeline and tips", AskDJTrackInsightV2RendersSectionsTimelineAndTips),
@@ -64,13 +65,17 @@ var tests = new (string Name, Action Run)[]
     ("Protocol 3.2 parses safe backend error object", Protocol32ParsesSafeBackendErrorObject),
     ("Backend-aware actions preserve Music Assistant value", BackendAwareActionsPreserveMusicAssistantValue),
     ("Backend-aware actions carry backend revision", BackendAwareActionsCarryBackendRevision),
+    ("Command payload includes current locale and preserves protocol values", CommandPayloadIncludesCurrentLocaleAndPreservesProtocolValues),
+    ("Raw voice upload includes language headers", RawVoiceUploadIncludesLanguageHeaders),
     ("Transport options require local HA websocket auth opt-in", TransportOptionsRequireLocalHaWebSocketAuthOptIn),
     ("Fast path diagnostics formatter renders safe summary", FastPathDiagnosticsFormatterRendersSafeSummary),
     ("WebSocket fast path stays disabled without HA auth token", WebSocketFastPathStaysDisabledWithoutHaAuthToken),
     ("WebSocket fast path detects capabilities", WebSocketFastPathDetectsCapabilities),
     ("WebSocket command success skips HTTP", WebSocketCommandSuccessSkipsHttp),
+    ("WebSocket command payload includes current locale", WebSocketCommandPayloadIncludesCurrentLocale),
     ("WebSocket missing capability falls back to HTTP", WebSocketMissingCapabilityFallsBackToHttp),
     ("WebSocket Ask DJ message success uses revisions", WebSocketAskDJMessageSuccessUsesRevisions),
+    ("WebSocket Ask DJ payload includes current locale", WebSocketAskDJPayloadIncludesCurrentLocale),
     ("WebSocket Track Insight success renders Music DNA", WebSocketTrackInsightSuccessRendersMusicDna),
     ("WebSocket timeout falls back to HTTP exactly once", WebSocketTimeoutFallsBackToHttpExactlyOnce),
     ("WebSocket auth error falls back to HTTP", WebSocketAuthErrorFallsBackToHttp),
@@ -325,6 +330,26 @@ static void AskDJRequestSerializesServerSideContract()
     AssertEqual(72, root.GetProperty("mood").GetInt32());
     AssertEqual("3.2.4", root.GetProperty("app_version").GetString());
     AssertEqual("3.2", root.GetProperty("protocol_version").GetString());
+}
+
+static void AskDJMessageRequestIncludesCurrentLocale()
+{
+    var http = new FakeHttpHandler("""{"success":true,"message":"ok"}""");
+    var client = new DJConnectApiClient(new HttpClient(http));
+    client.Configure("http://homeassistant.local:8123", "paired-device-token");
+
+    var request = TestAskRequest("speel iets rustigs") with
+    {
+        Language = AppStrings.NormalizeApiLocale("nl"),
+        Locale = AppStrings.NormalizeApiLocale("nl")
+    };
+    var response = client.SendAskDJMessageAsync(request, CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "Ask DJ response should deserialize");
+    AssertEqual("api/djconnect/ask_dj/message", http.LastPath.TrimStart('/'));
+    AssertTrue(http.LastBody.Contains("\"language\":\"nl-NL\""), "Ask DJ message body must include BCP-47 language");
+    AssertTrue(http.LastBody.Contains("\"locale\":\"nl-NL\""), "Ask DJ message body must include BCP-47 locale");
+    AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "Ask DJ message body must preserve Windows client type");
 }
 
 static void AskDJResponseDeserializesExchangeMessages()
@@ -1400,6 +1425,37 @@ static void BackendAwareActionsCarryBackendRevision()
     AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "action payload must include Windows client type");
 }
 
+static void CommandPayloadIncludesCurrentLocaleAndPreservesProtocolValues()
+{
+    var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
+    var payload = DJConnectApiClient.BuildCommandPayload(identity, "ask_dj_followup_response", new { response = "yes" }, "msg-command-1", "en_GB");
+    var serialized = JsonSerializer.Serialize(payload, JsonOptions());
+
+    AssertTrue(serialized.Contains("\"language\":\"en-GB\""), "command payload must include BCP-47 language");
+    AssertTrue(serialized.Contains("\"locale\":\"en-GB\""), "command payload must include BCP-47 locale");
+    AssertTrue(serialized.Contains("\"command\":\"ask_dj_followup_response\""), "command name must remain a protocol value");
+    AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "client_type must remain the Windows protocol value");
+}
+
+static void RawVoiceUploadIncludesLanguageHeaders()
+{
+    var http = new FakeHttpHandler("""{"success":true,"message":"voice ok"}""");
+    var client = new DJConnectApiClient(new HttpClient(http));
+    client.Configure("http://homeassistant.local:8123", "paired-device-token");
+    using var wav = new MemoryStream([0x52, 0x49, 0x46, 0x46]);
+
+    var response = client.SendAskDJVoiceAsync(TestIdentity(), wav, new AskDJVoiceRequest("voice-1", Language: "fr"), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "voice response should deserialize");
+    AssertEqual("api/djconnect/voice", http.LastPath.TrimStart('/'));
+    AssertEqual("fr-FR", http.LastLanguageHeader);
+    AssertEqual("fr-FR", http.LastLocaleHeader);
+    AssertTrue(http.LastBody.Contains("name=language"), "multipart voice upload must include language field");
+    AssertTrue(http.LastBody.Contains("fr-FR"), "multipart voice upload must include BCP-47 locale");
+    AssertTrue(http.LastBody.Contains("name=client_type"), "multipart voice upload must preserve client_type field");
+    AssertTrue(http.LastBody.Contains("windows"), "multipart voice upload must preserve Windows client type");
+}
+
 static void TransportOptionsRequireLocalHaWebSocketAuthOptIn()
 {
     var disabled = new DJConnectTransportOptions(false, "ha-ws-token");
@@ -1468,6 +1524,21 @@ static void WebSocketCommandSuccessSkipsHttp()
     AssertEqual("djconnect/command", fastPath.Routes.Single());
 }
 
+static void WebSocketCommandPayloadIncludesCurrentLocale()
+{
+    var fastPath = new FakeFastPath(["djconnect/command"])
+        .WithResponse("djconnect/command", new CommandResponse(true, "ws ok", "ws ok", null));
+    var client = NewClientWithFastPath(fastPath, new FakeHttpHandler("""{"success":true,"message":"http ok"}"""));
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
+
+    _ = client.RunCommandAsync(TestIdentity(), "ask_dj_followup_response", "es", CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual("ask_dj_followup_response", fastPath.LastPayload!["command"]);
+    AssertEqual("es-ES", fastPath.LastPayload["language"]);
+    AssertEqual("es-ES", fastPath.LastPayload["locale"]);
+    AssertEqual("windows", fastPath.LastPayload["client_type"]);
+}
+
 static void WebSocketMissingCapabilityFallsBackToHttp()
 {
     var fastPath = new FakeFastPath(["djconnect/ask_dj/message"]);
@@ -1506,6 +1577,27 @@ static void WebSocketAskDJMessageSuccessUsesRevisions()
     AssertEqual(3, response.ClearRevision);
     AssertEqual(0, http.RequestCount);
     AssertEqual("Tell me about this track", fastPath.LastPayload!["text"]);
+}
+
+static void WebSocketAskDJPayloadIncludesCurrentLocale()
+{
+    var askResponse = JsonSerializer.Deserialize<AskDJMessageResponse>("""
+    { "success": true, "message": "ok" }
+    """, JsonOptions())!;
+    var fastPath = new FakeFastPath(["djconnect/ask_dj/message"]).WithResponse("djconnect/ask_dj/message", askResponse);
+    var client = NewClientWithFastPath(fastPath, new FakeHttpHandler("""{"success":true}"""));
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
+    var request = TestAskRequest("Was draait er?") with
+    {
+        Language = "de-DE",
+        Locale = "de-DE"
+    };
+
+    _ = client.SendAskDJMessageAsync(request, CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual("de-DE", fastPath.LastPayload!["language"]);
+    AssertEqual("de-DE", fastPath.LastPayload["locale"]);
+    AssertEqual("windows", fastPath.LastPayload["client_type"]);
 }
 
 static void WebSocketTrackInsightSuccessRendersMusicDna()
@@ -1874,6 +1966,8 @@ sealed class FakeHttpHandler : HttpMessageHandler
     public string LastAuthorization { get; private set; } = "";
     public string LastDeviceIdHeader { get; private set; } = "";
     public string LastClientTypeHeader { get; private set; } = "";
+    public string LastLanguageHeader { get; private set; } = "";
+    public string LastLocaleHeader { get; private set; } = "";
     public string LastContentType { get; private set; } = "";
     public string LastBody { get; private set; } = "";
     public List<string> RequestPaths { get; } = [];
@@ -1890,6 +1984,12 @@ sealed class FakeHttpHandler : HttpMessageHandler
             : "";
         LastClientTypeHeader = request.Headers.TryGetValues("X-DJConnect-Client-Type", out var clientTypeValues)
             ? clientTypeValues.FirstOrDefault() ?? ""
+            : "";
+        LastLanguageHeader = request.Headers.TryGetValues("X-DJConnect-Language", out var languageValues)
+            ? languageValues.FirstOrDefault() ?? ""
+            : "";
+        LastLocaleHeader = request.Headers.TryGetValues("X-DJConnect-Locale", out var localeValues)
+            ? localeValues.FirstOrDefault() ?? ""
             : "";
         LastContentType = request.Content?.Headers.ContentType?.MediaType ?? "";
         LastBody = request.Content is null

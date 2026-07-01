@@ -140,9 +140,12 @@ POST /api/djconnect/ask_dj/history/clear
 
 Text and voice requests include `client_type`, `device_id`, `device_name`,
 `client_id`, `client_message_id`, `audio_response`, app/protocol version
-metadata and optional numeric `mood`. The server derives the canonical mood
-zone: `chill` for `0`-`24`, `groove` for `25`-`59`, `energy` for `60`-`84`
-and `party` for `85`-`100`. The app persists `history_revision` and
+metadata, BCP-47 `language`/`locale` values such as `nl-NL` or `en-GB`, and
+optional numeric `mood`. Raw WAV voice uploads also send
+`X-DJConnect-Language` and `X-DJConnect-Locale` headers because the audio body
+cannot be represented as JSON. The server derives the canonical mood zone:
+`chill` for `0`-`24`, `groove` for `25`-`59`, `energy` for `60`-`84` and
+`party` for `85`-`100`. The app persists `history_revision` and
 `clear_revision` as sync cursors.
 History is Home Assistant user scoped and limited by the backend to 1000
 messages per HA user.
@@ -160,6 +163,11 @@ confirmations are sent to:
 ```http
 POST /api/djconnect/command
 ```
+
+Commands that can produce user-facing text or audio include the same BCP-47
+`language`/`locale` metadata as Ask DJ text requests. Protocol values such as
+`client_type`, command names, endpoint paths, JSON keys, service ids, entity ids
+and tokens are never localized.
 
 Confirmation actions default to `command: "ask_dj_followup_response"`.
 Recommendation actions with `action_style: "play_now"` for track, album,
