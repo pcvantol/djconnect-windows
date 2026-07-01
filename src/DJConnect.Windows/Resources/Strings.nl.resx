@@ -1,15 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
   <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader><resheader name="version"><value>2.0</value></resheader><resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader><resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name="ApiError_ClientTypeMismatch" xml:space="preserve"><value>Deze app is als een ander clienttype geregistreerd. Koppel DJConnect opnieuw vanuit Home Assistant.</value></data>
-  <data name="ApiError_InvalidPairCode" xml:space="preserve"><value>De koppelcode klopt niet of is verlopen. Maak een nieuwe code in Home Assistant en probeer opnieuw.</value></data>
-  <data name="ApiError_InvalidClientType" xml:space="preserve"><value>Deze app moet als Windows-client koppelen. Herstart DJConnect en probeer opnieuw te koppelen.</value></data>
+  <data name="ApiError_ClientTypeMismatch" xml:space="preserve"><value>Het gekozen app-type in Home Assistant klopt niet met deze app. Kies in Home Assistant de DJConnect {0} setup-flow en probeer opnieuw.</value></data>
+  <data name="ApiError_InvalidPairCode" xml:space="preserve"><value>Koppelcode klopt niet. Controleer de code in Home Assistant.</value></data>
+  <data name="ApiError_InvalidClientType" xml:space="preserve"><value>Verkeerd app-type gekozen in Home Assistant. Kies de DJConnect {0} setup-flow en gebruik de nieuwe koppelcode.</value></data>
   <data name="ApiError_NotConfigured" xml:space="preserve"><value>DJConnect is nog niet geconfigureerd in Home Assistant. Open daar eerst de DJConnect-integratie.</value></data>
   <data name="ApiError_Unauthorized" xml:space="preserve"><value>Je pairing is verlopen. Koppel DJConnect opnieuw om verder te gaan.</value></data>
-  <data name="ApiError_StaleAuth" xml:space="preserve"><value>Je pairing is verouderd. Koppel DJConnect opnieuw om dit apparaat te vernieuwen.</value></data>
+  <data name="ApiError_StaleAuth" xml:space="preserve"><value>Deze koppeling is niet meer geldig. Genereer een nieuwe koppelcode in Home Assistant en probeer opnieuw.</value></data>
   <data name="ApiError_StaleBackendAction" xml:space="preserve"><value>Deze actie hoort bij een oudere muzieksessie. Vraag DJConnect om een nieuwe aanbeveling.</value></data>
   <data name="ApiError_UnsupportedBackendCapability" xml:space="preserve"><value>Deze muziekbackend ondersteunt die actie niet.</value></data>
   <data name="ApiError_GenericPairing" xml:space="preserve"><value>Pairing is niet gelukt. Controleer Home Assistant en probeer opnieuw.</value></data>
+  <data name="ApiError_NetworkTimeout" xml:space="preserve"><value>Home Assistant reageerde niet op tijd. Controleer of dit apparaat op hetzelfde netwerk zit en probeer opnieuw.</value></data>
+  <data name="ApiError_HostNotFound" xml:space="preserve"><value>Home Assistant is niet gevonden op dit adres. Controleer de hostnaam of het IP-adres.</value></data>
+  <data name="Pairing_InvalidUrl" xml:space="preserve"><value>Voer een geldige lokale Home Assistant URL in.</value></data>
+  <data name="Pairing_InvalidCode" xml:space="preserve"><value>Voer de 6-cijferige koppelcode uit Home Assistant in.</value></data>
+  <data name="Pairing_Pending" xml:space="preserve"><value>Koppelen met Home Assistant...</value></data>
+  <data name="Pairing_Waiting" xml:space="preserve"><value>Home Assistant afronding controleren...</value></data>
   <data name="ApiError_GenericBackend" xml:space="preserve"><value>Home Assistant kon de aanvraag niet afronden. Probeer opnieuw.</value></data>
   <data name="Status_NotPaired" xml:space="preserve"><value>Niet gekoppeld</value></data>
   <data name="Status_Paired" xml:space="preserve"><value>Gekoppeld</value></data>

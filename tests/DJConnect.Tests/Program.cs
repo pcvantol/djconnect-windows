@@ -10,6 +10,10 @@ var tests = new (string Name, Action Run)[]
     ("Client identity pads short install IDs", ClientIdentityPadsShortInstallIds),
     ("Pairing payload serializes Windows app contract", PairingPayloadSerializesWindowsAppContract),
     ("Pairing client posts only to Home Assistant pair endpoint", PairingClientPostsOnlyToHomeAssistantPairEndpoint),
+    ("Pairing deeplink accepts Windows payload", PairingDeepLinkAcceptsWindowsPayload),
+    ("Pairing deeplink rejects wrong client type", PairingDeepLinkRejectsWrongClientType),
+    ("Pairing deeplink rejects wrong pair path", PairingDeepLinkRejectsWrongPairPath),
+    ("Pairing errors show localized user guidance", PairingErrorsShowLocalizedUserGuidance),
     ("Authenticated requests include bearer token and device header", AuthenticatedRequestsIncludeBearerTokenAndDeviceHeader),
     ("Status payload serializes app protocol metadata", StatusPayloadSerializesAppProtocolMetadata),
     ("Ask DJ request serializes server-side message contract", AskDJRequestSerializesServerSideContract),
@@ -126,7 +130,11 @@ static void PairingPayloadSerializesWindowsAppContract()
         "Studio PC",
         "windows",
         "123456",
-        DJConnectContract.AppVersion);
+        DJConnectContract.AppVersion,
+        Platform: "windows",
+        Locale: "nl",
+        Language: "nl",
+        Build: DJConnectContract.AppVersion);
 
     using var document = JsonSerializer.SerializeToDocument(payload);
     var root = document.RootElement;
@@ -134,7 +142,10 @@ static void PairingPayloadSerializesWindowsAppContract()
     AssertEqual("djconnect-windows-ABC123DEF456", root.GetProperty("device_id").GetString());
     AssertEqual("Studio PC", root.GetProperty("device_name").GetString());
     AssertEqual("windows", root.GetProperty("client_type").GetString());
+    AssertEqual("windows", root.GetProperty("platform").GetString());
     AssertEqual("123456", root.GetProperty("pair_code").GetString());
+    AssertEqual("nl", root.GetProperty("locale").GetString());
+    AssertEqual("nl", root.GetProperty("language").GetString());
     AssertEqual(DJConnectContract.AppVersion, root.GetProperty("app_version").GetString());
     AssertTrue(!root.TryGetProperty("pairing_token", out _), "pairing payload must not send legacy token aliases");
     AssertTrue(!root.TryGetProperty("pairing_code", out _), "pairing payload must not send legacy code aliases");
@@ -151,7 +162,7 @@ static void PairingClientPostsOnlyToHomeAssistantPairEndpoint()
     }
     """);
     var client = new DJConnectApiClient(new HttpClient(http));
-    client.Configure("http://ha-local:8123", null);
+    client.Configure("http://ha-local:8123", "old-token-that-must-not-be-sent");
 
     var response = client.PairAsync(new PairingPayload(
         "djconnect-windows-ABC123DEF456",
@@ -163,11 +174,57 @@ static void PairingClientPostsOnlyToHomeAssistantPairEndpoint()
     AssertTrue(response.Success, "pairing response should deserialize");
     AssertEqual("api/djconnect/pair", http.LastPath.TrimStart('/'));
     AssertEqual("POST", http.LastMethod);
+    AssertEqual("application/json", http.LastContentType);
+    AssertEqual("windows", http.LastClientTypeHeader);
     AssertTrue(!http.RequestPaths.Any(path => path.Contains("/api/device/", StringComparison.OrdinalIgnoreCase)), "Windows pairing must not require a local /api/device callback");
     AssertTrue(string.IsNullOrWhiteSpace(http.LastAuthorization), "pairing request must not use a bearer token");
     AssertTrue(string.IsNullOrWhiteSpace(http.LastDeviceIdHeader), "pairing request must not use authenticated device header before token issue");
     AssertTrue(http.LastBody.Contains("\"pair_code\":\"123456\""), "pairing body must send the HA pair code");
     AssertTrue(!http.LastBody.Contains("pairing_token", StringComparison.OrdinalIgnoreCase), "pairing body must not send legacy pairing_token");
+}
+
+static void PairingDeepLinkAcceptsWindowsPayload()
+{
+    const string payload = "djconnect://pair?ha_url=http%3A%2F%2Fhomeassistant.local%3A8123&pair_code=123456&client_type=windows&pair_path=%2Fapi%2Fdjconnect%2Fpair";
+
+    var accepted = PairingDeepLinkPayload.TryParse(payload, out var result, out var reason);
+
+    AssertTrue(accepted, $"payload should be accepted, got {reason}");
+    AssertEqual("http://homeassistant.local:8123", result.HomeAssistantUrl);
+    AssertEqual("123456", result.PairCode);
+    AssertEqual("windows", result.ClientType);
+    AssertEqual("/api/djconnect/pair", result.PairPath);
+}
+
+static void PairingDeepLinkRejectsWrongClientType()
+{
+    const string payload = """{"ha_url":"http://homeassistant.local:8123","pair_code":"123456","client_type":"ios","pair_path":"/api/djconnect/pair"}""";
+
+    var accepted = PairingDeepLinkPayload.TryParse(payload, out _, out var reason);
+
+    AssertTrue(!accepted, "wrong client_type must be rejected");
+    AssertEqual("client_type", reason);
+}
+
+static void PairingDeepLinkRejectsWrongPairPath()
+{
+    const string payload = """{"ha_url":"http://homeassistant.local:8123","pair_code":"123456","client_type":"windows","pair_path":"/api/device/pair"}""";
+
+    var accepted = PairingDeepLinkPayload.TryParse(payload, out _, out var reason);
+
+    AssertTrue(!accepted, "wrong pair_path must be rejected");
+    AssertEqual("pair_path", reason);
+}
+
+static void PairingErrorsShowLocalizedUserGuidance()
+{
+    AppStrings.UseLanguage("nl");
+
+    AssertEqual("Koppelcode klopt niet. Controleer de code in Home Assistant.", ApiErrorLocalizer.Pairing("invalid_pair_code"));
+    AssertEqual("Koppelcode klopt niet. Controleer de code in Home Assistant.", ApiErrorLocalizer.Pairing("not_configured"));
+    AssertEqual("Het gekozen app-type in Home Assistant klopt niet met deze app. Kies in Home Assistant de DJConnect Windows setup-flow en probeer opnieuw.", ApiErrorLocalizer.Pairing("client_type_mismatch"));
+    AssertEqual("Verkeerd app-type gekozen in Home Assistant. Kies de DJConnect Windows setup-flow en gebruik de nieuwe koppelcode.", ApiErrorLocalizer.Pairing("invalid_client_type"));
+    AssertEqual("Home Assistant reageerde niet op tijd. Controleer of dit apparaat op hetzelfde netwerk zit en probeer opnieuw.", ApiErrorLocalizer.Pairing(new TimeoutException()));
 }
 
 static void AuthenticatedRequestsIncludeBearerTokenAndDeviceHeader()
@@ -200,7 +257,7 @@ static void StatusPayloadSerializesAppProtocolMetadata()
 
     AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "status must include Windows client type");
     AssertTrue(serialized.Contains("\"firmware\":\"windows-app\""), "status must identify the app surface as firmware metadata for HA compatibility");
-    AssertTrue(serialized.Contains("\"app_version\":\"3.2.3\""), "status must include app version");
+    AssertTrue(serialized.Contains("\"app_version\":\"3.2.4\""), "status must include app version");
     AssertTrue(serialized.Contains("\"protocol_version\":\"3.2\""), "status must include protocol line");
 }
 
@@ -229,7 +286,7 @@ static void AskDJRequestSerializesServerSideContract()
     AssertEqual("Welke nummers hoorde ik net?", root.GetProperty("message").GetString());
     AssertEqual("auto", root.GetProperty("audio_response").GetString());
     AssertEqual(72, root.GetProperty("mood").GetInt32());
-    AssertEqual("3.2.3", root.GetProperty("app_version").GetString());
+    AssertEqual("3.2.4", root.GetProperty("app_version").GetString());
     AssertEqual("3.2", root.GetProperty("protocol_version").GetString());
 }
 
@@ -983,12 +1040,17 @@ static void PairingUiHasOutboundOnlyCopy()
     var codeBehind = File.ReadAllText(Path.Combine("src", "DJConnect.Windows", "MainPage.xaml.cs"));
     var viewModel = File.ReadAllText(Path.Combine("src", "DJConnect.Windows", "ViewModels", "MainViewModel.cs"));
 
-    AssertTrue(xaml.Contains("Vul de lokale Home Assistant URL en de 6-cijferige koppelcode", StringComparison.Ordinal), "pairing UI must ask for HA URL and HA pair code");
+    AssertTrue(xaml.Contains("DJConnect koppelen", StringComparison.Ordinal), "pairing UI must show the DJConnect pairing title");
+    AssertTrue(xaml.Contains("Vul of scan de code uit Home Assistant", StringComparison.Ordinal), "pairing UI must explain QR/manual pairing");
+    AssertTrue(xaml.Contains("Lokale Home Assistant URL", StringComparison.Ordinal), "pairing UI must ask for local HA URL");
+    AssertTrue(xaml.Contains("Koppelcode", StringComparison.Ordinal), "pairing UI must ask for HA pair code");
+    AssertTrue(xaml.Contains("Koppel met Home Assistant", StringComparison.Ordinal), "pairing UI must expose the primary HA pairing action");
+    AssertTrue(xaml.Contains("IsEnabled=\"{Binding CanPair}\"", StringComparison.Ordinal), "pairing button must be disabled until input is valid");
     AssertTrue(xaml.Contains("Command=\"{Binding PairCommand}\"", StringComparison.Ordinal), "pairing UI must submit through PairCommand");
     AssertTrue(!xaml.Contains("Client adres", StringComparison.OrdinalIgnoreCase), "pairing UI must not show a Windows client address");
     AssertTrue(!xaml.Contains("Wacht op koppeling", StringComparison.OrdinalIgnoreCase), "pairing UI must not wait for an inbound Home Assistant callback");
     AssertTrue(!xaml.Contains("Koppelgegevens voor Home Assistant", StringComparison.OrdinalIgnoreCase), "pairing UI must not present data for HA to call back to Windows");
-    AssertTrue(!xaml.Contains("Demo modus starten", StringComparison.OrdinalIgnoreCase), "pairing UI must not route users into demo mode from pairing");
+    AssertTrue(xaml.Contains("Demo Mode starten", StringComparison.OrdinalIgnoreCase), "pairing UI should expose demo mode when supported");
     AssertTrue(!codeBehind.Contains("CopyPairingCode", StringComparison.OrdinalIgnoreCase), "Windows must not expose copy-code actions for app-generated pairing codes");
     AssertTrue(!viewModel.Contains("030610", StringComparison.Ordinal), "Windows must not ship a default pair code");
 }
@@ -1550,12 +1612,12 @@ static void ApiErrorLocalizerMapsUserFacingGuidance()
 {
     AppStrings.UseLanguage("en");
 
-    AssertEqual("The pairing code is wrong or expired. Create a new code in Home Assistant and try again.", ApiErrorLocalizer.Pairing("invalid_pair_code"));
-    AssertEqual("DJConnect is not configured in Home Assistant. Open the DJConnect integration there first.", ApiErrorLocalizer.Pairing("not_configured"));
-    AssertEqual("This app must pair as the Windows client. Restart DJConnect and try pairing again.", ApiErrorLocalizer.Pairing("invalid_client_type"));
-    AssertEqual("This app is registered as a different client type. Pair DJConnect again from Home Assistant.", ApiErrorLocalizer.Pairing("client_type_mismatch"));
+    AssertEqual("The pairing code is not correct. Check the code in Home Assistant.", ApiErrorLocalizer.Pairing("invalid_pair_code"));
+    AssertEqual("The pairing code is not correct. Check the code in Home Assistant.", ApiErrorLocalizer.Pairing("not_configured"));
+    AssertEqual("The wrong app type was selected in Home Assistant. Choose the DJConnect Windows setup flow and use the new pairing code.", ApiErrorLocalizer.Pairing("invalid_client_type"));
+    AssertEqual("The app type selected in Home Assistant does not match this app. Choose the DJConnect Windows setup flow in Home Assistant and try again.", ApiErrorLocalizer.Pairing("client_type_mismatch"));
     AssertEqual("Your pairing has expired. Pair DJConnect again to continue.", ApiErrorLocalizer.BackendAction("unauthorized"));
-    AssertEqual("Your pairing is out of date. Pair DJConnect again to refresh this device.", ApiErrorLocalizer.StaleAuth());
+    AssertEqual("This pairing is no longer valid. Generate a new pairing code in Home Assistant and try again.", ApiErrorLocalizer.StaleAuth());
     AssertEqual("This action is from an older music session. Ask DJConnect for a fresh recommendation.", ApiErrorLocalizer.BackendAction("stale_backend_action"));
     AssertEqual("This music backend does not support that action.", ApiErrorLocalizer.BackendAction("unsupported_backend_capability"));
 }
@@ -1728,6 +1790,8 @@ sealed class FakeHttpHandler : HttpMessageHandler
     public string LastMethod { get; private set; } = "";
     public string LastAuthorization { get; private set; } = "";
     public string LastDeviceIdHeader { get; private set; } = "";
+    public string LastClientTypeHeader { get; private set; } = "";
+    public string LastContentType { get; private set; } = "";
     public string LastBody { get; private set; } = "";
     public List<string> RequestPaths { get; } = [];
 
@@ -1741,6 +1805,10 @@ sealed class FakeHttpHandler : HttpMessageHandler
         LastDeviceIdHeader = request.Headers.TryGetValues("X-DJConnect-Device-ID", out var values)
             ? values.FirstOrDefault() ?? ""
             : "";
+        LastClientTypeHeader = request.Headers.TryGetValues("X-DJConnect-Client-Type", out var clientTypeValues)
+            ? clientTypeValues.FirstOrDefault() ?? ""
+            : "";
+        LastContentType = request.Content?.Headers.ContentType?.MediaType ?? "";
         LastBody = request.Content is null
             ? ""
             : request.Content.ReadAsStringAsync(cancellationToken).GetAwaiter().GetResult();

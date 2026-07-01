@@ -79,6 +79,10 @@ public sealed class DJConnectApiClient
 
     public async Task<PairingResponse> PairAsync(PairingPayload payload, CancellationToken cancellationToken)
     {
+        _httpClient.DefaultRequestHeaders.Authorization = null;
+        _httpClient.DefaultRequestHeaders.Remove("X-DJConnect-Device-ID");
+        _httpClient.DefaultRequestHeaders.Remove("X-DJConnect-Client-Type");
+        _httpClient.DefaultRequestHeaders.Add("X-DJConnect-Client-Type", DJConnectContract.ClientType);
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/pair", payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<PairingResponse>(response, cancellationToken);
     }

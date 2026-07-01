@@ -4,9 +4,30 @@ namespace DJConnect.Windows.Services;
 
 public static class ApiErrorLocalizer
 {
+    private const string WindowsAppTypeLabel = "Windows";
+
     public static string Pairing(string? error, string? message = null)
     {
-        return FromApiCode(error) ?? FromApiCode(message) ?? AppStrings.Get("ApiError_GenericPairing");
+        return FromPairingCode(error) ?? FromPairingCode(message) ?? AppStrings.Get("ApiError_GenericPairing");
+    }
+
+    public static string Pairing(Exception exception)
+    {
+        if (exception is TaskCanceledException or TimeoutException)
+        {
+            return AppStrings.Get("ApiError_NetworkTimeout");
+        }
+
+        var message = exception.Message;
+        if (message.Contains("No such host", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("Name or service not known", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("nodename nor servname", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("host not found", StringComparison.OrdinalIgnoreCase))
+        {
+            return AppStrings.Get("ApiError_HostNotFound");
+        }
+
+        return Pairing(message);
     }
 
     public static string BackendAction(string? error, string? message = null)
@@ -36,9 +57,9 @@ public static class ApiErrorLocalizer
         var value = codeOrMessage.Trim();
         var mapped = value.ToLowerInvariant() switch
         {
-            "client_type_mismatch" => AppStrings.Get("ApiError_ClientTypeMismatch"),
+            "client_type_mismatch" => AppStrings.Format("ApiError_ClientTypeMismatch", WindowsAppTypeLabel),
             "invalid_pair_code" or "wrong_pair_code" or "invalid_code" => AppStrings.Get("ApiError_InvalidPairCode"),
-            "invalid_client_type" => AppStrings.Get("ApiError_InvalidClientType"),
+            "invalid_client_type" => AppStrings.Format("ApiError_InvalidClientType", WindowsAppTypeLabel),
             "not_configured" => AppStrings.Get("ApiError_NotConfigured"),
             "unauthorized" or "invalid_token" or "forbidden" => AppStrings.Get("ApiError_Unauthorized"),
             "stale_backend_action" => AppStrings.Get("ApiError_StaleBackendAction"),
@@ -57,6 +78,27 @@ public static class ApiErrorLocalizer
         }
 
         return null;
+    }
+
+    private static string? FromPairingCode(string? codeOrMessage)
+    {
+        if (string.IsNullOrWhiteSpace(codeOrMessage))
+        {
+            return null;
+        }
+
+        var value = codeOrMessage.Trim();
+        return value.ToLowerInvariant() switch
+        {
+            "client_type_mismatch" => AppStrings.Format("ApiError_ClientTypeMismatch", WindowsAppTypeLabel),
+            "invalid_client_type" => AppStrings.Format("ApiError_InvalidClientType", WindowsAppTypeLabel),
+            "invalid_pair_code" or "wrong_pair_code" or "invalid_code" or "not_configured" => AppStrings.Get("ApiError_InvalidPairCode"),
+            "unauthorized" or "401" or "403" or "forbidden" => AppStrings.Get("ApiError_InvalidPairCode"),
+            "auth_stale" or "stale_auth" => AppStrings.Get("ApiError_StaleAuth"),
+            _ => PairingStatePolicy.RequiresLocalPairingCleanup(value)
+                ? AppStrings.Get("ApiError_StaleAuth")
+                : null
+        };
     }
 
     private static bool LooksLikeBackendCode(string value)

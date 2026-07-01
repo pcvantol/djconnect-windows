@@ -1213,7 +1213,7 @@
                             <Image Source="djconnect_icon.png" WidthRequest="72" HeightRequest="72" />
                             <VerticalStackLayout VerticalOptions="Center">
                                 <Label Text="DJConnect koppelen" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
-                                <Label Text="Vul de lokale Home Assistant URL en de code uit Home Assistant in." TextColor="{StaticResource TextSecondary}" />
+                                <Label Text="Vul of scan de code uit Home Assistant terwijl dit apparaat en Home Assistant op hetzelfde LAN zitten." TextColor="{StaticResource TextSecondary}" />
                             </VerticalStackLayout>
                         </HorizontalStackLayout>
                     </Border>
@@ -1221,7 +1221,7 @@
                     <VerticalStackLayout IsVisible="{Binding IsPairingFormVisible}" Spacing="16">
                         <Border Padding="16" BackgroundColor="#3B367D" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
                             <VerticalStackLayout Spacing="8">
-                                <Label Text="Vul de lokale Home Assistant URL en de 6-cijferige koppelcode uit Home Assistant in. DJConnect stuurt daarna zelf het koppelverzoek naar Home Assistant." TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                                <Label Text="Vul of scan de code uit Home Assistant terwijl dit apparaat en Home Assistant op hetzelfde LAN zitten." TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
                                 <Label Text="De Windows client vraagt niet om Spotify login of Home Assistant long-lived tokens." TextColor="{StaticResource TextSecondary}" />
                                 <Label Text="https://djconnect.dev/start" TextColor="{StaticResource Accent}" FontAttributes="Bold">
                                     <Label.GestureRecognizers>
@@ -1231,18 +1231,20 @@
                             </VerticalStackLayout>
                         </Border>
 
-                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="12">
+                        <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="12">
                             <Label Text="Lokale Home Assistant URL" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
                             <Border Grid.Row="1" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
                                 <Entry Text="{Binding HomeAssistantUrl}" BackgroundColor="#071026" TextColor="{StaticResource TextPrimary}" Placeholder="http://homeassistant.local:8123" />
                             </Border>
+                            <Label Grid.Row="2" Text="{Binding PairingUrlValidationText}" IsVisible="{Binding HasPairingUrlValidationText}" TextColor="#FCA5A5" />
 
-                            <Label Grid.Row="2" Text="Koppelcode" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                            <Border Grid.Row="3" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Label Grid.Row="3" Text="Koppelcode" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
+                            <Border Grid.Row="4" Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
                                 <Entry Text="{Binding PairingCode}" BackgroundColor="#071026" TextColor="{StaticResource TextPrimary}" Placeholder="123456" Keyboard="Numeric" MaxLength="6" />
                             </Border>
-                            <Button Grid.Row="4" Text="Koppelen" HeightRequest="58" Command="{Binding PairCommand}" />
-                            <Label Grid.Row="5" Text="Gebruik de code die Home Assistant tijdens DJConnect app-pairing toont. Remote URLs worden pas na succesvolle lokale pairing gebruikt." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                            <Label Grid.Row="5" Text="{Binding PairingCodeValidationText}" IsVisible="{Binding HasPairingCodeValidationText}" TextColor="#FCA5A5" />
+                            <Button Grid.Row="6" Text="Koppel met Home Assistant" HeightRequest="58" Command="{Binding PairCommand}" IsEnabled="{Binding CanPair}" />
+                            <Label Grid.Row="7" Text="Gebruik de code die Home Assistant tijdens DJConnect app-pairing toont. Remote URLs worden pas na succesvolle lokale pairing gebruikt." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
                         </Grid>
 
                         <Border Padding="14" BackgroundColor="#160A2C" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
@@ -1254,7 +1256,10 @@
                             <Label Text="Open Home Assistant > Integraties > DJConnect, start app-pairing en vul de getoonde code hier in. Zorg dat Windows en Home Assistant op hetzelfde lokale netwerk zitten." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
                         </VerticalStackLayout>
 
-                        <Button Text="App afsluiten" HeightRequest="58" Clicked="ExitAppClicked" />
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <Button Text="Demo Mode starten" HeightRequest="58" Command="{Binding StartDemoModeCommand}" />
+                            <Button Grid.Column="1" Text="App afsluiten" HeightRequest="58" Clicked="ExitAppClicked" />
+                        </Grid>
                     </VerticalStackLayout>
 
                     <VerticalStackLayout IsVisible="{Binding IsPairingSuccessVisible}" Spacing="18">

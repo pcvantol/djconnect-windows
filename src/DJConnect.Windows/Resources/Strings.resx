@@ -4,15 +4,21 @@
   <resheader name="version"><value>2.0</value></resheader>
   <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
   <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name="ApiError_ClientTypeMismatch" xml:space="preserve"><value>This app is registered as a different client type. Pair DJConnect again from Home Assistant.</value></data>
-  <data name="ApiError_InvalidPairCode" xml:space="preserve"><value>The pairing code is wrong or expired. Create a new code in Home Assistant and try again.</value></data>
-  <data name="ApiError_InvalidClientType" xml:space="preserve"><value>This app must pair as the Windows client. Restart DJConnect and try pairing again.</value></data>
+  <data name="ApiError_ClientTypeMismatch" xml:space="preserve"><value>The app type selected in Home Assistant does not match this app. Choose the DJConnect {0} setup flow in Home Assistant and try again.</value></data>
+  <data name="ApiError_InvalidPairCode" xml:space="preserve"><value>The pairing code is not correct. Check the code in Home Assistant.</value></data>
+  <data name="ApiError_InvalidClientType" xml:space="preserve"><value>The wrong app type was selected in Home Assistant. Choose the DJConnect {0} setup flow and use the new pairing code.</value></data>
   <data name="ApiError_NotConfigured" xml:space="preserve"><value>DJConnect is not configured in Home Assistant. Open the DJConnect integration there first.</value></data>
   <data name="ApiError_Unauthorized" xml:space="preserve"><value>Your pairing has expired. Pair DJConnect again to continue.</value></data>
-  <data name="ApiError_StaleAuth" xml:space="preserve"><value>Your pairing is out of date. Pair DJConnect again to refresh this device.</value></data>
+  <data name="ApiError_StaleAuth" xml:space="preserve"><value>This pairing is no longer valid. Generate a new pairing code in Home Assistant and try again.</value></data>
   <data name="ApiError_StaleBackendAction" xml:space="preserve"><value>This action is from an older music session. Ask DJConnect for a fresh recommendation.</value></data>
   <data name="ApiError_UnsupportedBackendCapability" xml:space="preserve"><value>This music backend does not support that action.</value></data>
   <data name="ApiError_GenericPairing" xml:space="preserve"><value>Pairing failed. Check Home Assistant and try again.</value></data>
+  <data name="ApiError_NetworkTimeout" xml:space="preserve"><value>Home Assistant did not respond in time. Check that this device is on the same network and try again.</value></data>
+  <data name="ApiError_HostNotFound" xml:space="preserve"><value>Home Assistant was not found at this address. Check the hostname or IP address.</value></data>
+  <data name="Pairing_InvalidUrl" xml:space="preserve"><value>Enter a valid local Home Assistant URL.</value></data>
+  <data name="Pairing_InvalidCode" xml:space="preserve"><value>Enter the 6-digit pairing code from Home Assistant.</value></data>
+  <data name="Pairing_Pending" xml:space="preserve"><value>Pairing with Home Assistant...</value></data>
+  <data name="Pairing_Waiting" xml:space="preserve"><value>Checking Home Assistant completion...</value></data>
   <data name="ApiError_GenericBackend" xml:space="preserve"><value>Home Assistant did not complete the request. Try again.</value></data>
   <data name="Status_NotPaired" xml:space="preserve"><value>Not paired</value></data>
   <data name="Status_Paired" xml:space="preserve"><value>Paired</value></data>

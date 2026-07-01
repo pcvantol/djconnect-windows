@@ -9,7 +9,11 @@ public sealed record PairingPayload(
     [property: JsonPropertyName("device_name")] string DeviceName,
     [property: JsonPropertyName("client_type")] string ClientType,
     [property: JsonPropertyName("pair_code")] string PairCode,
-    [property: JsonPropertyName("app_version")] string AppVersion);
+    [property: JsonPropertyName("app_version")] string AppVersion,
+    [property: JsonPropertyName("platform")] string Platform = "windows",
+    [property: JsonPropertyName("locale")] string? Locale = null,
+    [property: JsonPropertyName("language")] string? Language = null,
+    [property: JsonPropertyName("build")] string? Build = null);
 
 public sealed record PairingResponse(
     [property: JsonPropertyName("success")] bool Success,

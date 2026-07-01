@@ -76,6 +76,8 @@ public sealed class MainViewModel : ObservableObject
     private bool _isOnboardingVisible = true;
     private bool _isPairingOverlayVisible;
     private bool _isPairingSuccessVisible;
+    private bool _isPairingPending;
+    private bool _isPairingWaitingForCompletion;
     private bool _isFeedbackOverlayVisible;
     private bool _includePrivacySafeLogs;
     private bool _isFeedbackPreviewVisible;
@@ -101,7 +103,7 @@ public sealed class MainViewModel : ObservableObject
     public MainViewModel()
     {
         SaveSettingsCommand = new AsyncCommand(SaveSettingsAsync);
-        PairCommand = new AsyncCommand(PairAsync, () => !string.IsNullOrWhiteSpace(PairingCode));
+        PairCommand = new AsyncCommand(PairAsync, () => CanPair);
         RefreshCommand = new AsyncCommand(RefreshAsync, () => IsPaired || IsDemoMode);
         SendAskDJCommand = new AsyncCommand(SendAskDJAsync, () => CanUseAskDJ && !string.IsNullOrWhiteSpace(AskDJText));
         ClearHistoryCommand = new AsyncCommand(ClearHistoryAsync, () => CanUseAskDJ);
@@ -161,7 +163,13 @@ public sealed class MainViewModel : ObservableObject
     public string HomeAssistantUrl
     {
         get => _homeAssistantUrl;
-        set => SetProperty(ref _homeAssistantUrl, value);
+        set
+        {
+            if (SetProperty(ref _homeAssistantUrl, value))
+            {
+                RaisePairingInputProperties();
+            }
+        }
     }
 
     public string HomeAssistantRemoteUrl
@@ -189,7 +197,7 @@ public sealed class MainViewModel : ObservableObject
         {
             if (SetProperty(ref _pairingCode, value))
             {
-                PairCommand.RaiseCanExecuteChanged();
+                RaisePairingInputProperties();
             }
         }
     }
@@ -768,7 +776,40 @@ public sealed class MainViewModel : ObservableObject
     public string WebsiteUrl => "https://djconnect.dev";
     public bool IsPairable => IsPairingOverlayVisible && !IsPairingSuccessVisible && !IsOnboardingVisible && !IsDemoMode && !IsPaired;
     public bool IsPairingFormVisible => IsPairingOverlayVisible && !IsPairingSuccessVisible;
-    public bool IsPairingWaitingVisible => IsPairingFormVisible && !IsPaired;
+    public bool IsPairingWaitingVisible => IsPairingFormVisible && (IsPairingPending || IsPairingWaitingForCompletion);
+    public bool IsPairingPending
+    {
+        get => _isPairingPending;
+        private set
+        {
+            if (SetProperty(ref _isPairingPending, value))
+            {
+                RaisePairingProperties();
+                PairCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool IsPairingWaitingForCompletion
+    {
+        get => _isPairingWaitingForCompletion;
+        private set
+        {
+            if (SetProperty(ref _isPairingWaitingForCompletion, value))
+            {
+                RaisePairingProperties();
+                PairCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    public bool IsHomeAssistantUrlValid => IsValidHomeAssistantUrl(HomeAssistantUrl);
+    public bool IsPairingCodeValid => IsValidPairCode(PairingCode);
+    public bool CanPair => IsPairingFormVisible && IsHomeAssistantUrlValid && IsPairingCodeValid && !IsPairingPending && !IsPairingWaitingForCompletion;
+    public string PairingUrlValidationText => string.IsNullOrWhiteSpace(HomeAssistantUrl) || IsHomeAssistantUrlValid ? "" : AppStrings.Get("Pairing_InvalidUrl");
+    public string PairingCodeValidationText => string.IsNullOrWhiteSpace(PairingCode) || IsPairingCodeValid ? "" : AppStrings.Get("Pairing_InvalidCode");
+    public bool HasPairingUrlValidationText => !string.IsNullOrWhiteSpace(PairingUrlValidationText);
+    public bool HasPairingCodeValidationText => !string.IsNullOrWhiteSpace(PairingCodeValidationText);
     public string LegalNotice => DJConnectContract.SpotifyNotice;
 
     public string Tagline => L("Muziekbediening met karakter", "Music control with character");
@@ -807,6 +848,8 @@ public sealed class MainViewModel : ObservableObject
         : "niet gekoppeld";
     public string SettingsRuntimeSummary => $"{RuntimeCompatibilityText} · HA {ConnectionModeText} · muziekbackend {MusicBackendStatusText}";
     public string PairingStatusText => IsPairingSuccessVisible ? L("Succesvol gekoppeld", "Successfully paired")
+        : IsPairingWaitingForCompletion ? AppStrings.Get("Pairing_Waiting")
+        : IsPairingPending ? AppStrings.Get("Pairing_Pending")
         : IsUpdateRequired ? L("Update vereist", "Update required")
         : IsPaired ? L("Gekoppeld", "Paired")
         : L("Voer de lokale Home Assistant URL en koppelcode in", "Enter the local Home Assistant URL and pairing code");
@@ -1367,14 +1410,35 @@ public sealed class MainViewModel : ObservableObject
             _identity.DeviceName,
             _identity.ClientType,
             PairingCode.Trim(),
-            DJConnectContract.AppVersion);
-        var response = await _apiClient.PairAsync(payload, CancellationToken.None);
+            DJConnectContract.AppVersion,
+            Platform: "windows",
+            Locale: Language,
+            Language: Language,
+            Build: AppVersion);
+
+        IsPairingPending = true;
+        PairingResponse response;
+        try
+        {
+            response = await _apiClient.PairAsync(payload, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Status = ApiErrorLocalizer.Pairing(ex);
+            Notice = Status;
+            IsPairingOverlayVisible = true;
+            AddDiagnostic("WRN Pairing request failed: " + ex.GetType().Name);
+            IsPairingPending = false;
+            return;
+        }
+
         if (!response.Success || string.IsNullOrWhiteSpace(response.DeviceToken))
         {
             Status = PairingErrorMessage(response.Error, response.Message);
             Notice = Status;
             IsPairingOverlayVisible = true;
             AddDiagnostic("WRN Pairing failed.");
+            IsPairingPending = false;
             return;
         }
 
@@ -1384,14 +1448,51 @@ public sealed class MainViewModel : ObservableObject
             Notice = Status;
             IsPairingOverlayVisible = true;
             AddDiagnostic("ERR Pairing response client identity invariant failed.");
+            IsPairingPending = false;
             return;
         }
 
         Token = response.DeviceToken;
-        PairingCode = "";
-        _settings.PairingCode = "";
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ConfigureClient();
+        IsPairingPending = false;
+        IsPairingWaitingForCompletion = true;
+        Status = AppStrings.Get("Pairing_Waiting");
+
+        StatusResponse statusResponse;
+        try
+        {
+            statusResponse = await _apiClient.GetStatusAsync(_identity, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            Token = "";
+            Status = ApiErrorLocalizer.Pairing(ex);
+            Notice = Status;
+            IsPairingWaitingForCompletion = false;
+            AddDiagnostic("WRN Pairing verification failed: " + ex.GetType().Name);
+            return;
+        }
+
+        if (!statusResponse.Success)
+        {
+            Token = "";
+            Status = PairingErrorMessage(statusResponse.Error, statusResponse.Message);
+            Notice = Status;
+            IsPairingWaitingForCompletion = false;
+            AddDiagnostic("WRN Pairing verification returned unsuccessful status.");
+            return;
+        }
+
+        _backendAvailable = statusResponse.BackendAvailable ?? true;
+        ApplyVersionCompatibility(statusResponse);
+        ApplyBackendSummary(BackendSummaryFrom(statusResponse));
+        ApplyPlaybackState(statusResponse.Playback);
+        ReplaceOutputs(statusResponse.ResolvedOutputs());
+        ReplaceQueueItems(statusResponse.ResolvedQueue());
+        ReplacePlaylistItems(statusResponse.ResolvedPlaylists());
+
         try
         {
             _credentialStore.SaveToken(Token);
@@ -1400,13 +1501,28 @@ public sealed class MainViewModel : ObservableObject
         {
             Status = L("Token opslagfout", "Token storage failed");
             AddDiagnostic("WRN Pairing token storage failed: " + ex.GetType().Name);
+            IsPairingWaitingForCompletion = false;
             return;
         }
 
+        PairingCode = "";
+        _settings.PairingCode = "";
+        _settings.HomeAssistantUrl = HomeAssistantUrl;
+        _settings.HomeAssistantLocalUrl = HomeAssistantUrl;
+        _settings.HomeAssistantRemoteUrl = HomeAssistantRemoteUrl;
+        _settings.RemoteSupported = _transportManager.Current.RemoteSupported;
+        _settings.InstallId = _identity.InstallId;
+        _settings.DeviceName = _identity.DeviceName;
+        _settings.Language = Language;
+        _settings.LogLevel = LogLevel;
+        _settings.IsDemoMode = false;
+        _settings.DJConnectWelcomeSeen = true;
+        _settings.HasCompletedOnboarding = true;
+        await SaveSettingsIfMutableAsync();
         IsPaired = true;
         IsPairingSuccessVisible = true;
         IsPairingOverlayVisible = true;
-        await SaveSettingsAsync();
+        IsPairingWaitingForCompletion = false;
         Status = $"{AppStrings.Get("Status_Paired")}: {response.PairingStatus ?? "paired"}";
         AddDiagnostic("INF Pairing completed.");
     }
@@ -2471,6 +2587,32 @@ public sealed class MainViewModel : ObservableObject
         return Task.CompletedTask;
     }
 
+    public async Task ApplyPairingDeepLinkAsync(string payload)
+    {
+        if (!PairingDeepLinkPayload.TryParse(payload, out var parsed, out var failureReason))
+        {
+            Status = failureReason switch
+            {
+                "client_type" => ApiErrorLocalizer.Pairing("invalid_client_type"),
+                "pair_path" => ApiErrorLocalizer.Pairing("invalid_client_type"),
+                "pair_code" => AppStrings.Get("Pairing_InvalidCode"),
+                "ha_url" => AppStrings.Get("Pairing_InvalidUrl"),
+                _ => ApiErrorLocalizer.Pairing(null)
+            };
+            Notice = Status;
+            AddDiagnostic("WRN Pairing deeplink rejected: " + failureReason);
+            return;
+        }
+
+        HomeAssistantUrl = parsed.HomeAssistantUrl;
+        PairingCode = parsed.PairCode;
+        IsOnboardingVisible = false;
+        IsPairingOverlayVisible = true;
+        IsPairingSuccessVisible = false;
+        AddDiagnostic("INF Pairing deeplink accepted for Windows setup flow.");
+        await PairAsync();
+    }
+
     private Task HidePairingAsync()
     {
         IsPairingOverlayVisible = false;
@@ -3085,17 +3227,12 @@ public sealed class MainViewModel : ObservableObject
 
     private static bool IsValidHomeAssistantUrl(string? url)
     {
-        if (!Uri.TryCreate(url?.Trim(), UriKind.Absolute, out var uri))
-        {
-            return false;
-        }
-
-        return uri.Scheme is "http" or "https" && !string.IsNullOrWhiteSpace(uri.Host);
+        return PairingDeepLinkPayload.IsValidHomeAssistantUrl(url);
     }
 
     private static bool IsValidPairCode(string? pairCode)
     {
-        return pairCode?.Trim() is { Length: 6 } trimmed && trimmed.All(char.IsDigit);
+        return PairingDeepLinkPayload.IsValidPairCode(pairCode);
     }
 
     private static bool IsWindowsIdentity(ClientIdentity identity)
@@ -4231,6 +4368,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(FeedbackTitle));
         OnPropertyChanged(nameof(AskDJPlaceholder));
         OnPropertyChanged(nameof(PairingStatusText));
+        RaisePairingInputProperties();
         OnPropertyChanged(nameof(PlaybackAvailabilityText));
         RaiseNowPlayingStatusProperties();
         OnPropertyChanged(nameof(RuntimeCompatibilityText));
@@ -4317,7 +4455,22 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(IsPairable));
         OnPropertyChanged(nameof(IsPairingFormVisible));
         OnPropertyChanged(nameof(IsPairingWaitingVisible));
+        OnPropertyChanged(nameof(IsPairingPending));
+        OnPropertyChanged(nameof(IsPairingWaitingForCompletion));
         OnPropertyChanged(nameof(PairingStatusText));
+        RaisePairingInputProperties();
+    }
+
+    private void RaisePairingInputProperties()
+    {
+        OnPropertyChanged(nameof(IsHomeAssistantUrlValid));
+        OnPropertyChanged(nameof(IsPairingCodeValid));
+        OnPropertyChanged(nameof(CanPair));
+        OnPropertyChanged(nameof(PairingUrlValidationText));
+        OnPropertyChanged(nameof(PairingCodeValidationText));
+        OnPropertyChanged(nameof(HasPairingUrlValidationText));
+        OnPropertyChanged(nameof(HasPairingCodeValidationText));
+        PairCommand.RaiseCanExecuteChanged();
     }
 }
 

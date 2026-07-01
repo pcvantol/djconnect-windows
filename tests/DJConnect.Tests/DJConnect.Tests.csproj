@@ -20,6 +20,7 @@
     <Compile Include="..\..\src\DJConnect.Windows\Services\FastPathDiagnosticsFormatter.cs" Link="Services\FastPathDiagnosticsFormatter.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\HomeAssistantTransportManager.cs" Link="Services\HomeAssistantTransportManager.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\MonkeyTestMode.cs" Link="Services\MonkeyTestMode.cs" />
+    <Compile Include="..\..\src\DJConnect.Windows\Services\PairingDeepLinkPayload.cs" Link="Services\PairingDeepLinkPayload.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\PairingStatePolicy.cs" Link="Services\PairingStatePolicy.cs" />
   </ItemGroup>
   <ItemGroup>

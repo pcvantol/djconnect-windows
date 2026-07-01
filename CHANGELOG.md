@@ -4,6 +4,17 @@
 
 - Nothing yet.
 
+## 3.2.4 - 2026-07-01
+
+- Implemented the Home Assistant pairing screen and pairing flow for the
+  Windows client, aligned with the Apple app contract: local HA URL plus
+  six-digit pair code, QR/deeplink validation, exact `/api/djconnect/pair`
+  endpoint use, `X-DJConnect-Client-Type: windows`, no bearer token on pairing,
+  and paired state only after authenticated status verification.
+- Centralized pairing error presentation so raw backend codes are never shown
+  to users, while protocol values, JSON keys and `client_type=windows` remain
+  unchanged.
+
 ## 3.2.3 - 2026-07-01
 
 - Added complete Windows client localization infrastructure for English,
