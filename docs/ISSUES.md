@@ -9,15 +9,15 @@
   diagnostics copy flows.
 - Mac Catalyst artifacts still depend on an Xcode 26.4.x toolchain. The
   `v3.1.9` GitHub Actions CI and public unsigned Windows publication completed
-  successfully. Validate the `3.2.2` upgrade after push. Mac Catalyst jobs
+  successfully. Validate the `3.2.3` upgrade after push. Mac Catalyst jobs
   continue to skip on hosted runners with
   incompatible Xcode versions. Local Xcode 26.4.1 builds pass with both
   `MD_APPLE_SDK_ROOT` and `DEVELOPER_DIR` pointed at
   `/Applications/Xcode_26.4.1.app`; one later local no-restore build hung in
   tooling/bundling and was stopped.
 - Tests cover command payloads, backend summary/error parsing, stale backend
-  action and unsupported capability contracts and privacy helpers, but
-  stale-pairing handling still needs focused coverage.
+  action, unsupported capability contracts, stale auth guidance, localization
+  completeness and privacy helpers.
 
 ## P2
 

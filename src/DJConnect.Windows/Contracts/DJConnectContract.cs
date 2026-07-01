@@ -3,7 +3,7 @@ namespace DJConnect.Windows.Contracts;
 public static class DJConnectContract
 {
     public const string ClientType = "windows";
-    public const string AppVersion = "3.2.2";
+    public const string AppVersion = "3.2.3";
     public const string DeviceIdPrefix = "djconnect-windows";
     public const string DefaultHomeAssistantUrl = "http://homeassistant.local:8123";
     public const string ProtocolLine = "3.2";

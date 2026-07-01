@@ -11,6 +11,8 @@
     <Compile Include="..\..\src\DJConnect.Windows\Models\AppSettings.cs" Link="Models\AppSettings.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Models\ClientIdentity.cs" Link="Models\ClientIdentity.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Models\VersionCompatibility.cs" Link="Models\VersionCompatibility.cs" />
+    <Compile Include="..\..\src\DJConnect.Windows\Resources\AppStrings.cs" Link="Resources\AppStrings.cs" />
+    <Compile Include="..\..\src\DJConnect.Windows\Services\ApiErrorLocalizer.cs" Link="Services\ApiErrorLocalizer.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\DJConnectApiClient.cs" Link="Services\DJConnectApiClient.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\DJConnectTransportOptions.cs" Link="Services\DJConnectTransportOptions.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\DJConnectWebSocketPayloadFactory.cs" Link="Services\DJConnectWebSocketPayloadFactory.cs" />
@@ -19,5 +21,12 @@
     <Compile Include="..\..\src\DJConnect.Windows\Services\HomeAssistantTransportManager.cs" Link="Services\HomeAssistantTransportManager.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\MonkeyTestMode.cs" Link="Services\MonkeyTestMode.cs" />
     <Compile Include="..\..\src\DJConnect.Windows\Services\PairingStatePolicy.cs" Link="Services\PairingStatePolicy.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\src\DJConnect.Windows\Resources\Strings.resx" Link="Resources\Strings.resx" LogicalName="DJConnect.Windows.Resources.Strings.resources" />
+    <EmbeddedResource Include="..\..\src\DJConnect.Windows\Resources\Strings.nl.resx" Link="Resources\Strings.nl.resx" LogicalName="DJConnect.Windows.Resources.Strings.nl.resources" />
+    <EmbeddedResource Include="..\..\src\DJConnect.Windows\Resources\Strings.de.resx" Link="Resources\Strings.de.resx" LogicalName="DJConnect.Windows.Resources.Strings.de.resources" />
+    <EmbeddedResource Include="..\..\src\DJConnect.Windows\Resources\Strings.fr.resx" Link="Resources\Strings.fr.resx" LogicalName="DJConnect.Windows.Resources.Strings.fr.resources" />
+    <EmbeddedResource Include="..\..\src\DJConnect.Windows\Resources\Strings.es.resx" Link="Resources\Strings.es.resx" LogicalName="DJConnect.Windows.Resources.Strings.es.resources" />
   </ItemGroup>
 </Project>

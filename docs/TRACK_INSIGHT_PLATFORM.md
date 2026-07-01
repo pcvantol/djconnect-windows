@@ -154,7 +154,7 @@ plain answer text, the app may show that text as an Ask DJ answer or empty Track
 Insight state, but it must not parse prose to infer BPM, key, genre, timestamps,
 structure labels, tips or Music DNA.
 
-This keeps Windows aligned with the HA integration v3.2.2 contract and avoids
+This keeps Windows aligned with the HA integration `3.2.x` contract and avoids
 client-side disagreement with the backend.
 
 ## Visualization

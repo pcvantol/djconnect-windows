@@ -7,7 +7,7 @@ Windows and macOS. The app targets the DJConnect `3.2.x` Home Assistant
 protocol line and remains a thin client for Home Assistant-owned playback,
 Ask DJ and Music DNA state.
 
-Current app release: `3.2.2`.
+Current app release: `3.2.3`.
 
 ## Project Shape
 
@@ -21,6 +21,10 @@ Current app release: `3.2.2`.
 - `Services/DJConnectApiClient.cs`: typed HTTP client for Home Assistant.
 - `Services/HomeAssistantTransportManager.cs`: local/remote HA URL selection
   after local pairing.
+- `Services/ApiErrorLocalizer.cs`: centralized user-facing mapping for
+  backend/API error codes.
+- `Resources/Strings*.resx`: standard .NET resources for English, Dutch,
+  German, French and Spanish.
 - `Services/DiagnosticRedactor.cs`: shared redaction for logs, feedback,
   crash reports, diagnostics and clipboard exports.
 - `Services/CredentialStore.cs`: Windows Credential Manager and macOS Keychain.
@@ -124,6 +128,8 @@ the contract, model and privacy helper source files directly and cover:
 - shared redaction for tokens, Authorization headers, pairing codes, bootstrap
   proofs, HA tokens, push tokens, secrets and private URLs;
 - protocol compatibility checks;
+- localization completeness, supported locale normalization and API-error
+  guidance without localizing protocol values;
 - queue and playlist normalization limits/dedupe;
 - onboarding, What's New, crash, wakeword, demo, monkey-test env detection,
   diagnostic preference,

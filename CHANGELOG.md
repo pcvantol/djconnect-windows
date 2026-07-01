@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Nothing yet.
+
+## 3.2.3 - 2026-07-01
+
+- Added complete Windows client localization infrastructure for English,
+  Dutch, German, French and Spanish, including resource completeness
+  validation, language selection, localized release-note lookup and centralized
+  actionable API-error guidance for pairing, client type mismatch,
+  unauthorized/stale auth and backend action errors.
+- Updated the local SDK pin to .NET SDK `10.0.301` for the release/test
+  toolchain.
+
+## 3.2.2 - 2026-07-01
+
 - Added a CI/security baseline for the Windows client: Windows-runner restore,
   build, tests, formatting, workflow hygiene, secret-term scanning and unsigned
   artifact sanity checks; CodeQL for C#; advisory Semgrep through the shared

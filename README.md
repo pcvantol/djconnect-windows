@@ -18,7 +18,7 @@ automatically.
 
 ## Current Version
 
-- Desktop app: `3.2.2`
+- Desktop app: `3.2.3`
 - Home Assistant protocol line: `3.2.x`
 - Current local `client_type`: `windows`
 
@@ -57,6 +57,8 @@ API contracts rather than copying SwiftUI or Apple-specific code.
 - [docs/TECHNICAL_DESIGN_DECISIONS.md](docs/TECHNICAL_DESIGN_DECISIONS.md):
   code-level patterns and dependency notes.
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md): local setup, build and pairing.
+- [docs/LOCALIZATION.md](docs/LOCALIZATION.md): supported locales, resource
+  validation and API-error localization rules.
 - [docs/RELEASE.md](docs/RELEASE.md): release checklist and packaging open
   work, public unsigned release publication and What's New publication.
 - [docs/HANDOFF.md](docs/HANDOFF.md), [docs/TODO.md](docs/TODO.md) and
@@ -90,8 +92,9 @@ The Windows release contains separate unsigned diagnostic zips for:
 - `arm64`: Windows on ARM, including Parallels Windows VMs on Apple Silicon
   Macs.
 
-The same release workflow publishes English and Dutch What's New JSON files to
-`djconnect.dev` under `/release-notes/{windows|maccatalyst}/{en|nl}/vX.Y.Z.json`.
+The same release workflow publishes localized What's New JSON files to
+`djconnect.dev` under
+`/release-notes/{windows|maccatalyst}/{en|nl|de|fr|es}/vX.Y.Z.json`.
 These artifacts are for diagnostics and internal validation until signed
 Windows packaging and Mac Catalyst notarization are added.
 
@@ -126,7 +129,8 @@ Key screens and flows mirrored from macOS and extended for desktop:
   `music_backend_revision`; stale actions and unsupported capabilities are
   shown as refresh/unavailable states instead of Spotify-only UI.
 - Settings: connection status, pairing reset, output/playback preferences,
-  Ask DJ, Demo Mode, permissions, diagnostics, app info and legal/privacy links.
+  Ask DJ, Demo Mode, permissions, diagnostics, app info, language selection for
+  English, Dutch, German, French and Spanish, and legal/privacy links.
 - Logs/diagnostics: bounded local logs, log-level filtering, search, copy and
   wipe actions after shared redaction.
 - Feedback and Crash reports: user-controlled preview/copy/open-issue flows
@@ -201,8 +205,9 @@ Semgrep through the shared DJConnect workflow. CI does not use signing keys,
 API tokens, pairing tokens or app secrets.
 
 The manual `.github/workflows/public-unsigned-release.yml` workflow builds
-unsigned Windows and Mac Catalyst diagnostic artifacts and publishes EN/NL
-What's New files when the required repository secrets are configured.
+unsigned Windows and Mac Catalyst diagnostic artifacts and publishes
+EN/NL/DE/FR/ES What's New files when the required repository secrets are
+configured.
 
 This scaffold has no app-level third-party NuGet dependencies. The MAUI
 workloads are SDK/platform prerequisites and may download Microsoft workload

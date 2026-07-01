@@ -1,6 +1,7 @@
 using System.Text.Json;
 using DJConnect.Windows.Contracts;
 using DJConnect.Windows.Models;
+using DJConnect.Windows.Resources;
 using DJConnect.Windows.Services;
 
 var tests = new (string Name, Action Run)[]
@@ -70,6 +71,9 @@ var tests = new (string Name, Action Run)[]
     ("Remote connection stays HTTP", RemoteConnectionStaysHttp),
     ("WebSocket payload includes identity and token without diagnostic leaks", WebSocketPayloadIncludesIdentityAndTokenWithoutDiagnosticLeaks),
     ("Backend error responses deserialize stale and unsupported contracts", BackendErrorResponsesDeserializeStaleAndUnsupportedContracts),
+    ("Localization supports required locales", LocalizationSupportsRequiredLocales),
+    ("API error localizer maps user-facing guidance", ApiErrorLocalizerMapsUserFacingGuidance),
+    ("API error localization preserves protocol values", ApiErrorLocalizationPreservesProtocolValues),
     ("Protocol 3.2 advertises no client callback endpoint", Protocol32AdvertisesNoClientCallbackEndpoint)
 };
 
@@ -196,7 +200,7 @@ static void StatusPayloadSerializesAppProtocolMetadata()
 
     AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "status must include Windows client type");
     AssertTrue(serialized.Contains("\"firmware\":\"windows-app\""), "status must identify the app surface as firmware metadata for HA compatibility");
-    AssertTrue(serialized.Contains("\"app_version\":\"3.2.2\""), "status must include app version");
+    AssertTrue(serialized.Contains("\"app_version\":\"3.2.3\""), "status must include app version");
     AssertTrue(serialized.Contains("\"protocol_version\":\"3.2\""), "status must include protocol line");
 }
 
@@ -225,7 +229,7 @@ static void AskDJRequestSerializesServerSideContract()
     AssertEqual("Welke nummers hoorde ik net?", root.GetProperty("message").GetString());
     AssertEqual("auto", root.GetProperty("audio_response").GetString());
     AssertEqual(72, root.GetProperty("mood").GetInt32());
-    AssertEqual("3.2.2", root.GetProperty("app_version").GetString());
+    AssertEqual("3.2.3", root.GetProperty("app_version").GetString());
     AssertEqual("3.2", root.GetProperty("protocol_version").GetString());
 }
 
@@ -1531,6 +1535,45 @@ static void BackendErrorResponsesDeserializeStaleAndUnsupportedContracts()
     AssertEqual("The selected music backend does not provide recent listening history.", unsupported.Message);
 }
 
+static void LocalizationSupportsRequiredLocales()
+{
+    AssertSequenceEqual(new[] { "en", "nl", "de", "fr", "es" }, AppStrings.SupportedLanguages);
+    foreach (var locale in AppStrings.SupportedLanguages)
+    {
+        AppStrings.UseLanguage(locale);
+        AssertTrue(!string.IsNullOrWhiteSpace(AppStrings.Get("ApiError_InvalidPairCode")), $"{locale} must localize invalid pair code guidance");
+        AssertTrue(!string.IsNullOrWhiteSpace(AppStrings.Get("Status_UpdateRequired")), $"{locale} must localize update required");
+    }
+}
+
+static void ApiErrorLocalizerMapsUserFacingGuidance()
+{
+    AppStrings.UseLanguage("en");
+
+    AssertEqual("The pairing code is wrong or expired. Create a new code in Home Assistant and try again.", ApiErrorLocalizer.Pairing("invalid_pair_code"));
+    AssertEqual("DJConnect is not configured in Home Assistant. Open the DJConnect integration there first.", ApiErrorLocalizer.Pairing("not_configured"));
+    AssertEqual("This app must pair as the Windows client. Restart DJConnect and try pairing again.", ApiErrorLocalizer.Pairing("invalid_client_type"));
+    AssertEqual("This app is registered as a different client type. Pair DJConnect again from Home Assistant.", ApiErrorLocalizer.Pairing("client_type_mismatch"));
+    AssertEqual("Your pairing has expired. Pair DJConnect again to continue.", ApiErrorLocalizer.BackendAction("unauthorized"));
+    AssertEqual("Your pairing is out of date. Pair DJConnect again to refresh this device.", ApiErrorLocalizer.StaleAuth());
+    AssertEqual("This action is from an older music session. Ask DJConnect for a fresh recommendation.", ApiErrorLocalizer.BackendAction("stale_backend_action"));
+    AssertEqual("This music backend does not support that action.", ApiErrorLocalizer.BackendAction("unsupported_backend_capability"));
+}
+
+static void ApiErrorLocalizationPreservesProtocolValues()
+{
+    foreach (var locale in AppStrings.SupportedLanguages)
+    {
+        AppStrings.UseLanguage(locale);
+        var payload = DJConnectApiClient.BuildStatusPayload(TestIdentity());
+        var serialized = JsonSerializer.Serialize(payload, JsonOptions());
+
+        AssertTrue(serialized.Contains("\"client_type\":\"windows\""), $"{locale} must not localize client_type");
+        AssertTrue(serialized.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\""), $"{locale} must not localize device_id");
+        AssertTrue(serialized.Contains("\"protocol_version\":\"3.2\""), $"{locale} must not localize protocol version");
+    }
+}
+
 static void Protocol32AdvertisesNoClientCallbackEndpoint()
 {
     AssertEqual("3.2", DJConnectContract.ProtocolLine);
@@ -1572,6 +1615,22 @@ static void AssertEqual<T>(T expected, T actual)
     if (!EqualityComparer<T>.Default.Equals(expected, actual))
     {
         throw new InvalidOperationException($"Expected '{expected}', got '{actual}'.");
+    }
+}
+
+static void AssertSequenceEqual<T>(IReadOnlyList<T> expected, IReadOnlyList<T> actual)
+{
+    if (expected.Count != actual.Count)
+    {
+        throw new InvalidOperationException($"Expected {expected.Count} items, got {actual.Count}.");
+    }
+
+    for (var i = 0; i < expected.Count; i++)
+    {
+        if (!EqualityComparer<T>.Default.Equals(expected[i], actual[i]))
+        {
+            throw new InvalidOperationException($"Expected item {i} to be '{expected[i]}', got '{actual[i]}'.");
+        }
     }
 }
 

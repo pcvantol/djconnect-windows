@@ -1,5 +1,15 @@
 # Contributing
 
+## Localization
+
+DJConnect Windows supports English, Dutch, German, French and Spanish. Any change that adds user-facing text must add translations for all supported locales in `src/DJConnect.Windows/Resources` and pass:
+
+```sh
+python3 tools/validate-localization.py
+```
+
+Keep protocol values, JSON keys, endpoints, tokens and `client_type=windows` unchanged. Route user-visible backend/API errors through `ApiErrorLocalizer` instead of showing raw backend codes.
+
 DJConnect is maintained with careful, reviewable changes. Keep contributions
 small enough to inspect and update docs when behavior changes.
 

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader><resheader name="version"><value>2.0</value></resheader><resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader><resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="ApiError_ClientTypeMismatch" xml:space="preserve"><value>Deze app is als een ander clienttype geregistreerd. Koppel DJConnect opnieuw vanuit Home Assistant.</value></data>
+  <data name="ApiError_InvalidPairCode" xml:space="preserve"><value>De koppelcode klopt niet of is verlopen. Maak een nieuwe code in Home Assistant en probeer opnieuw.</value></data>
+  <data name="ApiError_InvalidClientType" xml:space="preserve"><value>Deze app moet als Windows-client koppelen. Herstart DJConnect en probeer opnieuw te koppelen.</value></data>
+  <data name="ApiError_NotConfigured" xml:space="preserve"><value>DJConnect is nog niet geconfigureerd in Home Assistant. Open daar eerst de DJConnect-integratie.</value></data>
+  <data name="ApiError_Unauthorized" xml:space="preserve"><value>Je pairing is verlopen. Koppel DJConnect opnieuw om verder te gaan.</value></data>
+  <data name="ApiError_StaleAuth" xml:space="preserve"><value>Je pairing is verouderd. Koppel DJConnect opnieuw om dit apparaat te vernieuwen.</value></data>
+  <data name="ApiError_StaleBackendAction" xml:space="preserve"><value>Deze actie hoort bij een oudere muzieksessie. Vraag DJConnect om een nieuwe aanbeveling.</value></data>
+  <data name="ApiError_UnsupportedBackendCapability" xml:space="preserve"><value>Deze muziekbackend ondersteunt die actie niet.</value></data>
+  <data name="ApiError_GenericPairing" xml:space="preserve"><value>Pairing is niet gelukt. Controleer Home Assistant en probeer opnieuw.</value></data>
+  <data name="ApiError_GenericBackend" xml:space="preserve"><value>Home Assistant kon de aanvraag niet afronden. Probeer opnieuw.</value></data>
+  <data name="Status_NotPaired" xml:space="preserve"><value>Niet gekoppeld</value></data>
+  <data name="Status_Paired" xml:space="preserve"><value>Gekoppeld</value></data>
+  <data name="Status_UpdateRequired" xml:space="preserve"><value>Update vereist</value></data>
+  <data name="Status_PairAgain" xml:space="preserve"><value>Opnieuw koppelen vereist</value></data>
+  <data name="Status_HomeAssistantUnreachable" xml:space="preserve"><value>Home Assistant is niet bereikbaar</value></data>
+  <data name="Status_PlaybackUnavailable" xml:space="preserve"><value>Playback niet beschikbaar</value></data>
+  <data name="Status_NoOutputSelected" xml:space="preserve"><value>Geen uitvoerapparaat geselecteerd</value></data>
+  <data name="Status_AskDJUnavailable" xml:space="preserve"><value>Ask DJ is niet bereikbaar</value></data>
+  <data name="Status_TrackInsightUnavailable" xml:space="preserve"><value>Track Insight is niet bereikbaar</value></data>
+  <data name="Status_NoActivePlayback" xml:space="preserve"><value>Geen actieve playback</value></data>
+  <data name="Status_NoQueue" xml:space="preserve"><value>Geen wachtrij</value></data>
+  <data name="Status_NoPlaylists" xml:space="preserve"><value>Geen afspeellijsten</value></data>
+  <data name="Settings_Language" xml:space="preserve"><value>Taal</value></data>
+  <data name="Settings_Save" xml:space="preserve"><value>Opslaan</value></data>
+  <data name="Settings_RelinkApp" xml:space="preserve"><value>App opnieuw koppelen</value></data>
+  <data name="Logs_Copied" xml:space="preserve"><value>Logs gekopieerd naar klembord</value></data>
+  <data name="Logs_Cleared" xml:space="preserve"><value>Logs gewist</value></data>
+  <data name="Format_AppProtocol" xml:space="preserve"><value>App: {0}.x</value></data>
+  <data name="Format_RequiredProtocol" xml:space="preserve"><value>Vereist: {0}.x</value></data>
+  <data name="Format_HomeAssistantIntegration" xml:space="preserve"><value>Home Assistant-integratie: {0}</value></data>
+  <data name="Format_UpdateRequiredDetail" xml:space="preserve"><value>Werk DJConnect bij voordat je verdergaat. Deze app vereist Home Assistant DJConnect {0}.x.</value></data>
+</root>

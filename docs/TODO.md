@@ -1,6 +1,6 @@
 # TODO
 
-- Validate the `3.2.2` local-pairing and remote-fallback upgrade against a live
+- Validate the `3.2.3` local-pairing, remote-fallback and localization upgrade against a live
   Home Assistant DJConnect `3.2.x` backend.
 - Run the Home Assistant `FIELD_TEST_APP_CLIENTS.md` checklist for Windows and
   record app build, HA version, DJConnect integration version, backend
@@ -10,9 +10,9 @@
   `stale_backend_action` refresh behavior from real Ask DJ playback actions.
 - Field-test Ask DJ `links[]`/`sources[]`, mood-zone recommendations and
   `audio_response:auto|always|never` behavior against a live HA instance.
-- Validate EN/NL What's New publication on `djconnect.dev` during the next
-  website release-note smoke test.
-- Extend tests for stale-pairing handling and any future real wakeword engine.
+- Validate EN/NL/DE/FR/ES What's New publication on `djconnect.dev` during the
+  next website release-note smoke test.
+- Extend tests for any future real wakeword engine.
 - Validate feedback, crash-report and logs redaction with manual UI smoke tests
   on Windows.
 - Validate Playlists, Queue and Ask DJ action execution against a live Home

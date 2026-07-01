@@ -7,6 +7,7 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using DJConnect.Windows.Contracts;
 using DJConnect.Windows.Models;
+using DJConnect.Windows.Resources;
 using DJConnect.Windows.Services;
 
 namespace DJConnect.Windows.ViewModels;
@@ -27,7 +28,7 @@ public sealed class MainViewModel : ObservableObject
     private string _token = "";
     private string _pairingCode = "";
     private string _askDJText = "";
-    private string _status = "Niet gekoppeld";
+    private string _status = AppStrings.Get("Status_NotPaired");
     private string _nowPlaying = "Midnight City - M83";
     private string _notice = "";
     private string _askDJNotice = "";
@@ -64,7 +65,7 @@ public sealed class MainViewModel : ObservableObject
     private double _playbackDurationMs = 1;
     private double _volumePercent = 42;
     private PlaybackOutput? _selectedOutput;
-    private string _language = "nl";
+    private string _language = "en";
     private string _logLevel = "info";
     private bool _isPaired;
     private bool _isDemoMode;
@@ -354,7 +355,7 @@ public sealed class MainViewModel : ObservableObject
     public int LogSearchResultCount => DiagnosticLogLines.Count(entry => entry.IsSearchMatch);
     public string LogSearchResultLabel => string.IsNullOrWhiteSpace(LogSearchText)
         ? ""
-        : LogSearchResultCount == 0 ? "0 resultaten" : $"{_selectedLogSearchResultIndex + 1} / {LogSearchResultCount}";
+        : LogSearchResultCount == 0 ? "0" : $"{_selectedLogSearchResultIndex + 1} / {LogSearchResultCount}";
 
     public string VoiceStatus
     {
@@ -431,13 +432,13 @@ public sealed class MainViewModel : ObservableObject
             "De app en Home Assistant DJConnect integration gebruiken verschillende protocolversies.",
             "The app and Home Assistant DJConnect integration use different protocol versions.")
         : UpdateRequiredMessage;
-    public string AppProtocolText => $"App: {DJConnectContract.ProtocolLine}.x";
+    public string AppProtocolText => AppStrings.Format("Format_AppProtocol", DJConnectContract.ProtocolLine);
     public string HomeAssistantVersionText
     {
-        get => string.IsNullOrWhiteSpace(_homeAssistantVersionText) ? L("Home Assistant integration: onbekend", "Home Assistant integration: unknown") : _homeAssistantVersionText;
+        get => string.IsNullOrWhiteSpace(_homeAssistantVersionText) ? AppStrings.Format("Format_HomeAssistantIntegration", "unknown") : _homeAssistantVersionText;
         set => SetProperty(ref _homeAssistantVersionText, value);
     }
-    public string RequiredProtocolText => $"{L("Vereist", "Required")}: {DJConnectContract.ProtocolLine}.x";
+    public string RequiredProtocolText => AppStrings.Format("Format_RequiredProtocol", DJConnectContract.ProtocolLine);
     public bool IsWhatsNewVisible
     {
         get => _isWhatsNewVisible;
@@ -635,9 +636,10 @@ public sealed class MainViewModel : ObservableObject
         get => _language;
         set
         {
-            var normalized = string.Equals(value, "en", StringComparison.OrdinalIgnoreCase) ? "en" : "nl";
+            var normalized = AppStrings.NormalizeLanguage(value);
             if (SetProperty(ref _language, normalized))
             {
+                AppStrings.UseLanguage(normalized);
                 _settings.Language = normalized;
                 RaiseLocalizedProperties();
                 _ = SaveSettingsIfMutableAsync();
@@ -654,6 +656,8 @@ public sealed class MainViewModel : ObservableObject
             OnPropertyChanged();
         }
     }
+
+    public IReadOnlyList<string> SupportedLanguages => AppStrings.SupportedLanguages;
 
     public string LogLevel
     {
@@ -1233,7 +1237,7 @@ public sealed class MainViewModel : ObservableObject
         HomeAssistantUrl = string.IsNullOrWhiteSpace(_settings.HomeAssistantLocalUrl) ? _settings.HomeAssistantUrl : _settings.HomeAssistantLocalUrl;
         HomeAssistantRemoteUrl = _settings.HomeAssistantRemoteUrl;
         _transportManager.UpdateUrls(HomeAssistantUrl, HomeAssistantRemoteUrl, _settings.RemoteSupported);
-        Language = string.IsNullOrWhiteSpace(_settings.Language) ? "nl" : _settings.Language;
+        Language = string.IsNullOrWhiteSpace(_settings.Language) ? "en" : _settings.Language;
         LogLevel = string.IsNullOrWhiteSpace(_settings.LogLevel) ? "info" : _settings.LogLevel;
         _wakewordEnabled = WakewordFeatureAvailable && _settings.WakewordEnabled;
         WakePhrase = string.IsNullOrWhiteSpace(_settings.WakePhrase) ? "Hey DJ" : _settings.WakePhrase;
@@ -1368,6 +1372,7 @@ public sealed class MainViewModel : ObservableObject
         if (!response.Success || string.IsNullOrWhiteSpace(response.DeviceToken))
         {
             Status = PairingErrorMessage(response.Error, response.Message);
+            Notice = Status;
             IsPairingOverlayVisible = true;
             AddDiagnostic("WRN Pairing failed.");
             return;
@@ -1402,7 +1407,7 @@ public sealed class MainViewModel : ObservableObject
         IsPairingSuccessVisible = true;
         IsPairingOverlayVisible = true;
         await SaveSettingsAsync();
-        Status = $"{L("Gekoppeld", "Paired")}: {response.PairingStatus ?? "paired"}";
+        Status = $"{AppStrings.Get("Status_Paired")}: {response.PairingStatus ?? "paired"}";
         AddDiagnostic("INF Pairing completed.");
     }
 
@@ -1439,7 +1444,7 @@ public sealed class MainViewModel : ObservableObject
         {
             if (await ApplyStalePairingAsync(ex))
             {
-                Notice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                Notice = AppStrings.Get("Status_PairAgain");
                 Status = Notice;
                 RaisePlaybackStateProperties();
                 return;
@@ -1465,7 +1470,7 @@ public sealed class MainViewModel : ObservableObject
         {
             if (await ApplyStalePairingAsync(response.Error))
             {
-                Notice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                Notice = AppStrings.Get("Status_PairAgain");
                 Status = Notice;
                 RaisePlaybackStateProperties();
                 return;
@@ -1559,7 +1564,7 @@ public sealed class MainViewModel : ObservableObject
             if (await ApplyStalePairingAsync(ex))
             {
                 MarkMessageFailed(clientMessageId);
-                AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                AskDJNotice = AppStrings.Get("Status_PairAgain");
                 return;
             }
 
@@ -1582,7 +1587,7 @@ public sealed class MainViewModel : ObservableObject
             if (await ApplyStalePairingAsync(response.Error))
             {
                 MarkMessageFailed(clientMessageId);
-                AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                AskDJNotice = AppStrings.Get("Status_PairAgain");
                 return;
             }
 
@@ -1707,7 +1712,7 @@ public sealed class MainViewModel : ObservableObject
             {
                 if (showStatus)
                 {
-                    AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                    AskDJNotice = AppStrings.Get("Status_PairAgain");
                 }
 
                 return;
@@ -2412,7 +2417,7 @@ public sealed class MainViewModel : ObservableObject
         IsLoadingWhatsNew = true;
         WhatsNewTitle = L("Wat is er nieuw?", "What's New");
         WhatsNewBody = L("Release notes laden...", "Loading release notes...");
-        var language = Language.StartsWith("nl", StringComparison.OrdinalIgnoreCase) ? "nl" : "en";
+        var language = AppStrings.NormalizeLanguage(Language);
         var versionTag = $"v{AppVersion}";
         var candidates = new[]
         {
@@ -3068,7 +3073,7 @@ public sealed class MainViewModel : ObservableObject
         await SaveSettingsIfMutableAsync();
         RaisePlaybackStateProperties();
         RaiseSettingsStatusProperties();
-        Status = L("Opnieuw koppelen vereist", "Pair again to continue");
+        Status = AppStrings.Get("Status_PairAgain");
         AddDiagnostic("WRN Stale pairing cleared local token and Ask DJ cache.");
         return true;
     }
@@ -3121,41 +3126,37 @@ public sealed class MainViewModel : ObservableObject
         if (string.Equals(error, "not_configured", StringComparison.OrdinalIgnoreCase)
             || string.Equals(message, "not_configured", StringComparison.OrdinalIgnoreCase))
         {
-            return L("DJConnect is nog niet geconfigureerd in Home Assistant.", "DJConnect is not configured in Home Assistant.");
+            return ApiErrorLocalizer.Pairing(error, message);
         }
 
         if (string.Equals(error, "invalid_pair_code", StringComparison.OrdinalIgnoreCase)
             || string.Equals(error, "wrong_pair_code", StringComparison.OrdinalIgnoreCase)
             || string.Equals(error, "invalid_code", StringComparison.OrdinalIgnoreCase))
         {
-            return L("De koppelcode klopt niet of is verlopen.", "The pairing code is wrong or expired.");
+            return ApiErrorLocalizer.Pairing(error, message);
         }
 
         if (IsStalePairingError(error) || IsStalePairingError(message))
         {
-            return L("Opnieuw koppelen vereist", "Pair again to continue");
+            return ApiErrorLocalizer.StaleAuth();
         }
 
-        return message ?? error ?? L("Pairing niet gelukt", "Pairing failed");
+        return ApiErrorLocalizer.Pairing(error, message);
     }
 
     private string BackendActionErrorMessage(string? error, string? message)
     {
         if (string.Equals(error, "stale_backend_action", StringComparison.OrdinalIgnoreCase))
         {
-            return L(
-                "Deze actie hoort bij een vorige muziekbackend. Vraag DJConnect opnieuw om een actuele aanbeveling.",
-                "This action belongs to a previous music backend. Ask DJConnect again for a current recommendation.");
+            return ApiErrorLocalizer.BackendAction(error, message);
         }
 
         if (string.Equals(error, "unsupported_backend_capability", StringComparison.OrdinalIgnoreCase))
         {
-            return string.IsNullOrWhiteSpace(message)
-                ? L("Deze muziekbackend ondersteunt deze actie niet.", "This music backend does not support this action.")
-                : message;
+            return ApiErrorLocalizer.BackendAction(error, message);
         }
 
-        return message ?? error ?? L("Home Assistant gaf geen antwoord", "Home Assistant did not answer");
+        return ApiErrorLocalizer.BackendAction(error, message);
     }
 
     private async Task RetryVersionCheckAsync()
@@ -4073,6 +4074,8 @@ public sealed class MainViewModel : ObservableObject
     }
 
     private string L(string dutch, string english) => Language == "nl" ? dutch : english;
+
+    private string S(string key) => AppStrings.Get(key);
 
     private static bool ShouldSuppressCrashReportPrompt()
     {

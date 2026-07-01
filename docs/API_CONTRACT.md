@@ -65,6 +65,13 @@ client chooses the local HA URL when reachable, falls back to the remote HA URL
 when local is unreachable and remote is supported, and marks itself offline
 when neither URL is reachable.
 
+User-visible API guidance is localized in the client. Backend protocol values,
+JSON field names, endpoint paths, bearer tokens and `client_type: "windows"`
+must remain byte-for-byte unchanged. Error codes such as
+`client_type_mismatch`, `invalid_pair_code`, `invalid_client_type`,
+`not_configured`, `unauthorized` and stale auth signals are mapped by the
+client into concise localized instructions instead of being shown directly.
+
 Pair/status/command/Ask DJ responses may include this backend summary:
 
 ```json

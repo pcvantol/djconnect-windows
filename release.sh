@@ -51,6 +51,7 @@ while [[ $# -gt 0 ]]; do
       BUILD_MAC=true
       ;;
     --windows)
+      BUILD_MAC=false
       BUILD_WINDOWS=true
       ;;
     --all)

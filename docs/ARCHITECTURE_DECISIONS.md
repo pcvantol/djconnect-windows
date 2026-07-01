@@ -60,8 +60,8 @@ Rationale:
   `pcvantol/djconnect-app-releases`.
 - `windows/vX.Y.Z` and `maccatalyst/vX.Y.Z` keep app startup fallback release
   metadata unambiguous.
-- EN/NL static What's New files on `djconnect.dev` avoid relying on GitHub API
-  availability during normal startup.
+- EN/NL/DE/FR/ES static What's New files on `djconnect.dev` avoid relying on
+  GitHub API availability during normal startup.
 
 Trade-off: these artifacts are useful for diagnostics and internal validation
 only until Windows signing/installers and Mac Catalyst notarization are added.

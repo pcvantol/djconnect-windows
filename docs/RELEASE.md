@@ -4,7 +4,7 @@ This repo is an early desktop scaffold. Public CI releases are unsigned
 diagnostic artifacts until the app has Windows packaging/signing, Mac Catalyst
 signing/notarization and live Home Assistant validation.
 
-Current release: `3.2.2`.
+Current release: `3.2.3`.
 
 ## Pre-Release Checklist
 
@@ -26,9 +26,8 @@ Current release: `3.2.2`.
 - Confirm no secrets, tokens, passwords or OAuth values are committed.
 - Confirm the repository secret `PUBLIC_RELEASES_TOKEN` is present only when a
   maintainer intentionally starts the manual public unsigned release workflow.
-- Add/update `docs/release-notes/en/vX.Y.Z.md` and
-  `docs/release-notes/nl/vX.Y.Z.md` when the in-app What's New text should
-  differ from the full changelog.
+- Add/update `docs/release-notes/{en|nl|de|fr|es}/vX.Y.Z.md` when the in-app
+  What's New text should differ from the full changelog.
 - Push `main` and the release tag only when explicitly requested by the
   maintainer.
 - After pushing, validate GitHub Actions with `gh run list` and inspect failed
@@ -130,8 +129,8 @@ The token must have write access to `pcvantol/djconnect-website`. The workflow
 publishes static Markdown and JSON files to:
 
 ```text
-wwwroot/release-notes/windows/{en|nl}/vX.Y.Z.{md,json}
-wwwroot/release-notes/maccatalyst/{en|nl}/vX.Y.Z.{md,json}
+wwwroot/release-notes/windows/{en|nl|de|fr|es}/vX.Y.Z.{md,json}
+wwwroot/release-notes/maccatalyst/{en|nl|de|fr|es}/vX.Y.Z.{md,json}
 wwwroot/release-notes/windows/vX.Y.Z.{md,json}
 wwwroot/release-notes/maccatalyst/vX.Y.Z.{md,json}
 ```
@@ -151,19 +150,25 @@ Windows and Mac Catalyst clients should load platform- and language-specific
 release notes from `djconnect.dev` after an app update:
 
 ```text
-https://djconnect.dev/release-notes/windows/nl/vX.Y.Z.json
 https://djconnect.dev/release-notes/windows/en/vX.Y.Z.json
-https://djconnect.dev/release-notes/maccatalyst/nl/vX.Y.Z.json
+https://djconnect.dev/release-notes/windows/nl/vX.Y.Z.json
+https://djconnect.dev/release-notes/windows/de/vX.Y.Z.json
+https://djconnect.dev/release-notes/windows/fr/vX.Y.Z.json
+https://djconnect.dev/release-notes/windows/es/vX.Y.Z.json
 https://djconnect.dev/release-notes/maccatalyst/en/vX.Y.Z.json
+https://djconnect.dev/release-notes/maccatalyst/nl/vX.Y.Z.json
+https://djconnect.dev/release-notes/maccatalyst/de/vX.Y.Z.json
+https://djconnect.dev/release-notes/maccatalyst/fr/vX.Y.Z.json
+https://djconnect.dev/release-notes/maccatalyst/es/vX.Y.Z.json
 https://djconnect.dev/release-notes/windows/vX.Y.Z.json
 https://djconnect.dev/release-notes/maccatalyst/vX.Y.Z.json
 ```
 
 Source order for the static notes:
 
-1. `docs/release-notes/{en|nl}/vX.Y.Z.md`.
-2. `CHANGELOG.md` for English or `CHANGELOG.nl.md` for Dutch.
-3. English content as fallback when Dutch content is missing.
+1. `docs/release-notes/{en|nl|de|fr|es}/vX.Y.Z.md`.
+2. `CHANGELOG.md` for English, localized changelogs when available.
+3. English content as fallback when localized content is missing.
 
 ## Packaging Open Work
 

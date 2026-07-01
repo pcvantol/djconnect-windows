@@ -719,11 +719,12 @@
                                 <Label Grid.Row="4" Text="Website" TextColor="{StaticResource TextSecondary}" />
                                 <Label Grid.Row="4" Grid.Column="1" Text="{Binding WebsiteUrl}" TextColor="{StaticResource TextPrimary}" />
                                 <Label Grid.Row="5" Text="Taal" TextColor="{StaticResource TextSecondary}" />
-                                <HorizontalStackLayout Grid.Row="5" Grid.Column="1" Spacing="8">
-                                    <Label Text="EN" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
-                                    <Switch IsToggled="{Binding IsDutch}" />
-                                    <Label Text="NL" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" />
-                                </HorizontalStackLayout>
+                                <Picker Grid.Row="5"
+                                        Grid.Column="1"
+                                        ItemsSource="{Binding SupportedLanguages}"
+                                        SelectedItem="{Binding Language, Mode=TwoWay}"
+                                        TextColor="{StaticResource TextPrimary}"
+                                        BackgroundColor="#2B3262" />
                                 <Label Grid.Row="6" Text="Device ID" TextColor="{StaticResource TextSecondary}" />
                                 <Label Grid.Row="6" Grid.Column="1" Text="{Binding DeviceId}" TextColor="{StaticResource TextPrimary}" />
                                 <Label Grid.Row="7" Text="HA verbinding" TextColor="{StaticResource TextSecondary}" />

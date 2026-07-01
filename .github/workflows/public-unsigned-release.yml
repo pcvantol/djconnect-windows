@@ -251,33 +251,36 @@ jobs:
             fi
           }
 
-          en_base=".public-release/release-notes/base-en.md"
-          nl_base=".public-release/release-notes/base-nl.md"
-          : > "$en_base"
-          : > "$nl_base"
+          languages=(en nl de fr es)
+          for lang in "${languages[@]}"; do
+            : > ".public-release/release-notes/base-${lang}.md"
+          done
 
           if [[ -f "docs/release-notes/en/v${version}.md" ]]; then
-            cp "docs/release-notes/en/v${version}.md" "$en_base"
+            cp "docs/release-notes/en/v${version}.md" ".public-release/release-notes/base-en.md"
           elif [[ -f "docs/release-notes/v${version}.md" ]]; then
-            cp "docs/release-notes/v${version}.md" "$en_base"
+            cp "docs/release-notes/v${version}.md" ".public-release/release-notes/base-en.md"
           else
-            extract_changelog_notes "CHANGELOG.md" "$en_base"
+            extract_changelog_notes "CHANGELOG.md" ".public-release/release-notes/base-en.md"
           fi
-          if [[ ! -s "$en_base" ]]; then
-            printf "DJConnect Windows %s\n" "$version" > "$en_base"
+          if [[ ! -s ".public-release/release-notes/base-en.md" ]]; then
+            printf "DJConnect Windows %s\n" "$version" > ".public-release/release-notes/base-en.md"
           fi
 
-          if [[ -f "docs/release-notes/nl/v${version}.md" ]]; then
-            cp "docs/release-notes/nl/v${version}.md" "$nl_base"
-          else
-            extract_changelog_notes "CHANGELOG.nl.md" "$nl_base"
-          fi
-          if [[ ! -s "$nl_base" ]]; then
-            cp "$en_base" "$nl_base"
-          fi
+          for lang in nl de fr es; do
+            base=".public-release/release-notes/base-${lang}.md"
+            if [[ -f "docs/release-notes/${lang}/v${version}.md" ]]; then
+              cp "docs/release-notes/${lang}/v${version}.md" "$base"
+            elif [[ "$lang" == "nl" ]]; then
+              extract_changelog_notes "CHANGELOG.nl.md" "$base"
+            fi
+            if [[ ! -s "$base" ]]; then
+              cp ".public-release/release-notes/base-en.md" "$base"
+            fi
+          done
 
           for platform in Windows MacCatalyst; do
-            for lang in en nl; do
+            for lang in "${languages[@]}"; do
               notes=".public-release/release-notes-${platform}-${lang}.md"
               base=".public-release/release-notes/base-${lang}.md"
               {
@@ -287,21 +290,28 @@ jobs:
                 echo
                 echo "Platform: ${platform}"
                 echo
-                if [[ "$lang" == "nl" ]]; then
-                  echo "Niet-ondertekende CI-artifacts zijn bedoeld voor diagnostics en interne validatie."
-                  if [[ "$platform" == "Windows" ]]; then
-                    echo "Windows-artifacts zijn niet ondertekend en nog geen Store/MSIX-installer."
-                  else
-                    echo "Mac Catalyst-artifacts zijn niet ondertekend en niet genotariseerd."
-                  fi
-                else
-                  echo "Unsigned CI artifacts are intended for diagnostics and internal validation."
-                  if [[ "$platform" == "Windows" ]]; then
-                    echo "Windows artifacts are unsigned and are not a store/MSIX installer yet."
-                  else
-                    echo "Mac Catalyst artifacts are unsigned and not notarized."
-                  fi
-                fi
+                case "$lang" in
+                  nl)
+                    echo "Niet-ondertekende CI-artifacts zijn bedoeld voor diagnostics en interne validatie."
+                    [[ "$platform" == "Windows" ]] && echo "Windows-artifacts zijn niet ondertekend en nog geen Store/MSIX-installer." || echo "Mac Catalyst-artifacts zijn niet ondertekend en niet genotariseerd."
+                    ;;
+                  de)
+                    echo "Nicht signierte CI-Artefakte sind für Diagnose und interne Validierung gedacht."
+                    [[ "$platform" == "Windows" ]] && echo "Windows-Artefakte sind nicht signiert und noch kein Store/MSIX-Installer." || echo "Mac Catalyst-Artefakte sind nicht signiert und nicht notarisiert."
+                    ;;
+                  fr)
+                    echo "Les artefacts CI non signés sont destinés au diagnostic et à la validation interne."
+                    [[ "$platform" == "Windows" ]] && echo "Les artefacts Windows ne sont pas signés et ne sont pas encore un installateur Store/MSIX." || echo "Les artefacts Mac Catalyst ne sont pas signés ni notariés."
+                    ;;
+                  es)
+                    echo "Los artefactos de CI sin firmar son para diagnóstico y validación interna."
+                    [[ "$platform" == "Windows" ]] && echo "Los artefactos de Windows no están firmados y todavía no son un instalador Store/MSIX." || echo "Los artefactos de Mac Catalyst no están firmados ni notarizados."
+                    ;;
+                  *)
+                    echo "Unsigned CI artifacts are intended for diagnostics and internal validation."
+                    [[ "$platform" == "Windows" ]] && echo "Windows artifacts are unsigned and are not a store/MSIX installer yet." || echo "Mac Catalyst artifacts are unsigned and not notarized."
+                    ;;
+                esac
               } > "$notes"
             done
             cp ".public-release/release-notes-${platform}-en.md" ".public-release/release-notes-${platform}.md"
@@ -410,7 +420,7 @@ jobs:
 
             target_dir="${website_dir}/wwwroot/release-notes/${platform}"
             mkdir -p "$target_dir"
-            for lang in en nl; do
+            for lang in en nl de fr es; do
               localized_dir="${target_dir}/${lang}"
               mkdir -p "$localized_dir"
               source_notes=".public-release/release-notes-${platform_name}-${lang}.md"

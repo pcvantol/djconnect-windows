@@ -149,7 +149,7 @@ artifacts, and publishes platform releases to
 The public tags are `windows/vX.Y.Z` and `maccatalyst/vX.Y.Z`. Windows release
 artifacts are produced for both `win-x64` and `win-arm64`; the ARM64 zip is the
 native Windows-on-ARM build for Parallels Windows VMs on Apple Silicon Macs.
-When
-`WEBSITE_RELEASE_NOTES_TOKEN` is configured, the workflow also publishes English
-and Dutch What's New JSON files to `djconnect.dev` under
-`/release-notes/{windows|maccatalyst}/{en|nl}/vX.Y.Z.json`.
+When `WEBSITE_RELEASE_NOTES_TOKEN` is configured, the workflow also publishes
+English, Dutch, German, French and Spanish What's New JSON files to
+`djconnect.dev` under
+`/release-notes/{windows|maccatalyst}/{en|nl|de|fr|es}/vX.Y.Z.json`.

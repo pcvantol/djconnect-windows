@@ -157,8 +157,8 @@ VMs running on Apple Silicon Macs.
 The same workflow publishes startup What's New content as static files on
 `djconnect.dev`:
 
-- `/release-notes/windows/{en|nl}/vX.Y.Z.json`
-- `/release-notes/maccatalyst/{en|nl}/vX.Y.Z.json`
+- `/release-notes/windows/{en|nl|de|fr|es}/vX.Y.Z.json`
+- `/release-notes/maccatalyst/{en|nl|de|fr|es}/vX.Y.Z.json`
 
 These artifacts are not signed Windows installers and not notarized Mac apps.
 
