@@ -4,7 +4,7 @@ This repo is an early desktop scaffold. Public CI releases are unsigned
 diagnostic artifacts until the app has Windows packaging/signing, Mac Catalyst
 signing/notarization and live Home Assistant validation.
 
-Current release: `3.2.4`.
+Current release: `3.2.5`.
 
 ## Pre-Release Checklist
 
@@ -167,8 +167,10 @@ https://djconnect.dev/release-notes/maccatalyst/vX.Y.Z.json
 Source order for the static notes:
 
 1. `docs/release-notes/{en|nl|de|fr|es}/vX.Y.Z.md`.
-2. `CHANGELOG.md` for English, localized changelogs when available.
-3. English content as fallback when localized content is missing.
+2. `CHANGELOG.md` for English.
+3. Localized release notes must be added for every supported locale in the
+   same release change. Do not publish English fallback text for localized
+   in-app What's New content.
 
 ## Packaging Open Work
 

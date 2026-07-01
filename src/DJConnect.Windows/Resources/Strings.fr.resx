@@ -1,21 +1,1823 @@
 <?xml version="1.0" encoding="utf-8"?>
 <root>
-  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader><resheader name="version"><value>2.0</value></resheader><resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader><resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
-  <data name="ApiError_ClientTypeMismatch" xml:space="preserve"><value>Le type d'app choisi dans Home Assistant ne correspond pas à cette app. Choisissez le flux de configuration DJConnect {0} dans Home Assistant et réessayez.</value></data>
-  <data name="ApiError_InvalidPairCode" xml:space="preserve"><value>Le code d'association est incorrect. Vérifiez le code dans Home Assistant.</value></data>
-  <data name="ApiError_InvalidClientType" xml:space="preserve"><value>Le mauvais type d'app a été choisi dans Home Assistant. Choisissez le flux DJConnect {0} et utilisez le nouveau code d'association.</value></data>
-  <data name="ApiError_NotConfigured" xml:space="preserve"><value>DJConnect n'est pas encore configuré dans Home Assistant. Ouvrez d'abord l'intégration DJConnect.</value></data>
-  <data name="ApiError_Unauthorized" xml:space="preserve"><value>Votre association a expiré. Associez de nouveau DJConnect pour continuer.</value></data>
-  <data name="ApiError_StaleAuth" xml:space="preserve"><value>Cette association n'est plus valide. Générez un nouveau code dans Home Assistant et réessayez.</value></data>
-  <data name="ApiError_StaleBackendAction" xml:space="preserve"><value>Cette action vient d'une ancienne session musicale. Demandez une nouvelle recommandation à DJConnect.</value></data>
-  <data name="ApiError_UnsupportedBackendCapability" xml:space="preserve"><value>Ce backend musical ne prend pas en charge cette action.</value></data>
-  <data name="ApiError_GenericPairing" xml:space="preserve"><value>L'association a échoué. Vérifiez Home Assistant et réessayez.</value></data>
-  <data name="ApiError_NetworkTimeout" xml:space="preserve"><value>Home Assistant n'a pas répondu à temps. Vérifiez que cet appareil est sur le même réseau et réessayez.</value></data>
-  <data name="ApiError_HostNotFound" xml:space="preserve"><value>Home Assistant est introuvable à cette adresse. Vérifiez le nom d'hôte ou l'adresse IP.</value></data>
-  <data name="Pairing_InvalidUrl" xml:space="preserve"><value>Saisissez une URL Home Assistant locale valide.</value></data>
-  <data name="Pairing_InvalidCode" xml:space="preserve"><value>Saisissez le code d'association à 6 chiffres de Home Assistant.</value></data>
-  <data name="Pairing_Pending" xml:space="preserve"><value>Association avec Home Assistant...</value></data>
-  <data name="Pairing_Waiting" xml:space="preserve"><value>Vérification de la fin de l'association...</value></data>
-  <data name="ApiError_GenericBackend" xml:space="preserve"><value>Home Assistant n'a pas terminé la demande. Réessayez.</value></data>
-  <data name="Status_NotPaired" xml:space="preserve"><value>Non associé</value></data><data name="Status_Paired" xml:space="preserve"><value>Associé</value></data><data name="Status_UpdateRequired" xml:space="preserve"><value>Mise à jour requise</value></data><data name="Status_PairAgain" xml:space="preserve"><value>Associez de nouveau pour continuer</value></data><data name="Status_HomeAssistantUnreachable" xml:space="preserve"><value>Home Assistant est inaccessible</value></data><data name="Status_PlaybackUnavailable" xml:space="preserve"><value>Lecture indisponible</value></data><data name="Status_NoOutputSelected" xml:space="preserve"><value>Aucun périphérique de sortie sélectionné</value></data><data name="Status_AskDJUnavailable" xml:space="preserve"><value>Ask DJ est indisponible</value></data><data name="Status_TrackInsightUnavailable" xml:space="preserve"><value>Track Insight est indisponible</value></data><data name="Status_NoActivePlayback" xml:space="preserve"><value>Aucune lecture active</value></data><data name="Status_NoQueue" xml:space="preserve"><value>File d'attente vide</value></data><data name="Status_NoPlaylists" xml:space="preserve"><value>Aucune playlist</value></data><data name="Settings_Language" xml:space="preserve"><value>Langue</value></data><data name="Settings_Save" xml:space="preserve"><value>Enregistrer</value></data><data name="Settings_RelinkApp" xml:space="preserve"><value>Associer de nouveau l'app</value></data><data name="Logs_Copied" xml:space="preserve"><value>Logs copiés dans le presse-papiers</value></data><data name="Logs_Cleared" xml:space="preserve"><value>Logs effacés</value></data><data name="Format_AppProtocol" xml:space="preserve"><value>App : {0}.x</value></data><data name="Format_RequiredProtocol" xml:space="preserve"><value>Requis : {0}.x</value></data><data name="Format_HomeAssistantIntegration" xml:space="preserve"><value>Intégration Home Assistant : {0}</value></data><data name="Format_UpdateRequiredDetail" xml:space="preserve"><value>Mettez DJConnect à jour avant de continuer. Cette app requiert Home Assistant DJConnect {0}.x.</value></data>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ApiError_ClientTypeMismatch" xml:space="preserve">
+    <value>Le type d'app choisi dans Home Assistant ne correspond pas à cette app. Choisissez le flux de configuration DJConnect {0} dans Home Assistant et réessayez.</value>
+  </data>
+  <data name="ApiError_GenericBackend" xml:space="preserve">
+    <value>Home Assistant n'a pas terminé la demande. Réessayez.</value>
+  </data>
+  <data name="ApiError_GenericPairing" xml:space="preserve">
+    <value>L'association a échoué. Vérifiez Home Assistant et réessayez.</value>
+  </data>
+  <data name="ApiError_HostNotFound" xml:space="preserve">
+    <value>Home Assistant est introuvable à cette adresse. Vérifiez le nom d'hôte ou l'adresse IP.</value>
+  </data>
+  <data name="ApiError_InvalidClientType" xml:space="preserve">
+    <value>Le mauvais type d'app a été choisi dans Home Assistant. Choisissez le flux DJConnect {0} et utilisez le nouveau code d'association.</value>
+  </data>
+  <data name="ApiError_InvalidPairCode" xml:space="preserve">
+    <value>Le code d'association est incorrect. Vérifiez le code dans Home Assistant.</value>
+  </data>
+  <data name="ApiError_NetworkTimeout" xml:space="preserve">
+    <value>Home Assistant n'a pas répondu à temps. Vérifiez que cet appareil est sur le même réseau et réessayez.</value>
+  </data>
+  <data name="ApiError_NotConfigured" xml:space="preserve">
+    <value>DJConnect n'est pas encore configuré dans Home Assistant. Ouvrez d'abord l'intégration DJConnect.</value>
+  </data>
+  <data name="ApiError_StaleAuth" xml:space="preserve">
+    <value>Cette association n'est plus valide. Générez un nouveau code dans Home Assistant et réessayez.</value>
+  </data>
+  <data name="ApiError_StaleBackendAction" xml:space="preserve">
+    <value>Cette action vient d'une ancienne session musicale. Demandez une nouvelle recommandation à DJConnect.</value>
+  </data>
+  <data name="ApiError_Unauthorized" xml:space="preserve">
+    <value>Votre association a expiré. Associez de nouveau DJConnect pour continuer.</value>
+  </data>
+  <data name="ApiError_UnsupportedBackendCapability" xml:space="preserve">
+    <value>Ce service musical ne prend pas en charge cette action.</value>
+  </data>
+  <data name="Format_AppProtocol" xml:space="preserve">
+    <value>App : {0}.x</value>
+  </data>
+  <data name="Format_HomeAssistantIntegration" xml:space="preserve">
+    <value>Intégration Home Assistant : {0}</value>
+  </data>
+  <data name="Format_RequiredProtocol" xml:space="preserve">
+    <value>Requis : {0}.x</value>
+  </data>
+  <data name="Format_UpdateRequiredDetail" xml:space="preserve">
+    <value>Mettez DJConnect à jour avant de continuer. Cette app requiert Home Assistant DJConnect {0}.x.</value>
+  </data>
+  <data name="Logs_Cleared" xml:space="preserve">
+    <value>Logs effacés</value>
+  </data>
+  <data name="Logs_Copied" xml:space="preserve">
+    <value>Logs copiés dans le presse-papiers</value>
+  </data>
+  <data name="Pairing_InvalidCode" xml:space="preserve">
+    <value>Saisissez le code d'association à 6 chiffres de Home Assistant.</value>
+  </data>
+  <data name="Pairing_InvalidUrl" xml:space="preserve">
+    <value>Saisissez une URL Home Assistant locale valide.</value>
+  </data>
+  <data name="Pairing_Pending" xml:space="preserve">
+    <value>Association avec Home Assistant...</value>
+  </data>
+  <data name="Pairing_Waiting" xml:space="preserve">
+    <value>Vérification de la fin de l'association...</value>
+  </data>
+  <data name="Settings_Language" xml:space="preserve">
+    <value>Langue</value>
+  </data>
+  <data name="Settings_RelinkApp" xml:space="preserve">
+    <value>Associer de nouveau l'app</value>
+  </data>
+  <data name="Settings_Save" xml:space="preserve">
+    <value>Enregistrer</value>
+  </data>
+  <data name="Status_AskDJUnavailable" xml:space="preserve">
+    <value>Ask DJ est indisponible</value>
+  </data>
+  <data name="Status_HomeAssistantUnreachable" xml:space="preserve">
+    <value>Home Assistant est inaccessible</value>
+  </data>
+  <data name="Status_NoActivePlayback" xml:space="preserve">
+    <value>Aucune lecture active</value>
+  </data>
+  <data name="Status_NoOutputSelected" xml:space="preserve">
+    <value>Aucun périphérique de sortie sélectionné</value>
+  </data>
+  <data name="Status_NoPlaylists" xml:space="preserve">
+    <value>Aucune playlist</value>
+  </data>
+  <data name="Status_NoQueue" xml:space="preserve">
+    <value>File d'attente vide</value>
+  </data>
+  <data name="Status_NotPaired" xml:space="preserve">
+    <value>Non associé</value>
+  </data>
+  <data name="Status_PairAgain" xml:space="preserve">
+    <value>Associez de nouveau pour continuer</value>
+  </data>
+  <data name="Status_Paired" xml:space="preserve">
+    <value>Associé</value>
+  </data>
+  <data name="Status_PlaybackUnavailable" xml:space="preserve">
+    <value>Lecture indisponible</value>
+  </data>
+  <data name="Status_TrackInsightUnavailable" xml:space="preserve">
+    <value>Track Insight est indisponible</value>
+  </data>
+  <data name="Status_UpdateRequired" xml:space="preserve">
+    <value>Mise à jour requise</value>
+  </data>
+  <data name="Vm_About" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="Vm_App_permissions" xml:space="preserve">
+    <value>App permissions</value>
+  </data>
+  <data name="Vm_Ask_DJ_anything_e_g_save_this_track_to_liked" xml:space="preserve">
+    <value>Ask DJ anything, e.g. save this track to liked songs...</value>
+  </data>
+  <data name="Vm_Ask_DJ_history_cleared" xml:space="preserve">
+    <value>Ask DJ history cleared</value>
+  </data>
+  <data name="Vm_Ask_DJ_is_unavailable" xml:space="preserve">
+    <value>Ask DJ is unavailable</value>
+  </data>
+  <data name="Vm_Ask_DJ_is_unavailable_3" xml:space="preserve">
+    <value>Ask DJ is unavailable</value>
+  </data>
+  <data name="Vm_Ask_DJ_is_unavailable_4" xml:space="preserve">
+    <value>Ask DJ is unavailable</value>
+  </data>
+  <data name="Vm_Ask_DJ_is_unavailable_5" xml:space="preserve">
+    <value>Ask DJ is unavailable</value>
+  </data>
+  <data name="Vm_Ask_DJ_is_unavailable_6" xml:space="preserve">
+    <value>Ask DJ is unavailable</value>
+  </data>
+  <data name="Vm_Ask_DJ_is_unavailable_7" xml:space="preserve">
+    <value>Ask DJ is unavailable</value>
+  </data>
+  <data name="Vm_Ask_DJ_is_unavailable_8" xml:space="preserve">
+    <value>Ask DJ is unavailable</value>
+  </data>
+  <data name="Vm_Ask_DJ_updated" xml:space="preserve">
+    <value>Ask DJ updated</value>
+  </data>
+  <data name="Vm_Available" xml:space="preserve">
+    <value>Available</value>
+  </data>
+  <data name="Vm_Command_executed" xml:space="preserve">
+    <value>Command executed</value>
+  </data>
+  <data name="Vm_Command_executed_3" xml:space="preserve">
+    <value>Command executed</value>
+  </data>
+  <data name="Vm_Command_executed_4" xml:space="preserve">
+    <value>Command executed</value>
+  </data>
+  <data name="Vm_Compatible" xml:space="preserve">
+    <value>Compatible</value>
+  </data>
+  <data name="Vm_Continue" xml:space="preserve">
+    <value>Continue</value>
+  </data>
+  <data name="Vm_Demo_Mode_3" xml:space="preserve">
+    <value>Demo Mode</value>
+  </data>
+  <data name="Vm_Demo_Mode_4" xml:space="preserve">
+    <value>Demo Mode</value>
+  </data>
+  <data name="Vm_Demo_Mode_5" xml:space="preserve">
+    <value>Demo Mode</value>
+  </data>
+  <data name="Vm_Demo_Mode_6" xml:space="preserve">
+    <value>Demo Mode</value>
+  </data>
+  <data name="Vm_Demo_Mode_7" xml:space="preserve">
+    <value>Demo Mode</value>
+  </data>
+  <data name="Vm_Demo_command" xml:space="preserve">
+    <value>Demo command</value>
+  </data>
+  <data name="Vm_Demo_microphone_not_used_Ask_DJ_would_listen" xml:space="preserve">
+    <value>Demo: microphone not used. Ask DJ would listen through Home Assistant.</value>
+  </data>
+  <data name="Vm_Demo_mode" xml:space="preserve">
+    <value>Demo mode</value>
+  </data>
+  <data name="Vm_Demo_music" xml:space="preserve">
+    <value>Demo music</value>
+  </data>
+  <data name="Vm_Disabled" xml:space="preserve">
+    <value>Disabled</value>
+  </data>
+  <data name="Vm_Enabled_while_the_app_is_open" xml:space="preserve">
+    <value>Enabled while the app is open</value>
+  </data>
+  <data name="Vm_Enter_a_valid_local_Home_Assistant_URL" xml:space="preserve">
+    <value>Enter a valid local Home Assistant URL.</value>
+  </data>
+  <data name="Vm_Enter_the_6_digit_pairing_code_from_Home_Ass" xml:space="preserve">
+    <value>Enter the 6-digit pairing code from Home Assistant.</value>
+  </data>
+  <data name="Vm_Enter_the_local_Home_Assistant_URL_and_pairi" xml:space="preserve">
+    <value>Enter the local Home Assistant URL and pairing code</value>
+  </data>
+  <data name="Vm_Explanation_shown" xml:space="preserve">
+    <value>Explanation shown</value>
+  </data>
+  <data name="Vm_Explanation_shown_3" xml:space="preserve">
+    <value>Explanation shown</value>
+  </data>
+  <data name="Vm_Home_Assistant_integration_unknown" xml:space="preserve">
+    <value>Home Assistant integration: unknown</value>
+  </data>
+  <data name="Vm_Home_Assistant_is_unreachable" xml:space="preserve">
+    <value>Home Assistant is unreachable</value>
+  </data>
+  <data name="Vm_Home_Assistant_is_unreachable_3" xml:space="preserve">
+    <value>Home Assistant is unreachable</value>
+  </data>
+  <data name="Vm_Home_Assistant_is_unreachable_4" xml:space="preserve">
+    <value>Home Assistant is unreachable</value>
+  </data>
+  <data name="Vm_Home_Assistant_is_unreachable_5" xml:space="preserve">
+    <value>Home Assistant is unreachable</value>
+  </data>
+  <data name="Vm_Home_Assistant_is_unreachable_6" xml:space="preserve">
+    <value>Home Assistant is unreachable</value>
+  </data>
+  <data name="Vm_Home_Assistant_is_unreachable_7" xml:space="preserve">
+    <value>Home Assistant is unreachable</value>
+  </data>
+  <data name="Vm_Home_Assistant_is_unreachable_on_your_local" xml:space="preserve">
+    <value>Home Assistant is unreachable on your local network.</value>
+  </data>
+  <data name="Vm_Home_Assistant_is_unreachable_through_local" xml:space="preserve">
+    <value>Home Assistant is unreachable through local or remote URL</value>
+  </data>
+  <data name="Vm_Home_Assistant_returned_an_invalid_Windows_p" xml:space="preserve">
+    <value>Home Assistant returned an invalid Windows pairing response.</value>
+  </data>
+  <data name="Vm_Internal_client_identity_is_invalid_Restart" xml:space="preserve">
+    <value>Internal client identity is invalid. Restart DJConnect.</value>
+  </data>
+  <data name="Vm_Legal" xml:space="preserve">
+    <value>Legal</value>
+  </data>
+  <data name="Vm_Loading_release_notes" xml:space="preserve">
+    <value>Loading release notes...</value>
+  </data>
+  <data name="Vm_Local_only" xml:space="preserve">
+    <value>Local only</value>
+  </data>
+  <data name="Vm_Logs_cleared" xml:space="preserve">
+    <value>Logs cleared.</value>
+  </data>
+  <data name="Vm_Logs_cleared_3" xml:space="preserve">
+    <value>Logs cleared</value>
+  </data>
+  <data name="Vm_Logs_copied_to_clipboard" xml:space="preserve">
+    <value>Logs copied to clipboard</value>
+  </data>
+  <data name="Vm_Logs_copied_with_redaction" xml:space="preserve">
+    <value>Logs copied with redaction.</value>
+  </data>
+  <data name="Vm_Microphone_unavailable" xml:space="preserve">
+    <value>Microphone unavailable</value>
+  </data>
+  <data name="Vm_Microphone_unavailable_3" xml:space="preserve">
+    <value>Microphone unavailable</value>
+  </data>
+  <data name="Vm_Microphone_unavailable_4" xml:space="preserve">
+    <value>Microphone unavailable</value>
+  </data>
+  <data name="Vm_Monkey_test_Demo_Mode_stays_active" xml:space="preserve">
+    <value>Monkey test: Demo Mode stays active</value>
+  </data>
+  <data name="Vm_Monkey_test_clipboard_unchanged" xml:space="preserve">
+    <value>Monkey test: clipboard unchanged</value>
+  </data>
+  <data name="Vm_Monkey_test_logs_not_cleared" xml:space="preserve">
+    <value>Monkey test: logs not cleared</value>
+  </data>
+  <data name="Vm_Monkey_test_pairing_reset_suppressed" xml:space="preserve">
+    <value>Monkey test: pairing reset suppressed</value>
+  </data>
+  <data name="Vm_Monkey_test_pairing_suppressed" xml:space="preserve">
+    <value>Monkey test: pairing suppressed</value>
+  </data>
+  <data name="Vm_Monkey_test_permission_prompt_suppressed" xml:space="preserve">
+    <value>Monkey test: permission prompt suppressed</value>
+  </data>
+  <data name="Vm_Monkey_test_settings_not_saved" xml:space="preserve">
+    <value>Monkey test: settings not saved</value>
+  </data>
+  <data name="Vm_Music_available" xml:space="preserve">
+    <value>Music available</value>
+  </data>
+  <data name="Vm_Music_backend_unavailable" xml:space="preserve">
+    <value>Service musical indisponible</value>
+  </data>
+  <data name="Vm_Music_control_with_character" xml:space="preserve">
+    <value>Music control with character</value>
+  </data>
+  <data name="Vm_Music_not_paired" xml:space="preserve">
+    <value>Music not paired</value>
+  </data>
+  <data name="Vm_Music_offline" xml:space="preserve">
+    <value>Music offline</value>
+  </data>
+  <data name="Vm_No_Track_Insight_available" xml:space="preserve">
+    <value>No Track Insight available.</value>
+  </data>
+  <data name="Vm_No_active_playback" xml:space="preserve">
+    <value>No active playback</value>
+  </data>
+  <data name="Vm_No_active_playback_3" xml:space="preserve">
+    <value>No active playback</value>
+  </data>
+  <data name="Vm_No_active_playback_4" xml:space="preserve">
+    <value>No active playback</value>
+  </data>
+  <data name="Vm_No_active_playback_5" xml:space="preserve">
+    <value>No active playback</value>
+  </data>
+  <data name="Vm_No_active_track_to_show" xml:space="preserve">
+    <value>No active track to show.</value>
+  </data>
+  <data name="Vm_No_logs_available" xml:space="preserve">
+    <value>No logs available.</value>
+  </data>
+  <data name="Vm_No_output_device_selected" xml:space="preserve">
+    <value>No output device selected</value>
+  </data>
+  <data name="Vm_No_output_device_selected_3" xml:space="preserve">
+    <value>No output device selected</value>
+  </data>
+  <data name="Vm_No_output_device_selected_4" xml:space="preserve">
+    <value>No output device selected</value>
+  </data>
+  <data name="Vm_No_output_device_selected_5" xml:space="preserve">
+    <value>No output device selected</value>
+  </data>
+  <data name="Vm_No_output_device_selected_6" xml:space="preserve">
+    <value>No output device selected</value>
+  </data>
+  <data name="Vm_No_playlists" xml:space="preserve">
+    <value>No playlists</value>
+  </data>
+  <data name="Vm_No_playlists_3" xml:space="preserve">
+    <value>No playlists</value>
+  </data>
+  <data name="Vm_No_queue" xml:space="preserve">
+    <value>No queue</value>
+  </data>
+  <data name="Vm_No_queue_3" xml:space="preserve">
+    <value>No queue</value>
+  </data>
+  <data name="Vm_Not_available_in_this_build" xml:space="preserve">
+    <value>Not available in this build</value>
+  </data>
+  <data name="Vm_Not_enabled" xml:space="preserve">
+    <value>Not enabled</value>
+  </data>
+  <data name="Vm_Not_paired" xml:space="preserve">
+    <value>Not paired</value>
+  </data>
+  <data name="Vm_Not_paired_3" xml:space="preserve">
+    <value>Not paired</value>
+  </data>
+  <data name="Vm_Not_paired_4" xml:space="preserve">
+    <value>Not paired</value>
+  </data>
+  <data name="Vm_Not_requested" xml:space="preserve">
+    <value>Not requested</value>
+  </data>
+  <data name="Vm_Notifications_remain_disabled" xml:space="preserve">
+    <value>Notifications remain disabled.</value>
+  </data>
+  <data name="Vm_Now_Playing" xml:space="preserve">
+    <value>Now Playing</value>
+  </data>
+  <data name="Vm_Offline" xml:space="preserve">
+    <value>Offline</value>
+  </data>
+  <data name="Vm_Open_Privacy_for_microphone_and_Ask_DJ_detai" xml:space="preserve">
+    <value>Open Privacy for microphone and Ask DJ details.</value>
+  </data>
+  <data name="Vm_Open_Windows_settings" xml:space="preserve">
+    <value>Open Windows settings</value>
+  </data>
+  <data name="Vm_Open_Windows_settings_3" xml:space="preserve">
+    <value>Open Windows settings</value>
+  </data>
+  <data name="Vm_Open_firewall_settings" xml:space="preserve">
+    <value>Open firewall settings</value>
+  </data>
+  <data name="Vm_Pair_again_to_continue" xml:space="preserve">
+    <value>Pair again to continue</value>
+  </data>
+  <data name="Vm_Pair_again_to_continue_3" xml:space="preserve">
+    <value>Pair again to continue</value>
+  </data>
+  <data name="Vm_Pair_again_to_continue_4" xml:space="preserve">
+    <value>Pair again to continue</value>
+  </data>
+  <data name="Vm_Pair_again_to_continue_5" xml:space="preserve">
+    <value>Pair again to continue</value>
+  </data>
+  <data name="Vm_Pair_again_to_continue_6" xml:space="preserve">
+    <value>Pair again to continue</value>
+  </data>
+  <data name="Vm_Pair_again_to_continue_7" xml:space="preserve">
+    <value>Pair again to continue</value>
+  </data>
+  <data name="Vm_Paired" xml:space="preserve">
+    <value>Paired</value>
+  </data>
+  <data name="Vm_Paired_3" xml:space="preserve">
+    <value>Paired</value>
+  </data>
+  <data name="Vm_Paired_4" xml:space="preserve">
+    <value>Paired</value>
+  </data>
+  <data name="Vm_Paired_5" xml:space="preserve">
+    <value>Paired</value>
+  </data>
+  <data name="Vm_Paired_6" xml:space="preserve">
+    <value>Paired</value>
+  </data>
+  <data name="Vm_Pairing" xml:space="preserve">
+    <value>Pairing</value>
+  </data>
+  <data name="Vm_Playback_unavailable" xml:space="preserve">
+    <value>Playback unavailable</value>
+  </data>
+  <data name="Vm_Playback_unavailable_10" xml:space="preserve">
+    <value>Playback unavailable</value>
+  </data>
+  <data name="Vm_Playback_unavailable_3" xml:space="preserve">
+    <value>Playback unavailable</value>
+  </data>
+  <data name="Vm_Playback_unavailable_4" xml:space="preserve">
+    <value>Playback unavailable</value>
+  </data>
+  <data name="Vm_Playback_unavailable_5" xml:space="preserve">
+    <value>Playback unavailable</value>
+  </data>
+  <data name="Vm_Playback_unavailable_6" xml:space="preserve">
+    <value>Playback unavailable</value>
+  </data>
+  <data name="Vm_Playback_unavailable_7" xml:space="preserve">
+    <value>Playback unavailable</value>
+  </data>
+  <data name="Vm_Playback_unavailable_8" xml:space="preserve">
+    <value>Playback unavailable</value>
+  </data>
+  <data name="Vm_Playback_unavailable_9" xml:space="preserve">
+    <value>Playback unavailable</value>
+  </data>
+  <data name="Vm_Playlists" xml:space="preserve">
+    <value>Playlists</value>
+  </data>
+  <data name="Vm_Privacy" xml:space="preserve">
+    <value>Privacy</value>
+  </data>
+  <data name="Vm_Queue" xml:space="preserve">
+    <value>Queue</value>
+  </data>
+  <data name="Vm_Ready_to_pair_again" xml:space="preserve">
+    <value>Ready to pair again</value>
+  </data>
+  <data name="Vm_Release_notes_could_not_be_loaded_Visit_http" xml:space="preserve">
+    <value>Release notes could not be loaded. Visit https://djconnect.dev for more information.</value>
+  </data>
+  <data name="Vm_Remote_fallback_available" xml:space="preserve">
+    <value>Repli distant disponible</value>
+  </data>
+  <data name="Vm_Requested_at_push_to_talk" xml:space="preserve">
+    <value>Requested at push-to-talk</value>
+  </data>
+  <data name="Vm_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Vm_Settings_saved" xml:space="preserve">
+    <value>Settings saved</value>
+  </data>
+  <data name="Vm_Share_Feedback" xml:space="preserve">
+    <value>Share Feedback</value>
+  </data>
+  <data name="Vm_Shown_during_pairing" xml:space="preserve">
+    <value>Shown during pairing</value>
+  </data>
+  <data name="Vm_Stale" xml:space="preserve">
+    <value>Stale</value>
+  </data>
+  <data name="Vm_Successfully_paired" xml:space="preserve">
+    <value>Successfully paired</value>
+  </data>
+  <data name="Vm_The_track_could_not_be_saved" xml:space="preserve">
+    <value>The track could not be saved.</value>
+  </data>
+  <data name="Vm_Token_storage_failed" xml:space="preserve">
+    <value>Token storage failed</value>
+  </data>
+  <data name="Vm_Track_Insight_is_unavailable" xml:space="preserve">
+    <value>Track Insight is unavailable</value>
+  </data>
+  <data name="Vm_Track_Insight_is_unavailable_3" xml:space="preserve">
+    <value>Track Insight is unavailable</value>
+  </data>
+  <data name="Vm_Track_Insight_is_unavailable_4" xml:space="preserve">
+    <value>Track Insight is unavailable</value>
+  </data>
+  <data name="Vm_Track_saved_to_favorites" xml:space="preserve">
+    <value>Track saved to favorites.</value>
+  </data>
+  <data name="Vm_Track_saved_to_favorites_3" xml:space="preserve">
+    <value>Track saved to favorites.</value>
+  </data>
+  <data name="Vm_Unavailable" xml:space="preserve">
+    <value>Unavailable</value>
+  </data>
+  <data name="Vm_Unpaired" xml:space="preserve">
+    <value>Unpaired</value>
+  </data>
+  <data name="Vm_Update_required" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_10" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_11" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_12" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_13" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_14" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_15" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_16" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_17" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_18" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_19" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_20" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_21" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_22" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_23" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_24" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_25" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_26" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_27" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_28" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_29" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_3" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_30" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_31" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_32" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_4" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_5" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_6" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_7" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_8" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Update_required_9" xml:space="preserve">
+    <value>Update required</value>
+  </data>
+  <data name="Vm_Version_check_failed" xml:space="preserve">
+    <value>Version check failed</value>
+  </data>
+  <data name="Vm_Voice_activation_enabled" xml:space="preserve">
+    <value>Voice activation enabled.</value>
+  </data>
+  <data name="Vm_Voice_activation_is_not_available_in_this_bu" xml:space="preserve">
+    <value>Voice activation is not available in this build.</value>
+  </data>
+  <data name="Vm_What_s_New" xml:space="preserve">
+    <value>What's New</value>
+  </data>
+  <data name="Vm_What_s_New_3" xml:space="preserve">
+    <value>What's New</value>
+  </data>
+  <data name="Vm_What_s_New_4" xml:space="preserve">
+    <value>What's New</value>
+  </data>
+  <data name="Vm_What_s_New_in" xml:space="preserve">
+    <value>What's New in</value>
+  </data>
+  <data name="Xaml_APP" xml:space="preserve">
+    <value>APP</value>
+  </data>
+  <data name="Xaml_APP_INFO" xml:space="preserve">
+    <value>APP-INFO</value>
+  </data>
+  <data name="Xaml_APP_METADATA" xml:space="preserve">
+    <value>APP METADATA</value>
+  </data>
+  <data name="Xaml_Aan_de_slag" xml:space="preserve">
+    <value>Aan de slag!</value>
+  </data>
+  <data name="Xaml_Actie" xml:space="preserve">
+    <value>Actie</value>
+  </data>
+  <data name="Xaml_Afspeellijsten" xml:space="preserve">
+    <value>▱  Afspeellijsten</value>
+  </data>
+  <data name="Xaml_Annuleren" xml:space="preserve">
+    <value>Annuleren</value>
+  </data>
+  <data name="Xaml_App_afsluiten" xml:space="preserve">
+    <value>App afsluiten</value>
+  </data>
+  <data name="Xaml_App_opnieuw_koppelen" xml:space="preserve">
+    <value>↻  App opnieuw koppelen</value>
+  </data>
+  <data name="Xaml_App_opnieuw_koppelen_3" xml:space="preserve">
+    <value>↻  App opnieuw koppelen</value>
+  </data>
+  <data name="Xaml_App_versie" xml:space="preserve">
+    <value>App versie</value>
+  </data>
+  <data name="Xaml_App_versie_3" xml:space="preserve">
+    <value>App versie</value>
+  </data>
+  <data name="Xaml_App_versie_4" xml:space="preserve">
+    <value>App versie</value>
+  </data>
+  <data name="Xaml_App_versie_5" xml:space="preserve">
+    <value>App versie</value>
+  </data>
+  <data name="Xaml_App_versie_protocol" xml:space="preserve">
+    <value>App versie/protocol</value>
+  </data>
+  <data name="Xaml_Apple_Microsoft_accountgegevens" xml:space="preserve">
+    <value>• Apple/Microsoft accountgegevens</value>
+  </data>
+  <data name="Xaml_Ask_DJ" xml:space="preserve">
+    <value>▰  Ask DJ</value>
+  </data>
+  <data name="Xaml_Ask_DJ_3" xml:space="preserve">
+    <value>Ask DJ</value>
+  </data>
+  <data name="Xaml_Ask_DJ_berichten_en_geschiedenis_worden_via" xml:space="preserve">
+    <value>Ask DJ berichten en geschiedenis worden via Home Assistant gesynchroniseerd. De Windows client cachet history lokaal voor performance; clear_revision vanuit Home Assistant is leidend voor volledig wissen.</value>
+  </data>
+  <data name="Xaml_Ask_DJ_geschiedenis_wissen" xml:space="preserve">
+    <value>⌫  Ask DJ geschiedenis wissen</value>
+  </data>
+  <data name="Xaml_Ask_DJ_geschiedenis_wissen_3" xml:space="preserve">
+    <value>⌫  Ask DJ geschiedenis wissen</value>
+  </data>
+  <data name="Xaml_Ask_DJ_lokale_cache_voor_snelle_weergave" xml:space="preserve">
+    <value>• Ask DJ lokale cache voor snelle weergave</value>
+  </data>
+  <data name="Xaml_Ask_DJ_tekst_voice_en_acties" xml:space="preserve">
+    <value>Ask DJ tekst, voice en acties</value>
+  </data>
+  <data name="Xaml_Assistant_only_systeemmeldingen_kunnen_versc" xml:space="preserve">
+    <value>Assistant-only systeemmeldingen kunnen verschijnen, bijvoorbeeld muziekcontext of history-retention. Audio responses verschijnen alleen als Home Assistant een audio_url teruggeeft.</value>
+  </data>
+  <data name="Xaml_Audio_opnieuw_afspelen" xml:space="preserve">
+    <value>Audio opnieuw afspelen</value>
+  </data>
+  <data name="Xaml_Backend" xml:space="preserve">
+    <value>Backend</value>
+  </data>
+  <data name="Xaml_Backend_3" xml:space="preserve">
+    <value>Backend</value>
+  </data>
+  <data name="Xaml_Backend_revision" xml:space="preserve">
+    <value>Version des données musicales</value>
+  </data>
+  <data name="Xaml_Backend_status" xml:space="preserve">
+    <value>État de la musique</value>
+  </data>
+  <data name="Xaml_Bedien_playback_volume_en_het_actieve_uitvoe" xml:space="preserve">
+    <value>Bedien playback, volume en het actieve uitvoerapparaat vanaf het hoofdscherm.</value>
+  </data>
+  <data name="Xaml_Bekijk_licentie" xml:space="preserve">
+    <value>▧  Bekijk licentie</value>
+  </data>
+  <data name="Xaml_Bekijk_online" xml:space="preserve">
+    <value>↗  Bekijk online</value>
+  </data>
+  <data name="Xaml_Bekijk_privacybeleid" xml:space="preserve">
+    <value>↗  Bekijk privacybeleid</value>
+  </data>
+  <data name="Xaml_Bekijk_third_party_notices" xml:space="preserve">
+    <value>▧  Bekijk third-party notices</value>
+  </data>
+  <data name="Xaml_Benodigde_range" xml:space="preserve">
+    <value>Benodigde range</value>
+  </data>
+  <data name="Xaml_Bericht" xml:space="preserve">
+    <value>Bericht</value>
+  </data>
+  <data name="Xaml_Blijft_beschikbaar" xml:space="preserve">
+    <value>Blijft beschikbaar</value>
+  </data>
+  <data name="Xaml_Build_channel" xml:space="preserve">
+    <value>Build channel</value>
+  </data>
+  <data name="Xaml_Build_channel_3" xml:space="preserve">
+    <value>Build channel</value>
+  </data>
+  <data name="Xaml_CREDITS" xml:space="preserve">
+    <value>CREDITS</value>
+  </data>
+  <data name="Xaml_Capabilities" xml:space="preserve">
+    <value>Capabilities</value>
+  </data>
+  <data name="Xaml_Chill" xml:space="preserve">
+    <value>Chill</value>
+  </data>
+  <data name="Xaml_Client_type" xml:space="preserve">
+    <value>Client type</value>
+  </data>
+  <data name="Xaml_Client_type_3" xml:space="preserve">
+    <value>Client type</value>
+  </data>
+  <data name="Xaml_Client_type_4" xml:space="preserve">
+    <value>Client type</value>
+  </data>
+  <data name="Xaml_Client_type_5" xml:space="preserve">
+    <value>Client type</value>
+  </data>
+  <data name="Xaml_Code_of_Conduct" xml:space="preserve">
+    <value>▧  Code of Conduct</value>
+  </data>
+  <data name="Xaml_Configuratie_pairing_permissions_en_diagnost" xml:space="preserve">
+    <value>Connexion, préférences de l’app, autorisations et journaux respectueux de la confidentialité. DJConnect n’envoie rien automatiquement.</value>
+  </data>
+  <data name="Xaml_Connectie" xml:space="preserve">
+    <value>Connectie</value>
+  </data>
+  <data name="Xaml_Context" xml:space="preserve">
+    <value>Context</value>
+  </data>
+  <data name="Xaml_Context_3" xml:space="preserve">
+    <value>Context</value>
+  </data>
+  <data name="Xaml_Copyright" xml:space="preserve">
+    <value>Copyright</value>
+  </data>
+  <data name="Xaml_Copyright_c_2026_Peter_van_Tol" xml:space="preserve">
+    <value>Copyright (c) 2026 Peter van Tol.</value>
+  </data>
+  <data name="Xaml_DIAGNOSTIEK" xml:space="preserve">
+    <value>DIAGNOSTIEK</value>
+  </data>
+  <data name="Xaml_DIAGNOSTIEK_3" xml:space="preserve">
+    <value>DIAGNOSTIEK</value>
+  </data>
+  <data name="Xaml_DJCONNECT_LICENTIE" xml:space="preserve">
+    <value>DJCONNECT LICENTIE</value>
+  </data>
+  <data name="Xaml_DJConnect" xml:space="preserve">
+    <value>DJConnect</value>
+  </data>
+  <data name="Xaml_DJConnect_3" xml:space="preserve">
+    <value>DJConnect</value>
+  </data>
+  <data name="Xaml_DJConnect_4" xml:space="preserve">
+    <value>DJConnect</value>
+  </data>
+  <data name="Xaml_DJConnect_5" xml:space="preserve">
+    <value>DJConnect</value>
+  </data>
+  <data name="Xaml_DJConnect_Windows_werkt_met_de_Home_Assistan" xml:space="preserve">
+    <value>DJConnect Windows fonctionne avec l’intégration DJConnect de Home Assistant. Home Assistant gère l’appairage, les jetons de l’app, l’accès Spotify, les commandes de lecture et Ask DJ.</value>
+  </data>
+  <data name="Xaml_DJConnect_bewaart_alleen_wat_nodig_is_om_dez" xml:space="preserve">
+    <value>DJConnect bewaart alleen wat nodig is om deze app met je Home Assistant DJConnect integration te koppelen.</value>
+  </data>
+  <data name="Xaml_DJConnect_device_token_na_pairing" xml:space="preserve">
+    <value>• DJConnect device-token na pairing</value>
+  </data>
+  <data name="Xaml_DJConnect_is_een_MIT_licensed_project_voor_h" xml:space="preserve">
+    <value>DJConnect is een MIT-licensed project voor het Home Assistant ecosystem.</value>
+  </data>
+  <data name="Xaml_DJConnect_koppelen" xml:space="preserve">
+    <value>DJConnect koppelen</value>
+  </data>
+  <data name="Xaml_DJConnect_uploadt_niets_automatisch" xml:space="preserve">
+    <value>DJConnect uploadt niets automatisch.</value>
+  </data>
+  <data name="Xaml_DJConnect_vraagt_niet_om_Spotify_credentials" xml:space="preserve">
+    <value>DJConnect vraagt niet om Spotify credentials.</value>
+  </data>
+  <data name="Xaml_De_Windows_client_bewaart_alleen_het_DJConne" xml:space="preserve">
+    <value>De Windows client bewaart alleen het DJConnect device-token na pairing. Spotify playback vereist Spotify Premium.</value>
+  </data>
+  <data name="Xaml_De_Windows_client_bewaart_alleen_lokale_apps" xml:space="preserve">
+    <value>De Windows client bewaart alleen lokale appstate en het DJConnect device-token na pairing. Spotify OAuth en playback credentials blijven in Home Assistant. Diagnostics/logs worden niet automatisch geüpload.</value>
+  </data>
+  <data name="Xaml_De_Windows_client_vraagt_niet_om_Spotify_log" xml:space="preserve">
+    <value>De Windows client vraagt niet om Spotify login of Home Assistant long-lived tokens.</value>
+  </data>
+  <data name="Xaml_De_app_is_mogelijk_gecrasht" xml:space="preserve">
+    <value>De app is mogelijk gecrasht</value>
+  </data>
+  <data name="Xaml_Demo_Mode_starten" xml:space="preserve">
+    <value>▶  Demo Mode starten</value>
+  </data>
+  <data name="Xaml_Demo_Mode_starten_3" xml:space="preserve">
+    <value>Demo Mode starten</value>
+  </data>
+  <data name="Xaml_Demo_Mode_stoppen" xml:space="preserve">
+    <value>Demo Mode stoppen</value>
+  </data>
+  <data name="Xaml_Demo_mode" xml:space="preserve">
+    <value>Demo mode</value>
+  </data>
+  <data name="Xaml_Demo_mode_3" xml:space="preserve">
+    <value>Demo mode</value>
+  </data>
+  <data name="Xaml_Device_ID" xml:space="preserve">
+    <value>Device ID</value>
+  </data>
+  <data name="Xaml_Diagnostische_gebeurtenissen_verschijnen_hie" xml:space="preserve">
+    <value>Diagnostische gebeurtenissen verschijnen hier.</value>
+  </data>
+  <data name="Xaml_Doorgaan" xml:space="preserve">
+    <value>Doorgaan</value>
+  </data>
+  <data name="Xaml_Energy" xml:space="preserve">
+    <value>Energy</value>
+  </data>
+  <data name="Xaml_Energy_×" xml:space="preserve">
+    <value>Energy  ×</value>
+  </data>
+  <data name="Xaml_Er_staat_nog_niets_klaar_om_af_te_spelen" xml:space="preserve">
+    <value>Er staat nog niets klaar om af te spelen.</value>
+  </data>
+  <data name="Xaml_Er_wordt_niets_automatisch_geüpload" xml:space="preserve">
+    <value>Er wordt niets automatisch geüpload.</value>
+  </data>
+  <data name="Xaml_Fast_path" xml:space="preserve">
+    <value>Fast path</value>
+  </data>
+  <data name="Xaml_Feedback_delen" xml:space="preserve">
+    <value>▱  Feedback delen</value>
+  </data>
+  <data name="Xaml_Feedback_delen_3" xml:space="preserve">
+    <value>▱  Feedback delen</value>
+  </data>
+  <data name="Xaml_Feedback_delen_4" xml:space="preserve">
+    <value>▱  Feedback delen</value>
+  </data>
+  <data name="Xaml_Feedback_delen_5" xml:space="preserve">
+    <value>Feedback delen</value>
+  </data>
+  <data name="Xaml_Feedback_delen_6" xml:space="preserve">
+    <value>Feedback delen</value>
+  </data>
+  <data name="Xaml_Firewall_settings" xml:space="preserve">
+    <value>▧  Firewall settings</value>
+  </data>
+  <data name="Xaml_GEGEVENS_WISSEN" xml:space="preserve">
+    <value>GEGEVENS WISSEN</value>
+  </data>
+  <data name="Xaml_Games" xml:space="preserve">
+    <value>☍  Games</value>
+  </data>
+  <data name="Xaml_Geblokkeerd" xml:space="preserve">
+    <value>Geblokkeerd</value>
+  </data>
+  <data name="Xaml_Gebruik_de_code_die_Home_Assistant_tijdens_D" xml:space="preserve">
+    <value>Gebruik de code die Home Assistant tijdens DJConnect app-pairing toont. Remote URLs worden pas na succesvolle lokale pairing gebruikt.</value>
+  </data>
+  <data name="Xaml_Gebruik_de_knoppen_tik_of_sleep_binnen_het_s" xml:space="preserve">
+    <value>Gebruik de knoppen, tik of sleep binnen het speelveld. Alles blijft lokaal en gebruikt Home Assistant niet.</value>
+  </data>
+  <data name="Xaml_Gebruik_of_sleep_de_paddle_Houd_de_bal_in_he" xml:space="preserve">
+    <value>Gebruik ↑/↓ of sleep de paddle. Houd de bal in het spel.</value>
+  </data>
+  <data name="Xaml_Geen_afspeellijsten" xml:space="preserve">
+    <value>Geen afspeellijsten</value>
+  </data>
+  <data name="Xaml_Geen_logs" xml:space="preserve">
+    <value>Geen logs</value>
+  </data>
+  <data name="Xaml_Geen_uitvoerapparaat_geselecteerd" xml:space="preserve">
+    <value>Geen uitvoerapparaat geselecteerd</value>
+  </data>
+  <data name="Xaml_Geen_uitvoerapparaat_geselecteerd_3" xml:space="preserve">
+    <value>Geen uitvoerapparaat geselecteerd</value>
+  </data>
+  <data name="Xaml_Geen_wachtrij" xml:space="preserve">
+    <value>Geen wachtrij</value>
+  </data>
+  <data name="Xaml_Geschiedenis" xml:space="preserve">
+    <value>Geschiedenis</value>
+  </data>
+  <data name="Xaml_Geselecteerd" xml:space="preserve">
+    <value>Geselecteerd</value>
+  </data>
+  <data name="Xaml_Geselecteerd_uitvoerapparaat_wanneer_beschik" xml:space="preserve">
+    <value>• Geselecteerd uitvoerapparaat wanneer beschikbaar</value>
+  </data>
+  <data name="Xaml_GitHub_project" xml:space="preserve">
+    <value>↗  GitHub project</value>
+  </data>
+  <data name="Xaml_Groove" xml:space="preserve">
+    <value>Groove</value>
+  </data>
+  <data name="Xaml_HA_integration" xml:space="preserve">
+    <value>⌂  HA integration</value>
+  </data>
+  <data name="Xaml_HA_lokale_URL" xml:space="preserve">
+    <value>HA lokale URL</value>
+  </data>
+  <data name="Xaml_HA_mode" xml:space="preserve">
+    <value>HA mode</value>
+  </data>
+  <data name="Xaml_HA_remote_URL" xml:space="preserve">
+    <value>HA remote URL</value>
+  </data>
+  <data name="Xaml_HA_verbinding" xml:space="preserve">
+    <value>HA verbinding</value>
+  </data>
+  <data name="Xaml_HOME_ASSISTANT_EN_ASK_DJ" xml:space="preserve">
+    <value>HOME ASSISTANT EN ASK DJ</value>
+  </data>
+  <data name="Xaml_Het_DJConnect_device_token_is_app_private_op" xml:space="preserve">
+    <value>Het DJConnect device-token is app-private opgeslagen. Remote transport wordt pas vanaf nu gebruikt als lokaal niet bereikbaar is.</value>
+  </data>
+  <data name="Xaml_Highscores_lokaal" xml:space="preserve">
+    <value>Highscores lokaal</value>
+  </data>
+  <data name="Xaml_Highscores_wissen" xml:space="preserve">
+    <value>Highscores wissen</value>
+  </data>
+  <data name="Xaml_Home_Assistant" xml:space="preserve">
+    <value>Home Assistant</value>
+  </data>
+  <data name="Xaml_Home_Assistant_3" xml:space="preserve">
+    <value>Home Assistant</value>
+  </data>
+  <data name="Xaml_Home_Assistant_gaf_nog_geen_afspeellijsten_t" xml:space="preserve">
+    <value>Home Assistant gaf nog geen afspeellijsten terug.</value>
+  </data>
+  <data name="Xaml_Home_Assistant_is_de_trusted_backend_voor_pa" xml:space="preserve">
+    <value>Home Assistant gère l’appairage, les jetons de l’app, l’accès Spotify, les commandes de lecture et Ask DJ.</value>
+  </data>
+  <data name="Xaml_Home_Assistant_is_de_trusted_backend_voor_pa_3" xml:space="preserve">
+    <value>Home Assistant gère l’appairage, les jetons de l’app, l’accès Spotify, les commandes de lecture et Ask DJ.</value>
+  </data>
+  <data name="Xaml_Home_Assistant_lokale_remote_URL_configurati" xml:space="preserve">
+    <value>• Home Assistant lokale/remote URL configuratie</value>
+  </data>
+  <data name="Xaml_Home_Assistant_long_lived_access_tokens" xml:space="preserve">
+    <value>• Home Assistant long-lived access tokens</value>
+  </data>
+  <data name="Xaml_Hulp" xml:space="preserve">
+    <value>Hulp</value>
+  </data>
+  <data name="Xaml_Installatie_loopt_via_Home_Assistant_Spotify" xml:space="preserve">
+    <value>Installatie loopt via Home Assistant. Spotify-weergave vereist Spotify Premium.</value>
+  </data>
+  <data name="Xaml_Instellingen" xml:space="preserve">
+    <value>⚙  Instellingen</value>
+  </data>
+  <data name="Xaml_Je_kunt_dit_later_uitschakelen_in_Instelling" xml:space="preserve">
+    <value>Je kunt dit later uitschakelen in Instellingen.</value>
+  </data>
+  <data name="Xaml_Je_kunt_privacy_safe_diagnostiek_kopiëren_of" xml:space="preserve">
+    <value>Je kunt privacy-safe diagnostiek kopiëren of een GitHub issue voorbereiden.</value>
+  </data>
+  <data name="Xaml_Juridisch" xml:space="preserve">
+    <value>▧  Juridisch</value>
+  </data>
+  <data name="Xaml_Juridisch_3" xml:space="preserve">
+    <value>▧  Juridisch</value>
+  </data>
+  <data name="Xaml_Juridisch_4" xml:space="preserve">
+    <value>▧  Juridisch</value>
+  </data>
+  <data name="Xaml_Juridisch_5" xml:space="preserve">
+    <value>Juridisch</value>
+  </data>
+  <data name="Xaml_Juridisch_online" xml:space="preserve">
+    <value>▧  Juridisch online</value>
+  </data>
+  <data name="Xaml_Kopieer_crashrapport" xml:space="preserve">
+    <value>⧉  Kopieer crashrapport</value>
+  </data>
+  <data name="Xaml_Kopieer_feedback" xml:space="preserve">
+    <value>⧉  Kopieer feedback</value>
+  </data>
+  <data name="Xaml_Kopieer_licentietekst" xml:space="preserve">
+    <value>⧉  Kopieer licentietekst</value>
+  </data>
+  <data name="Xaml_Kopieer_notices" xml:space="preserve">
+    <value>⧉  Kopieer notices</value>
+  </data>
+  <data name="Xaml_Koppel_met_Home_Assistant" xml:space="preserve">
+    <value>Koppel met Home Assistant</value>
+  </data>
+  <data name="Xaml_Koppelcode" xml:space="preserve">
+    <value>Koppelcode</value>
+  </data>
+  <data name="Xaml_LINKS" xml:space="preserve">
+    <value>LINKS</value>
+  </data>
+  <data name="Xaml_LINKS_3" xml:space="preserve">
+    <value>LINKS</value>
+  </data>
+  <data name="Xaml_LINKS_4" xml:space="preserve">
+    <value>LINKS</value>
+  </data>
+  <data name="Xaml_LOKAAL_BEWAARD" xml:space="preserve">
+    <value>LOKAAL BEWAARD</value>
+  </data>
+  <data name="Xaml_Licentie" xml:space="preserve">
+    <value>Licentie</value>
+  </data>
+  <data name="Xaml_Licentie_3" xml:space="preserve">
+    <value>▧  Licentie</value>
+  </data>
+  <data name="Xaml_Licenties_privacy_en_projectinformatie_voor" xml:space="preserve">
+    <value>Licenties, privacy en projectinformatie voor DJConnect.</value>
+  </data>
+  <data name="Xaml_Logniveau" xml:space="preserve">
+    <value>Logniveau</value>
+  </data>
+  <data name="Xaml_Logs" xml:space="preserve">
+    <value>▤  Logs</value>
+  </data>
+  <data name="Xaml_Logs_3" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="Xaml_Logs_4" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="Xaml_Logs_5" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="Xaml_Logs_blijven_lokaal_Kopiëren_gebruikt_redact" xml:space="preserve">
+    <value>Logs blijven lokaal. Kopiëren gebruikt redaction voor bearer tokens, pairing codes, bootstrap proofs, Authorization headers, private URLs, push tokens, cookies en secrets.</value>
+  </data>
+  <data name="Xaml_Logs_kopiëren" xml:space="preserve">
+    <value>⧉  Logs kopiëren</value>
+  </data>
+  <data name="Xaml_Logs_kopiëren_3" xml:space="preserve">
+    <value>⧉  Logs kopiëren</value>
+  </data>
+  <data name="Xaml_Logs_kopiëren_4" xml:space="preserve">
+    <value>⧉  Logs kopiëren</value>
+  </data>
+  <data name="Xaml_Logs_openen" xml:space="preserve">
+    <value>▤  Logs openen</value>
+  </data>
+  <data name="Xaml_Logs_openen_3" xml:space="preserve">
+    <value>▤  Logs openen</value>
+  </data>
+  <data name="Xaml_Logs_wissen" xml:space="preserve">
+    <value>Logs wissen</value>
+  </data>
+  <data name="Xaml_Logs_wissen_3" xml:space="preserve">
+    <value>⌫  Logs wissen</value>
+  </data>
+  <data name="Xaml_Logs_wissen_4" xml:space="preserve">
+    <value>⌫  Logs wissen</value>
+  </data>
+  <data name="Xaml_Logs_wissen_5" xml:space="preserve">
+    <value>⌫  Logs wissen</value>
+  </data>
+  <data name="Xaml_Logs_worden_vóór_kopiëren_geredigeerd_Secret" xml:space="preserve">
+    <value>Logs worden vóór kopiëren geredigeerd. Secrets worden nooit automatisch geüpload.</value>
+  </data>
+  <data name="Xaml_Lokaal_netwerk_firewall_Nodig_om_Home_Assist" xml:space="preserve">
+    <value>Lokaal netwerk/firewall
+Nodig om Home Assistant lokaal te bereiken.</value>
+  </data>
+  <data name="Xaml_Lokaal_netwerk_firewall_Nodig_voor_pairing_m" xml:space="preserve">
+    <value>Lokaal netwerk / firewall
+Nodig voor pairing met Home Assistant op hetzelfde LAN.</value>
+  </data>
+  <data name="Xaml_Lokale_Home_Assistant_URL" xml:space="preserve">
+    <value>Lokale Home Assistant URL</value>
+  </data>
+  <data name="Xaml_Lokale_audio_replay" xml:space="preserve">
+    <value>Lokale audio replay</value>
+  </data>
+  <data name="Xaml_Lokale_diagnostics_logs" xml:space="preserve">
+    <value>• Lokale diagnostics/logs</value>
+  </data>
+  <data name="Xaml_Lokale_diagnostiek_Kopiëren_en_preview_gebru" xml:space="preserve">
+    <value>Lokale diagnostiek. Kopiëren en preview gebruiken redaction; er wordt niets automatisch geüpload.</value>
+  </data>
+  <data name="Xaml_Lokale_pairing_doorgaan" xml:space="preserve">
+    <value>Lokale pairing doorgaan</value>
+  </data>
+  <data name="Xaml_Lokale_spelletjes_voor_tussendoor_Ze_gebruik" xml:space="preserve">
+    <value>Lokale spelletjes voor tussendoor. Ze gebruiken Home Assistant niet.</value>
+  </data>
+  <data name="Xaml_MIT_License" xml:space="preserve">
+    <value>MIT License</value>
+  </data>
+  <data name="Xaml_Maze_Chase_High_0" xml:space="preserve">
+    <value>▦  Maze Chase
+High 0</value>
+  </data>
+  <data name="Xaml_Meer_over_privacy" xml:space="preserve">
+    <value>♧  Meer over privacy</value>
+  </data>
+  <data name="Xaml_Meteor_Run_High_0" xml:space="preserve">
+    <value>☄  Meteor Run
+High 0</value>
+  </data>
+  <data name="Xaml_Microfoon_Alleen_nodig_voor_Ask_DJ_voice_pus" xml:space="preserve">
+    <value>Microfoon
+Alleen nodig voor Ask DJ voice/push-to-talk.</value>
+  </data>
+  <data name="Xaml_Microfoon_Nodig_voor_push_to_talk_muziekverz" xml:space="preserve">
+    <value>Microfoon
+Nodig voor push-to-talk muziekverzoeken.</value>
+  </data>
+  <data name="Xaml_Microfoon_en_spraakherkenningstoestemming_ku" xml:space="preserve">
+    <value>Microfoon- en spraakherkenningstoestemming kunnen worden gevraagd.</value>
+  </data>
+  <data name="Xaml_Microfoon_toestaan" xml:space="preserve">
+    <value>Microfoon toestaan</value>
+  </data>
+  <data name="Xaml_Microsoft_terms" xml:space="preserve">
+    <value>Microsoft terms</value>
+  </data>
+  <data name="Xaml_Mini_games" xml:space="preserve">
+    <value>Mini-games</value>
+  </data>
+  <data name="Xaml_Mood" xml:space="preserve">
+    <value>Mood</value>
+  </data>
+  <data name="Xaml_Mood_3" xml:space="preserve">
+    <value>Mood</value>
+  </data>
+  <data name="Xaml_Mood_stuurt_Ask_DJ_s_aanbevelingen_van_rusti" xml:space="preserve">
+    <value>Mood stuurt Ask DJ's aanbevelingen, van rustigere tracks tot energiekere keuzes.</value>
+  </data>
+  <data name="Xaml_Music_backend" xml:space="preserve">
+    <value>Service musical</value>
+  </data>
+  <data name="Xaml_NET_MAUI_platform_frameworks" xml:space="preserve">
+    <value>.NET MAUI / platform frameworks</value>
+  </data>
+  <data name="Xaml_NIET_BEWAARD" xml:space="preserve">
+    <value>NIET BEWAARD</value>
+  </data>
+  <data name="Xaml_Niet_nu" xml:space="preserve">
+    <value>Niet nu</value>
+  </data>
+  <data name="Xaml_Niet_nu_3" xml:space="preserve">
+    <value>Niet nu</value>
+  </data>
+  <data name="Xaml_Niet_nu_4" xml:space="preserve">
+    <value>Niet nu</value>
+  </data>
+  <data name="Xaml_Notificaties_Alleen_voor_meldingen_indien_on" xml:space="preserve">
+    <value>Notificaties
+Alleen voor meldingen indien ondersteund.</value>
+  </data>
+  <data name="Xaml_Notificaties_Voor_Windows_toast_meldingen_wa" xml:space="preserve">
+    <value>Notificaties
+Voor Windows toast-meldingen wanneer ondersteund.</value>
+  </data>
+  <data name="Xaml_Notificaties_toestaan" xml:space="preserve">
+    <value>Notificaties toestaan</value>
+  </data>
+  <data name="Xaml_Notification_settings" xml:space="preserve">
+    <value>🔔  Notification settings</value>
+  </data>
+  <data name="Xaml_OS" xml:space="preserve">
+    <value>OS</value>
+  </data>
+  <data name="Xaml_OpenAI_API_keys" xml:space="preserve">
+    <value>• OpenAI/API keys</value>
+  </data>
+  <data name="Xaml_Open_GitHub_issue" xml:space="preserve">
+    <value>↗  Open GitHub issue</value>
+  </data>
+  <data name="Xaml_Open_GitHub_issue_3" xml:space="preserve">
+    <value>↗  Open GitHub issue</value>
+  </data>
+  <data name="Xaml_Open_Home_Assistant_Integraties_DJConnect_st" xml:space="preserve">
+    <value>Open Home Assistant &gt; Integraties &gt; DJConnect, start app-pairing en vul de getoonde code hier in. Zorg dat Windows en Home Assistant op hetzelfde lokale netwerk zitten.</value>
+  </data>
+  <data name="Xaml_Open_Logs" xml:space="preserve">
+    <value>▤  Open Logs</value>
+  </data>
+  <data name="Xaml_Open_Privacy_scherm" xml:space="preserve">
+    <value>♧  Open Privacy scherm</value>
+  </data>
+  <data name="Xaml_Open_firewall_instellingen" xml:space="preserve">
+    <value>Open firewall instellingen</value>
+  </data>
+  <data name="Xaml_Open_updatepagina" xml:space="preserve">
+    <value>↗  Open updatepagina</value>
+  </data>
+  <data name="Xaml_Opnieuw" xml:space="preserve">
+    <value>↻  Opnieuw</value>
+  </data>
+  <data name="Xaml_Opnieuw_koppelen_wist_het_lokale_DJConnect_d" xml:space="preserve">
+    <value>Opnieuw koppelen wist het lokale DJConnect device-token, roteert clientidentiteit en pairing code, en opent de lokale Home Assistant pairing flow opnieuw.</value>
+  </data>
+  <data name="Xaml_Opslaan" xml:space="preserve">
+    <value>Opslaan</value>
+  </data>
+  <data name="Xaml_Opt_in_Tokens_pairing_codes_en_private_waard" xml:space="preserve">
+    <value>Opt-in. Tokens, pairing codes en private waarden worden vóór preview, kopiëren en openen geredigeerd.</value>
+  </data>
+  <data name="Xaml_Output_wijzigen" xml:space="preserve">
+    <value>Output wijzigen</value>
+  </data>
+  <data name="Xaml_Over" xml:space="preserve">
+    <value>ⓘ  Over</value>
+  </data>
+  <data name="Xaml_Overslaan" xml:space="preserve">
+    <value>Overslaan</value>
+  </data>
+  <data name="Xaml_PERMISSIONS" xml:space="preserve">
+    <value>PERMISSIONS</value>
+  </data>
+  <data name="Xaml_PERMISSIONS_3" xml:space="preserve">
+    <value>PERMISSIONS</value>
+  </data>
+  <data name="Xaml_Paddle_Rally" xml:space="preserve">
+    <value>Paddle Rally</value>
+  </data>
+  <data name="Xaml_Paddle_Rally_High_0" xml:space="preserve">
+    <value>▭  Paddle Rally
+High 0</value>
+  </data>
+  <data name="Xaml_Pairing" xml:space="preserve">
+    <value>Pairing</value>
+  </data>
+  <data name="Xaml_Pairing_3" xml:space="preserve">
+    <value>Pairing</value>
+  </data>
+  <data name="Xaml_Pairing_reset_handmatig_via_Settings" xml:space="preserve">
+    <value>Pairing reset handmatig via Settings</value>
+  </data>
+  <data name="Xaml_Pairing_status" xml:space="preserve">
+    <value>Pairing status</value>
+  </data>
+  <data name="Xaml_Party" xml:space="preserve">
+    <value>Party</value>
+  </data>
+  <data name="Xaml_Pauze" xml:space="preserve">
+    <value>Ⅱ  Pauze</value>
+  </data>
+  <data name="Xaml_Platform" xml:space="preserve">
+    <value>Platform</value>
+  </data>
+  <data name="Xaml_Platform_3" xml:space="preserve">
+    <value>Platform</value>
+  </data>
+  <data name="Xaml_Playback_controls" xml:space="preserve">
+    <value>Playback controls</value>
+  </data>
+  <data name="Xaml_Playback_start_is_geblokkeerd_zolang_geen_ui" xml:space="preserve">
+    <value>Playback-start is geblokkeerd zolang geen uitvoerapparaat is geselecteerd.</value>
+  </data>
+  <data name="Xaml_Playlist_starten" xml:space="preserve">
+    <value>Playlist starten</value>
+  </data>
+  <data name="Xaml_Preview" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Xaml_Preview_3" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Xaml_Preview_4" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Xaml_Preview_5" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="Xaml_Privacy" xml:space="preserve">
+    <value>♧  Privacy</value>
+  </data>
+  <data name="Xaml_Privacy_3" xml:space="preserve">
+    <value>♧  Privacy</value>
+  </data>
+  <data name="Xaml_Privacy_4" xml:space="preserve">
+    <value>♧  Privacy</value>
+  </data>
+  <data name="Xaml_Privacy_en_Juridisch" xml:space="preserve">
+    <value>Privacy en Juridisch</value>
+  </data>
+  <data name="Xaml_Privacy_safe_logs_toevoegen" xml:space="preserve">
+    <value>Privacy-safe logs toevoegen</value>
+  </data>
+  <data name="Xaml_Privacy_settings" xml:space="preserve">
+    <value>🎙  Privacy settings</value>
+  </data>
+  <data name="Xaml_Privacybeleid" xml:space="preserve">
+    <value>↗  Privacybeleid</value>
+  </data>
+  <data name="Xaml_Probeer_opnieuw" xml:space="preserve">
+    <value>↻  Probeer opnieuw</value>
+  </data>
+  <data name="Xaml_Project" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="Xaml_Project_repo" xml:space="preserve">
+    <value>↗  Project repo</value>
+  </data>
+  <data name="Xaml_Protocol" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="Xaml_Protocol_3" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="Xaml_Protocol_4" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="Xaml_Protocol_5" xml:space="preserve">
+    <value>Protocol</value>
+  </data>
+  <data name="Xaml_Push_to_talk_en_tekstchat_blijven_beschikbaa" xml:space="preserve">
+    <value>Push-to-talk en tekstchat blijven beschikbaar zonder wakeword. Stemactivatie start geen achtergrondluisteren in deze build.</value>
+  </data>
+  <data name="Xaml_Queue_starten" xml:space="preserve">
+    <value>Queue starten</value>
+  </data>
+  <data name="Xaml_Raw_secrets_in_diagnostics" xml:space="preserve">
+    <value>• Raw secrets in diagnostics</value>
+  </data>
+  <data name="Xaml_Remote_support" xml:space="preserve">
+    <value>Remote support</value>
+  </data>
+  <data name="Xaml_Runtime" xml:space="preserve">
+    <value>État de connexion</value>
+  </data>
+  <data name="Xaml_Runtime_3" xml:space="preserve">
+    <value>Runtime</value>
+  </data>
+  <data name="Xaml_Runtime_4" xml:space="preserve">
+    <value>Runtime</value>
+  </data>
+  <data name="Xaml_SDK_platform" xml:space="preserve">
+    <value>SDK/platform</value>
+  </data>
+  <data name="Xaml_SETUP_EN_HELP" xml:space="preserve">
+    <value>SETUP EN HELP</value>
+  </data>
+  <data name="Xaml_SPOTIFY" xml:space="preserve">
+    <value>SPOTIFY</value>
+  </data>
+  <data name="Xaml_Score_0_High_0" xml:space="preserve">
+    <value>Score 0   High 0</value>
+  </data>
+  <data name="Xaml_Security" xml:space="preserve">
+    <value>⚑  Security</value>
+  </data>
+  <data name="Xaml_Security_3" xml:space="preserve">
+    <value>⚑  Security</value>
+  </data>
+  <data name="Xaml_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Xaml_Setup_loopt_via_de_Home_Assistant_DJConnect" xml:space="preserve">
+    <value>La configuration passe par l’intégration DJConnect de Home Assistant. Après l’appairage, Windows utilise automatiquement la meilleure connexion Home Assistant disponible.</value>
+  </data>
+  <data name="Xaml_Sky_Dash_High_0" xml:space="preserve">
+    <value>✦  Sky Dash
+High 0</value>
+  </data>
+  <data name="Xaml_Sonos_backend_credentials" xml:space="preserve">
+    <value>• Identifiants Sonos/service musical</value>
+  </data>
+  <data name="Xaml_Sources_diagnostics" xml:space="preserve">
+    <value>Sources / diagnostics</value>
+  </data>
+  <data name="Xaml_Speelt_Nu" xml:space="preserve">
+    <value>♪  Speelt Nu</value>
+  </data>
+  <data name="Xaml_Speelt_Nu_3" xml:space="preserve">
+    <value>Speelt Nu</value>
+  </data>
+  <data name="Xaml_Speelt_Nu_4" xml:space="preserve">
+    <value>♪  Speelt Nu</value>
+  </data>
+  <data name="Xaml_Spotify_OAuth_refresh_access_tokens" xml:space="preserve">
+    <value>• Spotify OAuth refresh/access tokens</value>
+  </data>
+  <data name="Xaml_Spotify_is_een_handelsmerk_van_Spotify_AB_DJ" xml:space="preserve">
+    <value>Spotify is een handelsmerk van Spotify AB. DJConnect is niet gelieerd aan, goedgekeurd door of gesponsord door Spotify AB.</value>
+  </data>
+  <data name="Xaml_Spotify_is_een_handelsmerk_van_Spotify_AB_DJ_3" xml:space="preserve">
+    <value>Spotify is een handelsmerk van Spotify AB. DJConnect is niet gelieerd aan, goedgekeurd door of gesponsord door Spotify AB.</value>
+  </data>
+  <data name="Xaml_Spotify_is_een_handelsmerk_van_Spotify_AB_DJ_4" xml:space="preserve">
+    <value>Spotify is een handelsmerk van Spotify AB. DJConnect is niet gelieerd aan, goedgekeurd door of gesponsord door Spotify AB.</value>
+  </data>
+  <data name="Xaml_Spotify_login_en_playback_backend_credential" xml:space="preserve">
+    <value>La connexion Spotify et les identifiants du service musical restent dans Home Assistant. Les diagnostics et journaux ne sont pas envoyés automatiquement.</value>
+  </data>
+  <data name="Xaml_Spotify_wachtwoord" xml:space="preserve">
+    <value>• Spotify wachtwoord</value>
+  </data>
+  <data name="Xaml_Stabiele_lokale_clientidentiteit_device_id" xml:space="preserve">
+    <value>• Stabiele lokale clientidentiteit/device id</value>
+  </data>
+  <data name="Xaml_Start" xml:space="preserve">
+    <value>▶  Start</value>
+  </data>
+  <data name="Xaml_Start_Ask_DJ_handsfree_met_Hey_DJ_terwijl_DJ" xml:space="preserve">
+    <value>Start Ask DJ handsfree met “Hey DJ” terwijl DJConnect open is.</value>
+  </data>
+  <data name="Xaml_Start_setup" xml:space="preserve">
+    <value>↗  Start/setup</value>
+  </data>
+  <data name="Xaml_Start_setup_3" xml:space="preserve">
+    <value>↗  Start/setup</value>
+  </data>
+  <data name="Xaml_Start_setup_openen" xml:space="preserve">
+    <value>↗  Start/setup openen</value>
+  </data>
+  <data name="Xaml_Status" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Xaml_Stemactivatie" xml:space="preserve">
+    <value>Stemactivatie</value>
+  </data>
+  <data name="Xaml_Stemactivatie_inschakelen" xml:space="preserve">
+    <value>Stemactivatie inschakelen?</value>
+  </data>
+  <data name="Xaml_Stemactivatie_inschakelen_3" xml:space="preserve">
+    <value>🎙  Stemactivatie inschakelen</value>
+  </data>
+  <data name="Xaml_Stemactivatie_werkt_alleen_terwijl_de_app_op" xml:space="preserve">
+    <value>Stemactivatie werkt alleen terwijl de app open is. Push-to-talk blijft beschikbaar zonder wakeword; tekstchat blijft beschikbaar zonder microfoon.</value>
+  </data>
+  <data name="Xaml_Succesvol_gekoppeld" xml:space="preserve">
+    <value>Succesvol gekoppeld</value>
+  </data>
+  <data name="Xaml_THIRD_PARTY_NOTICES" xml:space="preserve">
+    <value>THIRD-PARTY NOTICES</value>
+  </data>
+  <data name="Xaml_Taal" xml:space="preserve">
+    <value>Taal</value>
+  </data>
+  <data name="Xaml_Target_player" xml:space="preserve">
+    <value>Target player</value>
+  </data>
+  <data name="Xaml_Tik_of_klik_om_te_spelen" xml:space="preserve">
+    <value>▶  Tik of klik om te spelen</value>
+  </data>
+  <data name="Xaml_Track_Insight" xml:space="preserve">
+    <value>Track Insight</value>
+  </data>
+  <data name="Xaml_Type" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="Xaml_UITVOER_EN_PLAYBACK" xml:space="preserve">
+    <value>UITVOER EN PLAYBACK</value>
+  </data>
+  <data name="Xaml_Uitvoerapparaat" xml:space="preserve">
+    <value>Uitvoerapparaat</value>
+  </data>
+  <data name="Xaml_Uitvoerapparaat_3" xml:space="preserve">
+    <value>Uitvoerapparaat</value>
+  </data>
+  <data name="Xaml_VERBINDING" xml:space="preserve">
+    <value>VERBINDING</value>
+  </data>
+  <data name="Xaml_Vernieuwen" xml:space="preserve">
+    <value>↻  Vernieuwen</value>
+  </data>
+  <data name="Xaml_Vertel_wat_beter_kan_of_kopieer_een_privacy" xml:space="preserve">
+    <value>Vertel wat beter kan of kopieer een privacy-safe bugreport.</value>
+  </data>
+  <data name="Xaml_Volgende" xml:space="preserve">
+    <value>›  Volgende</value>
+  </data>
+  <data name="Xaml_Volledig_lokaal_voor_UI_inspectie_Demo_mode" xml:space="preserve">
+    <value>Volledig lokaal voor UI-inspectie. Demo mode belt Home Assistant niet en slaat geen bearer token op.</value>
+  </data>
+  <data name="Xaml_Voorkeuren_zoals_taal_logniveau_audio_replay" xml:space="preserve">
+    <value>• Voorkeuren zoals taal, logniveau, audio replay, demo en onboarding</value>
+  </data>
+  <data name="Xaml_Vorige" xml:space="preserve">
+    <value>‹  Vorige</value>
+  </data>
+  <data name="Xaml_Vul_of_scan_de_code_uit_Home_Assistant_terwi" xml:space="preserve">
+    <value>Vul of scan de code uit Home Assistant terwijl dit apparaat en Home Assistant op hetzelfde LAN zitten.</value>
+  </data>
+  <data name="Xaml_Vul_of_scan_de_code_uit_Home_Assistant_terwi_3" xml:space="preserve">
+    <value>Vul of scan de code uit Home Assistant terwijl dit apparaat en Home Assistant op hetzelfde LAN zitten.</value>
+  </data>
+  <data name="Xaml_Wachtrij" xml:space="preserve">
+    <value>☰  Wachtrij</value>
+  </data>
+  <data name="Xaml_Wake_phrase" xml:space="preserve">
+    <value>Wake phrase</value>
+  </data>
+  <data name="Xaml_Wat_gebeurde_er_Wat_verwachtte_je" xml:space="preserve">
+    <value>Wat gebeurde er? Wat verwachtte je?</value>
+  </data>
+  <data name="Xaml_Wat_is_er_nieuw" xml:space="preserve">
+    <value>✦  Wat is er nieuw</value>
+  </data>
+  <data name="Xaml_Website" xml:space="preserve">
+    <value>Website</value>
+  </data>
+  <data name="Xaml_Website_3" xml:space="preserve">
+    <value>↗  Website</value>
+  </data>
+  <data name="Xaml_Website_start" xml:space="preserve">
+    <value>↗  Website/start</value>
+  </data>
+  <data name="Xaml_WiFi_wachtwoorden" xml:space="preserve">
+    <value>• WiFi wachtwoorden</value>
+  </data>
+  <data name="Xaml_Windows_client_voor_de_Home_Assistant_DJConn" xml:space="preserve">
+    <value>Windows client voor de Home Assistant DJConnect integration.</value>
+  </data>
+  <data name="Xaml_Zoek_afspeellijsten" xml:space="preserve">
+    <value>Zoek afspeellijsten</value>
+  </data>
+  <data name="Xaml_Zoek_in_logs" xml:space="preserve">
+    <value>Zoek in logs</value>
+  </data>
+  <data name="Vm_UpdateRequiredSubtitle" xml:space="preserve">
+    <value>Mettez DJConnect à jour avant de continuer.</value>
+  </data>
+  <data name="Vm_UpdateRequiredDetail" xml:space="preserve">
+    <value>L’application et l’intégration Home Assistant DJConnect utilisent des versions de protocole différentes.</value>
+  </data>
+  <data name="Vm_PermissionIntro" xml:space="preserve">
+    <value>DJConnect ne demande une autorisation que lorsqu’une fonction en a besoin.</value>
+  </data>
+  <data name="Vm_PermissionMicrophonePrimary" xml:space="preserve">
+    <value>Le microphone est nécessaire pour les demandes vocales Ask DJ.</value>
+  </data>
+  <data name="Vm_PermissionNotificationsPrimary" xml:space="preserve">
+    <value>Les notifications sont nécessaires pour afficher les messages DJConnect sous forme de notifications Windows.</value>
+  </data>
+  <data name="Vm_PermissionLocalNetworkPrimary" xml:space="preserve">
+    <value>Pour l’appairage, cette app doit pouvoir joindre Home Assistant sur votre réseau local.</value>
+  </data>
+  <data name="Vm_PermissionMicrophoneSecondary" xml:space="preserve">
+    <value>Le chat texte et les commandes musicales fonctionnent aussi sans microphone.</value>
+  </data>
+  <data name="Vm_PermissionNotificationsSecondary" xml:space="preserve">
+    <value>Vous pouvez modifier cela plus tard dans les paramètres de notifications Windows.</value>
+  </data>
+  <data name="Vm_PermissionLocalNetworkSecondary" xml:space="preserve">
+    <value>Windows peut demander si DJConnect peut utiliser l’accès réseau.</value>
+  </data>
+  <data name="Vm_PermissionMicrophoneTertiary" xml:space="preserve">
+    <value>Vous pouvez modifier cela plus tard dans les paramètres de confidentialité Windows.</value>
+  </data>
+  <data name="Vm_PermissionLocalNetworkTertiary" xml:space="preserve">
+    <value>L’utilisation à distance devient disponible après l’appairage si Home Assistant fournit une URL Nabu Casa ou HTTPS externe.</value>
+  </data>
+  <data name="Vm_DemoAskDJAnswer" xml:space="preserve">
+    <value>Démo : Ask DJ donne de vraies réponses dès que Home Assistant est appairé. Je récupérerais le contexte musical, des recommandations et des actions via votre intégration DJConnect.</value>
+  </data>
+  <data name="Vm_WhatsNewLoadFailedBody" xml:space="preserve">
+    <value>Les notes de version n’ont pas pu être chargées. Consultez https://djconnect.dev pour plus d’informations.</value>
+  </data>
+  <data name="Format_UpdateRequiredMessage" xml:space="preserve">
+    <value>Mettez DJConnect à jour avant de continuer. Cette app nécessite Home Assistant DJConnect {0}.x.</value>
+  </data>
+  <data name="Vm_NotificationsNotActiveYet" xml:space="preserve">
+    <value>Les notifications toast Windows ne sont pas encore actives dans cette version.</value>
+  </data>
+  <data name="CodeBehind_WelcomeNowPlayingTitle" xml:space="preserve">
+    <value>Lecture en cours</value>
+  </data>
+  <data name="CodeBehind_WelcomeNowPlayingBody" xml:space="preserve">
+    <value>Contrôlez la lecture, le volume et la sortie active depuis l’écran principal.</value>
+  </data>
+  <data name="CodeBehind_WelcomeAskDJTitle" xml:space="preserve">
+    <value>Ask DJ</value>
+  </data>
+  <data name="CodeBehind_WelcomeAskDJBody" xml:space="preserve">
+    <value>Demandez de la musique, du contexte ou une réponse vocale. DJConnect synchronise l’historique du chat via Home Assistant.</value>
+  </data>
+  <data name="CodeBehind_WelcomeTrackInsightTitle" xml:space="preserve">
+    <value>Track Insight</value>
+  </data>
+  <data name="CodeBehind_WelcomeTrackInsightBody" xml:space="preserve">
+    <value>Analysez le morceau actuel selon l’ambiance, l’énergie, le genre et les détails musicaux lorsque Home Assistant dispose de données fournisseur.</value>
+  </data>
+  <data name="CodeBehind_WelcomeQueueTitle" xml:space="preserve">
+    <value>File d’attente</value>
+  </data>
+  <data name="CodeBehind_WelcomeQueueBody" xml:space="preserve">
+    <value>Voyez ce qui arrive ensuite et lancez les éléments de file d’attente lorsque Home Assistant renvoie des actions lisibles.</value>
+  </data>
+  <data name="CodeBehind_WelcomeMiniGamesTitle" xml:space="preserve">
+    <value>Mini-jeux</value>
+  </data>
+  <data name="CodeBehind_WelcomeMiniGamesBody" xml:space="preserve">
+    <value>Jouez à des mini-jeux locaux tout en gardant DJConnect prêt pour votre installation musicale.</value>
+  </data>
+  <data name="CodeBehind_WelcomeSetupHint" xml:space="preserve">
+    <value>La configuration passe par Home Assistant. La lecture Spotify nécessite Spotify Premium.</value>
+  </data>
+  <data name="CodeBehind_WelcomeSkip" xml:space="preserve">
+    <value>Ignorer</value>
+  </data>
+  <data name="CodeBehind_WelcomePrevious" xml:space="preserve">
+    <value>‹  Précédent</value>
+  </data>
+  <data name="CodeBehind_WelcomeNext" xml:space="preserve">
+    <value>›  Suivant</value>
+  </data>
+  <data name="CodeBehind_WelcomeStart" xml:space="preserve">
+    <value>Commencer !</value>
+  </data>
+  <data name="CodeBehind_ClearHighscoresTitle" xml:space="preserve">
+    <value>Effacer les meilleurs scores</value>
+  </data>
+  <data name="CodeBehind_ClearHighscoresMessage" xml:space="preserve">
+    <value>Effacer tous les meilleurs scores locaux des mini-jeux ?</value>
+  </data>
+  <data name="CodeBehind_ClearAction" xml:space="preserve">
+    <value>Effacer</value>
+  </data>
+  <data name="CodeBehind_NotNowAction" xml:space="preserve">
+    <value>Pas maintenant</value>
+  </data>
+  <data name="CodeBehind_GamePaddleTitle" xml:space="preserve">
+    <value>Paddle Rally</value>
+  </data>
+  <data name="CodeBehind_GameMeteorTitle" xml:space="preserve">
+    <value>Meteor Run</value>
+  </data>
+  <data name="CodeBehind_GameSkyTitle" xml:space="preserve">
+    <value>Sky Dash</value>
+  </data>
+  <data name="CodeBehind_GameMazeTitle" xml:space="preserve">
+    <value>Maze Chase</value>
+  </data>
+  <data name="CodeBehind_GamePaddleHint" xml:space="preserve">
+    <value>Utilisez ↑/↓ ou faites glisser la raquette. Gardez la balle en jeu.</value>
+  </data>
+  <data name="CodeBehind_GameMeteorHint" xml:space="preserve">
+    <value>Utilisez ←/→ ou faites glisser votre vaisseau. Évitez les météores.</value>
+  </data>
+  <data name="CodeBehind_GameSkyHint" xml:space="preserve">
+    <value>Touchez ou appuyez sur Espace pour accélérer. Passez les obstacles.</value>
+  </data>
+  <data name="CodeBehind_GameMazeHint" xml:space="preserve">
+    <value>Utilisez les flèches/WASD ou cliquez une direction. Collectez des points et évitez le poursuivant.</value>
+  </data>
+  <data name="Format_GameScore" xml:space="preserve">
+    <value>Score {0}   Record {1}</value>
+  </data>
+  <data name="Format_GameHighscores" xml:space="preserve">
+    <value>Meilleurs scores : {0} / {1} / {2} / {3}</value>
+  </data>
+  <data name="Format_GameChoice" xml:space="preserve">
+    <value>{0}  {1}
+Record {2}</value>
+  </data>
+  <data name="CodeBehind_GameOverRestart" xml:space="preserve">
+    <value>↻  Game over - recommencer</value>
+  </data>
+  <data name="CodeBehind_GameStart" xml:space="preserve">
+    <value>▶  Touchez ou cliquez pour jouer</value>
+  </data>
+  <data name="CodeBehind_GameScoreLabel" xml:space="preserve">
+    <value>Score</value>
+  </data>
+  <data name="CodeBehind_GameHighLabel" xml:space="preserve">
+    <value>Record</value>
+  </data>
+  <data name="CodeBehind_GamePaused" xml:space="preserve">
+    <value>Pause</value>
+  </data>
+  <data name="CodeBehind_GameOver" xml:space="preserve">
+    <value>Game over</value>
+  </data>
+  <data name="CodeBehind_MitLicenseTitle" xml:space="preserve">
+    <value>Licence MIT</value>
+  </data>
+  <data name="CodeBehind_CloseAction" xml:space="preserve">
+    <value>Fermer</value>
+  </data>
+  <data name="CodeBehind_LicenseTitle" xml:space="preserve">
+    <value>Licence</value>
+  </data>
+  <data name="CodeBehind_LicenseCopiedMessage" xml:space="preserve">
+    <value>Licence copiée</value>
+  </data>
+  <data name="CodeBehind_OkAction" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="CodeBehind_ThirdPartyNoticesTitle" xml:space="preserve">
+    <value>Mentions tierces</value>
+  </data>
+  <data name="CodeBehind_NoticesTitle" xml:space="preserve">
+    <value>Mentions</value>
+  </data>
+  <data name="CodeBehind_NoticesCopiedMessage" xml:space="preserve">
+    <value>Mentions copiées</value>
+  </data>
+  <data name="CodeBehind_ResetPairingTitle" xml:space="preserve">
+    <value>Appairer à nouveau l’app</value>
+  </data>
+  <data name="CodeBehind_ResetPairingMessage" xml:space="preserve">
+    <value>Cela efface l’appairage DJConnect local et renouvelle l’identité client. Appairez ensuite à nouveau via Home Assistant.</value>
+  </data>
+  <data name="CodeBehind_ResetPairingAction" xml:space="preserve">
+    <value>Appairer à nouveau</value>
+  </data>
+  <data name="CodeBehind_CancelAction" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="CodeBehind_ClearLogsTitle" xml:space="preserve">
+    <value>Effacer les journaux</value>
+  </data>
+  <data name="CodeBehind_ClearLogsMessage" xml:space="preserve">
+    <value>Cela efface les diagnostics locaux visibles dans l’app.</value>
+  </data>
+  <data name="CodeBehind_ClearLogsAction" xml:space="preserve">
+    <value>Effacer les journaux</value>
+  </data>
+  <data name="CodeBehind_ClearAskDJHistoryTitle" xml:space="preserve">
+    <value>Effacer l’historique Ask DJ</value>
+  </data>
+  <data name="CodeBehind_ClearAskDJHistoryMessage" xml:space="preserve">
+    <value>En mode démo, le cache local est effacé. Une fois appairé, DJConnect demande à Home Assistant d’effacer l’historique.</value>
+  </data>
+  <data name="CodeBehind_ClearHistoryAction" xml:space="preserve">
+    <value>Effacer l’historique</value>
+  </data>
+  <data name="Format_SettingsRuntimeSummary" xml:space="preserve">
+    <value>{0} · Home Assistant {1} · musique {2}</value>
+  </data>
+  <data name="Vm_Enabled" xml:space="preserve">
+    <value>Activé</value>
+  </data>
+  <data name="Vm_Local" xml:space="preserve">
+    <value>Local</value>
+  </data>
+  <data name="Vm_Remote" xml:space="preserve">
+    <value>Distant</value>
+  </data>
+  <data name="Vm_FeedbackDescriptionPlaceholder" xml:space="preserve">
+    <value>&lt;décrivez ce qui s’est passé et ce que vous attendiez&gt;</value>
+  </data>
+  <data name="Vm_DemoAskDJSystemMessage" xml:space="preserve">
+    <value>Le mode démo est local. Appairez Home Assistant pour obtenir de vraies réponses Ask DJ, l’audio et les actions.</value>
+  </data>
+  <data name="Vm_DemoAskDJAssistantMessage" xml:space="preserve">
+    <value>Demandez de la musique, du contexte ou une réponse vocale. Je montre ici à quoi ressemblent les actions et les réponses.</value>
+  </data>
 </root>

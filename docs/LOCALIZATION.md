@@ -23,3 +23,5 @@ python3 tools/validate-localization.py
 ```
 
 The script fails if any supported locale is missing a key or has a key not present in English.
+It also fails when a locale changes the placeholder set for a format string,
+for example by omitting `{0}` from a translated `Format_*` value.

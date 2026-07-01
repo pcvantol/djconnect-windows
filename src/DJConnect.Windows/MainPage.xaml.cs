@@ -1,4 +1,6 @@
 using DJConnect.Windows.Models;
+using DJConnect.Windows.Resources;
+using DJConnect.Windows.Services;
 using DJConnect.Windows.ViewModels;
 
 namespace DJConnect.Windows;
@@ -47,11 +49,11 @@ the current source-of-truth notices.
 
     private readonly WelcomeStep[] _welcomeSteps =
     [
-        new("♪", "Now Playing", "Speelt Nu", "Control playback, volume and the active output from the main screen.", "Bedien playback, volume en het actieve uitvoerapparaat vanaf het hoofdscherm."),
-        new("☵", "Ask DJ", "Ask DJ", "Ask for music, context or a voice reply. DJConnect keeps the chat history in sync through Home Assistant.", "Vraag om muziek, context of een gesproken antwoord. DJConnect synchroniseert de chatgeschiedenis via Home Assistant."),
-        new("〽", "Track Insight", "Track Insight", "Analyze the current track for mood, energy, genre and musical details when Home Assistant has provider data.", "Analyseer het huidige nummer op sfeer, energie, genre en muzikale details wanneer Home Assistant providerdata heeft."),
-        new("▸☰", "Queue", "Wachtrij", "See what is coming up next and start queue items when Home Assistant returns playable actions.", "Bekijk wat hierna komt en start wachtrij-items wanneer Home Assistant afspeelacties teruggeeft."),
-        new("🎮", "Mini-games", "Mini-games", "Play local mini-games while keeping DJConnect ready for your music setup.", "Speel lokale mini-games terwijl DJConnect klaar blijft voor je muziekopstelling.")
+        new("♪", "CodeBehind_WelcomeNowPlayingTitle", "CodeBehind_WelcomeNowPlayingBody"),
+        new("☵", "CodeBehind_WelcomeAskDJTitle", "CodeBehind_WelcomeAskDJBody"),
+        new("〽", "CodeBehind_WelcomeTrackInsightTitle", "CodeBehind_WelcomeTrackInsightBody"),
+        new("▸☰", "CodeBehind_WelcomeQueueTitle", "CodeBehind_WelcomeQueueBody"),
+        new("🎮", "CodeBehind_WelcomeMiniGamesTitle", "CodeBehind_WelcomeMiniGamesBody")
     ];
 
     private readonly MainViewModel _viewModel = new();
@@ -95,15 +97,27 @@ the current source-of-truth notices.
     private float _skyVelocity;
     private Point _mazePlayer = new(1, 1);
     private Point _mazeChaser = new(6, 4);
+    private bool _isInitialized;
 
     public MainPage()
     {
         InitializeComponent();
         BindingContext = _viewModel;
+        PairingDeepLinkActivation.PayloadQueued += PairingDeepLinkPayloadQueued;
+        _viewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(MainViewModel.Language))
+            {
+                SetWelcomeStep(_welcomeStepIndex, animate: false);
+                UpdateMiniGameUi();
+            }
+        };
         MiniGameSurface.Drawable = _miniGameDrawable;
         Loaded += async (_, _) =>
         {
             await _viewModel.InitializeAsync();
+            _isInitialized = true;
+            await DrainPairingDeepLinkQueueAsync();
             SetWelcomeStep(_welcomeStepIndex, animate: false);
         };
         ShowSection(NowPlayingPanel, NowPlayingNavButton);
@@ -112,6 +126,29 @@ the current source-of-truth notices.
     }
 
     public Task MarkCleanShutdownAsync() => _viewModel.MarkCleanShutdownAsync();
+
+    public void ReleaseActivationHandlers()
+    {
+        PairingDeepLinkActivation.PayloadQueued -= PairingDeepLinkPayloadQueued;
+    }
+
+    private void PairingDeepLinkPayloadQueued(object? sender, EventArgs e)
+    {
+        if (!_isInitialized)
+        {
+            return;
+        }
+
+        MainThread.BeginInvokeOnMainThread(async () => await DrainPairingDeepLinkQueueAsync());
+    }
+
+    private async Task DrainPairingDeepLinkQueueAsync()
+    {
+        while (PairingDeepLinkActivation.TryDequeue(out var payload))
+        {
+            await _viewModel.ApplyPairingDeepLinkAsync(payload);
+        }
+    }
 
     private void ShowNowPlaying(object sender, EventArgs e) => ShowSection(NowPlayingPanel, NowPlayingNavButton);
 
@@ -272,7 +309,11 @@ the current source-of-truth notices.
 
     private async void ClearGameHighscoresClicked(object sender, EventArgs e)
     {
-        var clear = await DisplayAlertAsync("Highscores wissen", "Alle lokale mini-game highscores wissen?", "Wissen", "Niet nu");
+        var clear = await DisplayAlertAsync(
+            T("CodeBehind_ClearHighscoresTitle"),
+            T("CodeBehind_ClearHighscoresMessage"),
+            T("CodeBehind_ClearAction"),
+            T("CodeBehind_NotNowAction"));
         if (!clear)
         {
             return;
@@ -690,32 +731,36 @@ the current source-of-truth notices.
         var high = SelectedHighScore();
         var title = _selectedGame switch
         {
-            MiniGameKind.Paddle => "Paddle Rally",
-            MiniGameKind.Meteor => "Meteor Run",
-            MiniGameKind.Sky => "Sky Dash",
-            _ => "Maze Chase"
+            MiniGameKind.Paddle => T("CodeBehind_GamePaddleTitle"),
+            MiniGameKind.Meteor => T("CodeBehind_GameMeteorTitle"),
+            MiniGameKind.Sky => T("CodeBehind_GameSkyTitle"),
+            _ => T("CodeBehind_GameMazeTitle")
         };
         GameTitleLabel.Text = title;
         GameHintLabel.Text = _selectedGame switch
         {
-            MiniGameKind.Paddle => "Gebruik ↑/↓ of sleep de paddle. Houd de bal in het spel.",
-            MiniGameKind.Meteor => "Gebruik ←/→ of sleep je ship. Ontwijk vallende meteors.",
-            MiniGameKind.Sky => "Tik of Space om te boosten. Vlieg langs de obstakels.",
-            _ => "Gebruik pijltjes/WASD of klik richting. Verzamel punten en ontwijk de chaser."
+            MiniGameKind.Paddle => T("CodeBehind_GamePaddleHint"),
+            MiniGameKind.Meteor => T("CodeBehind_GameMeteorHint"),
+            MiniGameKind.Sky => T("CodeBehind_GameSkyHint"),
+            _ => T("CodeBehind_GameMazeHint")
         };
-        GameScoreLabel.Text = $"Score {_gameScore}   High {high}";
-        GameHighSummaryLabel.Text = $"Highscores: {Preferences.Get(PaddleHighKey, 0)} / {Preferences.Get(MeteorHighKey, 0)} / {Preferences.Get(SkyHighKey, 0)} / {Preferences.Get(MazeHighKey, 0)}";
-        PaddleGameButton.Text = $"▭  Paddle Rally\nHigh {Preferences.Get(PaddleHighKey, 0)}";
-        MeteorGameButton.Text = $"☄  Meteor Run\nHigh {Preferences.Get(MeteorHighKey, 0)}";
-        SkyGameButton.Text = $"✦  Sky Dash\nHigh {Preferences.Get(SkyHighKey, 0)}";
-        MazeGameButton.Text = $"▦  Maze Chase\nHigh {Preferences.Get(MazeHighKey, 0)}";
+        GameScoreLabel.Text = AppStrings.Format("Format_GameScore", _gameScore, high);
+        GameHighSummaryLabel.Text = AppStrings.Format("Format_GameHighscores", Preferences.Get(PaddleHighKey, 0), Preferences.Get(MeteorHighKey, 0), Preferences.Get(SkyHighKey, 0), Preferences.Get(MazeHighKey, 0));
+        PaddleGameButton.Text = AppStrings.Format("Format_GameChoice", "▭", T("CodeBehind_GamePaddleTitle"), Preferences.Get(PaddleHighKey, 0));
+        MeteorGameButton.Text = AppStrings.Format("Format_GameChoice", "☄", T("CodeBehind_GameMeteorTitle"), Preferences.Get(MeteorHighKey, 0));
+        SkyGameButton.Text = AppStrings.Format("Format_GameChoice", "✦", T("CodeBehind_GameSkyTitle"), Preferences.Get(SkyHighKey, 0));
+        MazeGameButton.Text = AppStrings.Format("Format_GameChoice", "▦", T("CodeBehind_GameMazeTitle"), Preferences.Get(MazeHighKey, 0));
         GameIdleButton.IsVisible = _gameState is MiniGameRunState.Idle or MiniGameRunState.GameOver;
-        GameIdleButton.Text = _gameState == MiniGameRunState.GameOver ? "↻  Game over - opnieuw" : "▶  Tik of klik om te spelen";
+        GameIdleButton.Text = _gameState == MiniGameRunState.GameOver ? T("CodeBehind_GameOverRestart") : T("CodeBehind_GameStart");
         _miniGameDrawable.State = new MiniGameRenderState(
             _selectedGame,
             _gameState,
             _gameScore,
             high,
+            T("CodeBehind_GameScoreLabel"),
+            T("CodeBehind_GameHighLabel"),
+            T("CodeBehind_GamePaused"),
+            T("CodeBehind_GameOver"),
             _paddleY,
             _ball,
             _meteorPlayerX,
@@ -792,24 +837,24 @@ the current source-of-truth notices.
 
     private async void ShowLicenseDetail(object sender, EventArgs e)
     {
-        await DisplayAlertAsync("MIT License", MitLicenseText, "Sluiten");
+        await DisplayAlertAsync(T("CodeBehind_MitLicenseTitle"), MitLicenseText, T("CodeBehind_CloseAction"));
     }
 
     private async void CopyLicenseText(object sender, EventArgs e)
     {
         await Clipboard.Default.SetTextAsync(MitLicenseText);
-        await DisplayAlertAsync("Licentie", "Licentie gekopieerd", "OK");
+        await DisplayAlertAsync(T("CodeBehind_LicenseTitle"), T("CodeBehind_LicenseCopiedMessage"), T("CodeBehind_OkAction"));
     }
 
     private async void ShowThirdPartyNotices(object sender, EventArgs e)
     {
-        await DisplayAlertAsync("Third-party notices", ThirdPartyNoticesText, "Sluiten");
+        await DisplayAlertAsync(T("CodeBehind_ThirdPartyNoticesTitle"), ThirdPartyNoticesText, T("CodeBehind_CloseAction"));
     }
 
     private async void CopyThirdPartyNotices(object sender, EventArgs e)
     {
         await Clipboard.Default.SetTextAsync(ThirdPartyNoticesText);
-        await DisplayAlertAsync("Notices", "Notices gekopieerd", "OK");
+        await DisplayAlertAsync(T("CodeBehind_NoticesTitle"), T("CodeBehind_NoticesCopiedMessage"), T("CodeBehind_OkAction"));
     }
 
     private void OpenFeedbackFromAbout(object sender, EventArgs e)
@@ -823,10 +868,10 @@ the current source-of-truth notices.
     private async void ResetPairingFromSettingsClicked(object sender, EventArgs e)
     {
         var confirmed = await DisplayAlertAsync(
-            "App opnieuw koppelen",
-            "Dit wist de lokale DJConnect pairing en roteert de clientidentiteit. Je koppelt daarna opnieuw via Home Assistant.",
-            "Opnieuw koppelen",
-            "Annuleren");
+            T("CodeBehind_ResetPairingTitle"),
+            T("CodeBehind_ResetPairingMessage"),
+            T("CodeBehind_ResetPairingAction"),
+            T("CodeBehind_CancelAction"));
 
         if (confirmed && _viewModel.ResetPairingCommand.CanExecute(null))
         {
@@ -860,10 +905,10 @@ the current source-of-truth notices.
     private async void ClearLogsFromPrivacyClicked(object sender, EventArgs e)
     {
         var confirmed = await DisplayAlertAsync(
-            "Logs wissen",
-            "Dit wist de lokale diagnostiek die in de app zichtbaar is.",
-            "Logs wissen",
-            "Annuleren");
+            T("CodeBehind_ClearLogsTitle"),
+            T("CodeBehind_ClearLogsMessage"),
+            T("CodeBehind_ClearLogsAction"),
+            T("CodeBehind_CancelAction"));
 
         if (confirmed)
         {
@@ -874,10 +919,10 @@ the current source-of-truth notices.
     private async void ClearAskDJHistoryFromPrivacyClicked(object sender, EventArgs e)
     {
         var confirmed = await DisplayAlertAsync(
-            "Ask DJ geschiedenis wissen",
-            "In demo mode wordt de lokale cache gewist. Gekoppeld vraagt DJConnect Home Assistant om de geschiedenis te wissen.",
-            "Geschiedenis wissen",
-            "Annuleren");
+            T("CodeBehind_ClearAskDJHistoryTitle"),
+            T("CodeBehind_ClearAskDJHistoryMessage"),
+            T("CodeBehind_ClearHistoryAction"),
+            T("CodeBehind_CancelAction"));
 
         if (confirmed && _viewModel.ClearHistoryCommand.CanExecute(null))
         {
@@ -961,22 +1006,19 @@ the current source-of-truth notices.
     {
         _welcomeStepIndex = Math.Clamp(index, 0, _welcomeSteps.Length - 1);
         var step = _welcomeSteps[_welcomeStepIndex];
-        var isDutch = IsDutch;
-        var title = step.Title(isDutch);
+        var title = T(step.TitleKey);
         WelcomePreviewIconLabel.Text = step.Icon;
         WelcomePreviewTitleLabel.Text = title;
         WelcomeTitleLabel.Text = $"{step.Icon}  {title}";
-        WelcomeBodyLabel.Text = step.Body(isDutch);
-        WelcomeSetupHintLabel.Text = isDutch
-            ? "Installatie loopt via Home Assistant. Spotify-weergave vereist Spotify Premium."
-            : "Setup runs through Home Assistant. Spotify playback requires Spotify Premium.";
-        WelcomeSkipButton.Text = isDutch ? "Overslaan" : "Skip";
+        WelcomeBodyLabel.Text = T(step.BodyKey);
+        WelcomeSetupHintLabel.Text = T("CodeBehind_WelcomeSetupHint");
+        WelcomeSkipButton.Text = T("CodeBehind_WelcomeSkip");
         WelcomePreviousButton.IsEnabled = _welcomeStepIndex > 0;
         WelcomePreviousButton.Opacity = _welcomeStepIndex > 0 ? 1 : 0.55;
-        WelcomePreviousButton.Text = isDutch ? "‹  Vorige" : "‹  Previous";
+        WelcomePreviousButton.Text = T("CodeBehind_WelcomePrevious");
         WelcomeNextButton.Text = _welcomeStepIndex == _welcomeSteps.Length - 1
-            ? (isDutch ? "Aan de slag!" : "Let's Start!")
-            : (isDutch ? "›  Volgende" : "›  Next");
+            ? T("CodeBehind_WelcomeStart")
+            : T("CodeBehind_WelcomeNext");
 
         var buttons = new[]
         {
@@ -1018,15 +1060,9 @@ the current source-of-truth notices.
         await button.ScaleToAsync(1.0, 160, Easing.CubicIn);
     }
 
-    private bool IsDutch => string.IsNullOrWhiteSpace(_viewModel.Language)
-        || _viewModel.Language.StartsWith("nl", StringComparison.OrdinalIgnoreCase);
+    private static string T(string key) => AppStrings.Get(key);
 
-    private sealed record WelcomeStep(string Icon, string EnglishTitle, string DutchTitle, string EnglishBody, string DutchBody)
-    {
-        public string Title(bool isDutch) => isDutch ? DutchTitle : EnglishTitle;
-
-        public string Body(bool isDutch) => isDutch ? DutchBody : EnglishBody;
-    }
+    private sealed record WelcomeStep(string Icon, string TitleKey, string BodyKey);
 }
 
 internal enum MiniGameKind
@@ -1058,6 +1094,10 @@ internal sealed record MiniGameRenderState(
     MiniGameRunState RunState,
     int Score,
     int HighScore,
+    string ScoreLabel,
+    string HighScoreLabel,
+    string PausedText,
+    string GameOverText,
     float PaddleY,
     PointF Ball,
     float MeteorPlayerX,
@@ -1082,6 +1122,10 @@ internal sealed class MiniGameDrawable : IDrawable
         MiniGameRunState.Idle,
         0,
         0,
+        "Score",
+        "High",
+        "Pause",
+        "Game over",
         0.5f,
         new PointF(0.5f, 0.5f),
         0.5f,
@@ -1116,14 +1160,14 @@ internal sealed class MiniGameDrawable : IDrawable
 
         canvas.FontColor = _text;
         canvas.FontSize = 16;
-        canvas.DrawString($"Score {State.Score}   High {State.HighScore}", dirtyRect.Left + 18, dirtyRect.Top + 18, HorizontalAlignment.Left);
+        canvas.DrawString($"{State.ScoreLabel} {State.Score}   {State.HighScoreLabel} {State.HighScore}", dirtyRect.Left + 18, dirtyRect.Top + 18, HorizontalAlignment.Left);
         if (State.RunState == MiniGameRunState.Paused)
         {
-            DrawCenterText(canvas, dirtyRect, "Pauze");
+            DrawCenterText(canvas, dirtyRect, State.PausedText);
         }
         else if (State.RunState == MiniGameRunState.GameOver)
         {
-            DrawCenterText(canvas, dirtyRect, "Game over");
+            DrawCenterText(canvas, dirtyRect, State.GameOverText);
         }
     }
 

@@ -15,7 +15,11 @@ public partial class App : Application
         {
             Title = "DJConnect"
         };
-        window.Destroying += async (_, _) => await page.MarkCleanShutdownAsync();
+        window.Destroying += async (_, _) =>
+        {
+            page.ReleaseActivationHandlers();
+            await page.MarkCleanShutdownAsync();
+        };
         return window;
     }
 }

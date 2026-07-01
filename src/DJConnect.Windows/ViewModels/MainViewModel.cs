@@ -159,6 +159,7 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<PlaybackOutput> OutputDevices { get; } = [];
     public ObservableCollection<DiagnosticLogEntry> DiagnosticLogLines { get; } = [];
     public ObservableCollection<DiagnosticLogEntry> FilteredDiagnosticLogLines { get; } = [];
+    public LocalizedTextCatalog T { get; } = new();
 
     public string HomeAssistantUrl
     {
@@ -431,14 +432,10 @@ public sealed class MainViewModel : ObservableObject
         set => SetProperty(ref _isRefreshingVersionCheck, value);
     }
 
-    public string UpdateRequiredTitle => L("Update vereist", "Update Required");
-    public string UpdateRequiredSubtitle => L(
-        "Werk DJConnect bij voordat je verdergaat.",
-        "Update DJConnect before continuing.");
+    public string UpdateRequiredTitle => P("Vm_Update_required");
+    public string UpdateRequiredSubtitle => P("Vm_UpdateRequiredSubtitle");
     public string UpdateRequiredDetail => string.IsNullOrWhiteSpace(UpdateRequiredMessage)
-        ? L(
-            "De app en Home Assistant DJConnect integration gebruiken verschillende protocolversies.",
-            "The app and Home Assistant DJConnect integration use different protocol versions.")
+        ? P("Vm_UpdateRequiredDetail")
         : UpdateRequiredMessage;
     public string AppProtocolText => AppStrings.Format("Format_AppProtocol", DJConnectContract.ProtocolLine);
     public string HomeAssistantVersionText
@@ -461,7 +458,7 @@ public sealed class MainViewModel : ObservableObject
 
     public string WhatsNewTitle
     {
-        get => string.IsNullOrWhiteSpace(_whatsNewTitle) ? L("Wat is er nieuw?", "What's New") : _whatsNewTitle;
+        get => string.IsNullOrWhiteSpace(_whatsNewTitle) ? P("Vm_What_s_New") : _whatsNewTitle;
         set => SetProperty(ref _whatsNewTitle, value);
     }
 
@@ -470,7 +467,7 @@ public sealed class MainViewModel : ObservableObject
     public string WhatsNewBody
     {
         get => string.IsNullOrWhiteSpace(_whatsNewBody)
-            ? L("Release notes konden niet worden geladen. Bekijk https://djconnect.dev voor meer informatie.", "Release notes could not be loaded. Visit https://djconnect.dev for more information.")
+            ? P("Vm_Release_notes_could_not_be_loaded_Visit_http")
             : _whatsNewBody;
         set => SetProperty(ref _whatsNewBody, value);
     }
@@ -483,7 +480,7 @@ public sealed class MainViewModel : ObservableObject
 
     public string TrackTitle
     {
-        get => string.IsNullOrWhiteSpace(_trackTitle) ? L("Geen actieve playback", "No active playback") : _trackTitle;
+        get => string.IsNullOrWhiteSpace(_trackTitle) ? P("Vm_No_active_playback") : _trackTitle;
         set => SetProperty(ref _trackTitle, value);
     }
 
@@ -611,7 +608,7 @@ public sealed class MainViewModel : ObservableObject
         }
     }
 
-    public string SelectedOutputText => SelectedOutput?.DisplayName ?? L("Geen uitvoerapparaat geselecteerd", "No output device selected");
+    public string SelectedOutputText => SelectedOutput?.DisplayName ?? P("Vm_No_output_device_selected");
 
     public bool HasActivePlayback
     {
@@ -649,6 +646,7 @@ public sealed class MainViewModel : ObservableObject
             {
                 AppStrings.UseLanguage(normalized);
                 _settings.Language = normalized;
+                T.Refresh();
                 RaiseLocalizedProperties();
                 _ = SaveSettingsIfMutableAsync();
             }
@@ -733,9 +731,9 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public string WakewordStatusText => WakewordFeatureAvailable
-        ? WakewordEnabled ? L("Ingeschakeld terwijl de app open is", "Enabled while the app is open")
-        : L("Uitgeschakeld", "Disabled")
-        : L("Niet beschikbaar in deze build", "Not available in this build");
+        ? WakewordEnabled ? P("Vm_Enabled_while_the_app_is_open")
+        : P("Vm_Disabled")
+        : P("Vm_Not_available_in_this_build");
 
     public string WakewordNotice
     {
@@ -812,15 +810,15 @@ public sealed class MainViewModel : ObservableObject
     public bool HasPairingCodeValidationText => !string.IsNullOrWhiteSpace(PairingCodeValidationText);
     public string LegalNotice => DJConnectContract.SpotifyNotice;
 
-    public string Tagline => L("Muziekbediening met karakter", "Music control with character");
-    public string NowPlayingTitle => L("Speelt Nu", "Now Playing");
-    public string QueueTitle => L("Wachtrij", "Queue");
-    public string PlaylistsTitle => L("Afspeellijsten", "Playlists");
-    public string SettingsTitle => L("Instellingen", "Settings");
-    public string AboutTitle => L("Over", "About");
-    public string LegalTitle => L("Juridisch", "Legal");
-    public string PrivacyTitle => L("Privacy", "Privacy");
-    public string FeedbackTitle => L("Feedback delen", "Share Feedback");
+    public string Tagline => P("Vm_Music_control_with_character");
+    public string NowPlayingTitle => P("Vm_Now_Playing");
+    public string QueueTitle => P("Vm_Queue");
+    public string PlaylistsTitle => P("Vm_Playlists");
+    public string SettingsTitle => P("Vm_Settings");
+    public string AboutTitle => P("Vm_About");
+    public string LegalTitle => P("Vm_Legal");
+    public string PrivacyTitle => P("Vm_Privacy");
+    public string FeedbackTitle => P("Vm_Share_Feedback");
     public string FeedbackContextSummary =>
         $"""
         App: DJConnect Windows {AppVersion}
@@ -840,33 +838,33 @@ public sealed class MainViewModel : ObservableObject
         : IsPairingOverlayVisible ? "pairing"
         : !string.IsNullOrWhiteSpace(Token) ? "stale"
         : "unpaired";
-    public string SettingsPairingStatusText => IsDemoMode ? "demo mode"
-        : IsUpdateRequired ? "update vereist"
-        : IsPaired && _backendAvailable ? "gekoppeld"
-        : IsPaired ? "verlopen/stale"
-        : IsPairingOverlayVisible ? "koppelen"
-        : "niet gekoppeld";
-    public string SettingsRuntimeSummary => $"{RuntimeCompatibilityText} · HA {ConnectionModeText} · muziekbackend {MusicBackendStatusText}";
-    public string PairingStatusText => IsPairingSuccessVisible ? L("Succesvol gekoppeld", "Successfully paired")
+    public string SettingsPairingStatusText => IsDemoMode ? P("Vm_Demo_mode")
+        : IsUpdateRequired ? P("Vm_Update_required")
+        : IsPaired && _backendAvailable ? P("Vm_Paired")
+        : IsPaired ? P("Vm_Stale")
+        : IsPairingOverlayVisible ? P("Vm_Pairing")
+        : P("Vm_Unpaired");
+    public string SettingsRuntimeSummary => AppStrings.Format("Format_SettingsRuntimeSummary", RuntimeCompatibilityText, ConnectionModeText, MusicServiceStatusText);
+    public string PairingStatusText => IsPairingSuccessVisible ? P("Vm_Successfully_paired")
         : IsPairingWaitingForCompletion ? AppStrings.Get("Pairing_Waiting")
         : IsPairingPending ? AppStrings.Get("Pairing_Pending")
-        : IsUpdateRequired ? L("Update vereist", "Update required")
-        : IsPaired ? L("Gekoppeld", "Paired")
-        : L("Voer de lokale Home Assistant URL en koppelcode in", "Enter the local Home Assistant URL and pairing code");
-    public string PlaybackAvailabilityText => IsDemoMode || IsPaired ? L("Beschikbaar", "Available") : L("Niet beschikbaar", "Unavailable");
+        : IsUpdateRequired ? P("Vm_Update_required")
+        : IsPaired ? P("Vm_Paired")
+        : P("Vm_Enter_the_local_Home_Assistant_URL_and_pairi");
+    public string PlaybackAvailabilityText => IsDemoMode || IsPaired ? P("Vm_Available") : P("Vm_Unavailable");
     public string ConnectionStatusText => IsDemoMode
-        ? L("Demo mode", "Demo mode")
-        : !IsPaired ? L("Niet gekoppeld", "Not paired")
-        : !_backendAvailable ? L("Offline", "Offline")
-        : !_runtimeCompatible ? L("Update vereist", "Update required")
-        : L("Gekoppeld", "Paired");
+        ? P("Vm_Demo_mode")
+        : !IsPaired ? P("Vm_Not_paired")
+        : !_backendAvailable ? P("Vm_Offline")
+        : !_runtimeCompatible ? P("Vm_Update_required_3")
+        : P("Vm_Paired_3");
     public string NowPlayingPairingStatusText => IsDemoMode
-        ? L("Demo modus", "Demo Mode")
-        : IsUpdateRequired ? L("Update vereist", "Update required")
-        : IsPaired ? L("Gekoppeld", "Paired")
-        : IsPairingOverlayVisible ? L("Koppelen", "Pairing")
-        : !string.IsNullOrWhiteSpace(Token) ? L("Verlopen", "Stale")
-        : L("Niet gekoppeld", "Unpaired");
+        ? P("Vm_Demo_mode")
+        : IsUpdateRequired ? P("Vm_Update_required_4")
+        : IsPaired ? P("Vm_Paired_4")
+        : IsPairingOverlayVisible ? P("Vm_Pairing")
+        : !string.IsNullOrWhiteSpace(Token) ? P("Vm_Stale")
+        : P("Vm_Unpaired");
     public string NowPlayingPairingStatusIcon => IsDemoMode
         ? "▶"
         : IsPaired ? "✓"
@@ -879,19 +877,19 @@ public sealed class MainViewModel : ObservableObject
         : IsUpdateRequired || !string.IsNullOrWhiteSpace(Token) ? "#F59E0B"
         : "#AAA2BE";
     public string NowPlayingMusicBackendStatusText => IsDemoMode
-        ? L("Demo muziek", "Demo music")
-        : !IsPaired ? L("Muziek niet gekoppeld", "Music not paired")
-        : !_runtimeCompatible ? L("Update vereist", "Update required")
-        : !_backendAvailable ? L("Muziek offline", "Music offline")
-        : _musicBackendSummary.IsUnavailable ? L("Muziekbackend niet beschikbaar", "Music backend unavailable")
-        : L("Muziek beschikbaar", "Music available");
+        ? P("Vm_Demo_music")
+        : !IsPaired ? P("Vm_Music_not_paired")
+        : !_runtimeCompatible ? P("Vm_Update_required_5")
+        : !_backendAvailable ? P("Vm_Music_offline")
+        : _musicBackendSummary.IsUnavailable ? P("Vm_Music_backend_unavailable")
+        : P("Vm_Music_available");
     public string NowPlayingMusicBackendStatusColor => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && !_musicBackendSummary.IsUnavailable)
         ? "#35E56B"
         : "#EF4444";
-    public string RuntimeCompatibilityText => _runtimeCompatible ? L("Compatible", "Compatible") : L("Update vereist", "Update required");
-    public string AboutPairingStatusText => IsPaired ? "paired" : IsPairingOverlayVisible ? "pairing" : "unpaired";
-    public string AboutBackendAvailabilityText => _backendAvailable ? "available" : "unavailable";
-    public string AboutDemoModeText => IsDemoMode ? "true" : "false";
+    public string RuntimeCompatibilityText => _runtimeCompatible ? P("Vm_Compatible") : P("Vm_Update_required_6");
+    public string AboutPairingStatusText => IsPaired ? P("Vm_Paired") : IsPairingOverlayVisible ? P("Vm_Pairing") : P("Vm_Unpaired");
+    public string AboutBackendAvailabilityText => _backendAvailable ? P("Vm_Available") : P("Vm_Unavailable");
+    public string AboutDemoModeText => IsDemoMode ? P("Vm_Enabled") : P("Vm_Disabled");
     public string AboutConnectionTypeText => ConnectionModeText;
     public string AboutFastPathText
     {
@@ -900,15 +898,21 @@ public sealed class MainViewModel : ObservableObject
             return FastPathDiagnosticsFormatter.AboutText(_apiClient.FastPathDiagnostics);
         }
     }
-    public string ConnectionModeText => IsDemoMode ? "Demo" : _connectionMode switch
+    public string ConnectionModeText => IsDemoMode ? P("Vm_Demo_mode") : _connectionMode switch
     {
-        HomeAssistantConnectionMode.Local => "Local",
-        HomeAssistantConnectionMode.Remote => "Remote",
-        _ => "Offline"
+        HomeAssistantConnectionMode.Local => P("Vm_Local"),
+        HomeAssistantConnectionMode.Remote => P("Vm_Remote"),
+        _ => P("Vm_Offline")
     };
     public string RemoteSupportText => _transportManager.Current.RemoteSupported
-        ? L("Remote fallback beschikbaar", "Remote fallback available")
-        : L("Alleen lokaal", "Local only");
+        ? P("Vm_Remote_fallback_available")
+        : P("Vm_Local_only");
+    public string MusicServiceStatusText => IsDemoMode
+        ? P("Vm_Demo_music")
+        : !IsPaired ? P("Vm_Music_not_paired")
+        : !_runtimeCompatible ? P("Vm_Update_required_5")
+        : !_backendAvailable || _musicBackendSummary.IsUnavailable ? P("Vm_Music_backend_unavailable")
+        : P("Vm_Music_available");
     public string MusicBackendNameText => _musicBackendSummary.DisplayName;
     public string MusicBackendStatusText => string.IsNullOrWhiteSpace(_musicBackendSummary.ErrorText)
         ? _musicBackendSummary.AvailabilityText
@@ -924,7 +928,7 @@ public sealed class MainViewModel : ObservableObject
     public bool CanStartPlayback => CanUsePlaybackFeatures && SelectedOutput is not null;
     public bool CanUseAskDJ => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && _connectionMode != HomeAssistantConnectionMode.Offline);
     public bool CanSendAskDJ => CanUseAskDJ && !string.IsNullOrWhiteSpace(AskDJText);
-    public string AskDJPlaceholder => L("Vraag Ask DJ iets, bv. zet huidig nummer in favorieten...", "Ask DJ anything, e.g. save this track to liked songs...");
+    public string AskDJPlaceholder => P("Vm_Ask_DJ_anything_e_g_save_this_track_to_liked");
     public bool IsMonkeyTestMode => MonkeyTestMode.IsEnabled;
 
     public bool IsPaired
@@ -1159,67 +1163,49 @@ public sealed class MainViewModel : ObservableObject
         _ => "🛡"
     };
 
-    public string PermissionTitle => L("App-toestemmingen", "App permissions");
+    public string PermissionTitle => P("Vm_App_permissions");
 
-    public string PermissionIntro => L(
-        "DJConnect vraagt alleen toestemming wanneer een functie die nodig heeft.",
-        "DJConnect only asks permission when a feature needs it.");
+    public string PermissionIntro => P("Vm_PermissionIntro");
 
     public string PermissionBodyPrimary => ActivePermissionKind switch
     {
-        PermissionExplanationKind.Microphone => L(
-            "Microfoon is nodig voor Ask DJ spraakverzoeken.",
-            "Microphone is needed for Ask DJ voice requests."),
-        PermissionExplanationKind.Notifications => L(
-            "Notificaties zijn nodig om DJConnect-meldingen als Windows toast te tonen.",
-            "Notifications are needed to show DJConnect messages as Windows toasts."),
-        PermissionExplanationKind.LocalNetwork => L(
-            "Voor pairing moet deze app Home Assistant op je lokale netwerk kunnen bereiken.",
-            "For pairing, this app must be able to reach Home Assistant on your local network."),
+        PermissionExplanationKind.Microphone => P("Vm_PermissionMicrophonePrimary"),
+        PermissionExplanationKind.Notifications => P("Vm_PermissionNotificationsPrimary"),
+        PermissionExplanationKind.LocalNetwork => P("Vm_PermissionLocalNetworkPrimary"),
         _ => ""
     };
 
     public string PermissionBodySecondary => ActivePermissionKind switch
     {
-        PermissionExplanationKind.Microphone => L(
-            "Tekstchat en muziekbediening werken ook zonder microfoon.",
-            "Text chat and music controls also work without the microphone."),
-        PermissionExplanationKind.Notifications => L(
-            "Je kunt dit later aanpassen in Windows Meldingsinstellingen.",
-            "You can change this later in Windows notification settings."),
-        PermissionExplanationKind.LocalNetwork => L(
-            "Windows kan vragen of DJConnect netwerktoegang mag krijgen.",
-            "Windows may ask whether DJConnect can use network access."),
+        PermissionExplanationKind.Microphone => P("Vm_PermissionMicrophoneSecondary"),
+        PermissionExplanationKind.Notifications => P("Vm_PermissionNotificationsSecondary"),
+        PermissionExplanationKind.LocalNetwork => P("Vm_PermissionLocalNetworkSecondary"),
         _ => ""
     };
 
     public string PermissionBodyTertiary => ActivePermissionKind switch
     {
-        PermissionExplanationKind.Microphone => L(
-            "Je kunt dit later aanpassen in Windows Privacy-instellingen.",
-            "You can change this later in Windows privacy settings."),
-        PermissionExplanationKind.LocalNetwork => L(
-            "Remote gebruik komt na pairing beschikbaar als Home Assistant een Nabu Casa of externe HTTPS URL aanbiedt.",
-            "Remote use becomes available after pairing if Home Assistant provides a Nabu Casa or external HTTPS URL."),
+        PermissionExplanationKind.Microphone => P("Vm_PermissionMicrophoneTertiary"),
+        PermissionExplanationKind.LocalNetwork => P("Vm_PermissionLocalNetworkTertiary"),
         _ => ""
     };
 
     public bool HasPermissionBodyTertiary => !string.IsNullOrWhiteSpace(PermissionBodyTertiary);
     public bool IsPermissionSettingsMode => ActivePermissionMode == PermissionExplanationMode.Settings;
     public bool IsLocalNetworkPermission => ActivePermissionKind == PermissionExplanationKind.LocalNetwork;
-    public string PermissionContinueText => IsPermissionSettingsMode ? L("Open Windows instellingen", "Open Windows settings") : L("Doorgaan", "Continue");
+    public string PermissionContinueText => IsPermissionSettingsMode ? P("Vm_Open_Windows_settings") : P("Vm_Continue");
     public string PermissionSettingsText => ActivePermissionKind == PermissionExplanationKind.LocalNetwork
-        ? L("Open firewall instellingen", "Open firewall settings")
-        : L("Open Windows instellingen", "Open Windows settings");
+        ? P("Vm_Open_firewall_settings")
+        : P("Vm_Open_Windows_settings_3");
     public string NotificationPermissionStatus => _settings.PermissionExplanationNotificationsSeen
-        ? L("Uitleg getoond", "Explanation shown")
-        : L("Niet ingeschakeld", "Not enabled");
+        ? P("Vm_Explanation_shown")
+        : P("Vm_Not_enabled");
     public string MicrophonePermissionStatus => _settings.PermissionExplanationMicrophoneSeen
-        ? L("Wordt gevraagd bij push-to-talk", "Requested at push-to-talk")
-        : L("Niet gevraagd", "Not requested");
+        ? P("Vm_Requested_at_push_to_talk")
+        : P("Vm_Not_requested");
     public string LocalNetworkPermissionStatus => _settings.PermissionExplanationLocalNetworkSeen
-        ? L("Uitleg getoond", "Explanation shown")
-        : L("Wordt getoond bij pairing", "Shown during pairing");
+        ? P("Vm_Explanation_shown_3")
+        : P("Vm_Shown_during_pairing");
 
     public AsyncCommand SaveSettingsCommand { get; }
     public AsyncCommand PairCommand { get; }
@@ -1332,7 +1318,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (IsMonkeyTestMode)
         {
-            Status = L("Monkeytest: instellingen niet opgeslagen", "Monkey test: settings not saved");
+            Status = P("Vm_Monkey_test_settings_not_saved");
             AddDiagnostic("INF Monkey test suppressed settings save.");
             return;
         }
@@ -1358,7 +1344,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         await ConfigureClientAsync(pairingOnly: false);
-        Status = L("Instellingen opgeslagen", "Settings saved");
+        Status = P("Vm_Settings_saved");
         AddDiagnostic("INF Settings saved.");
     }
 
@@ -1366,14 +1352,14 @@ public sealed class MainViewModel : ObservableObject
     {
         if (IsMonkeyTestMode)
         {
-            Status = L("Monkeytest: pairing onderdrukt", "Monkey test: pairing suppressed");
+            Status = P("Vm_Monkey_test_pairing_suppressed");
             AddDiagnostic("INF Monkey test suppressed pairing.");
             return;
         }
 
         if (!IsValidHomeAssistantUrl(HomeAssistantUrl))
         {
-            Status = L("Voer een geldige lokale Home Assistant URL in.", "Enter a valid local Home Assistant URL.");
+            Status = P("Vm_Enter_a_valid_local_Home_Assistant_URL");
             Notice = Status;
             AddDiagnostic("WRN Pairing blocked because Home Assistant URL is invalid.");
             return;
@@ -1381,7 +1367,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (!IsValidPairCode(PairingCode))
         {
-            Status = L("Voer de 6-cijferige koppelcode uit Home Assistant in.", "Enter the 6-digit pairing code from Home Assistant.");
+            Status = P("Vm_Enter_the_6_digit_pairing_code_from_Home_Ass");
             Notice = Status;
             AddDiagnostic("WRN Pairing blocked because pair code is invalid.");
             return;
@@ -1389,7 +1375,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (!IsWindowsIdentity(_identity))
         {
-            Status = L("Interne client-identiteit klopt niet. Herstart DJConnect.", "Internal client identity is invalid. Restart DJConnect.");
+            Status = P("Vm_Internal_client_identity_is_invalid_Restart");
             Notice = Status;
             AddDiagnostic("ERR Windows client identity invariant failed.");
             return;
@@ -1398,7 +1384,7 @@ public sealed class MainViewModel : ObservableObject
         var pairingTransport = await _transportManager.ResolvePairingAsync(HomeAssistantUrl, CancellationToken.None);
         if (pairingTransport.Mode != HomeAssistantConnectionMode.Local || string.IsNullOrWhiteSpace(pairingTransport.ActiveUrl))
         {
-            Status = L("Home Assistant is niet bereikbaar op je lokale netwerk.", "Home Assistant is unreachable on your local network.");
+            Status = P("Vm_Home_Assistant_is_unreachable_on_your_local");
             Notice = Status;
             AddDiagnostic("WRN Pairing blocked because local Home Assistant URL is unreachable.");
             return;
@@ -1444,7 +1430,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (!IsValidPairingResponse(response))
         {
-            Status = L("Home Assistant antwoordde met een ongeldige Windows pairing response.", "Home Assistant returned an invalid Windows pairing response.");
+            Status = P("Vm_Home_Assistant_returned_an_invalid_Windows_p");
             Notice = Status;
             IsPairingOverlayVisible = true;
             AddDiagnostic("ERR Pairing response client identity invariant failed.");
@@ -1478,7 +1464,7 @@ public sealed class MainViewModel : ObservableObject
         if (!statusResponse.Success)
         {
             Token = "";
-            Status = PairingErrorMessage(statusResponse.Error, statusResponse.Message);
+            Status = PairingErrorMessage(statusResponse.Error, null);
             Notice = Status;
             IsPairingWaitingForCompletion = false;
             AddDiagnostic("WRN Pairing verification returned unsuccessful status.");
@@ -1499,7 +1485,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            Status = L("Token opslagfout", "Token storage failed");
+            Status = P("Vm_Token_storage_failed");
             AddDiagnostic("WRN Pairing token storage failed: " + ex.GetType().Name);
             IsPairingWaitingForCompletion = false;
             return;
@@ -1523,7 +1509,7 @@ public sealed class MainViewModel : ObservableObject
         IsPairingSuccessVisible = true;
         IsPairingOverlayVisible = true;
         IsPairingWaitingForCompletion = false;
-        Status = $"{AppStrings.Get("Status_Paired")}: {response.PairingStatus ?? "paired"}";
+        Status = P("Vm_Successfully_paired");
         AddDiagnostic("INF Pairing completed.");
     }
 
@@ -1531,7 +1517,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (IsDemoMode)
         {
-            Status = L("Demo modus", "Demo Mode");
+            Status = P("Vm_Demo_mode_3");
             Notice = "";
             _backendAvailable = true;
             _runtimeCompatible = true;
@@ -1545,7 +1531,7 @@ public sealed class MainViewModel : ObservableObject
         {
             _backendAvailable = false;
             _connectionMode = HomeAssistantConnectionMode.Offline;
-            Notice = L("Home Assistant niet bereikbaar via lokaal of remote adres", "Home Assistant is unreachable through local or remote URL");
+            Notice = P("Vm_Home_Assistant_is_unreachable_through_local");
             Status = Notice;
             RaisePlaybackStateProperties();
             RaiseSettingsStatusProperties();
@@ -1568,14 +1554,14 @@ public sealed class MainViewModel : ObservableObject
 
             if (ApplyVersionMismatch(ex))
             {
-                Notice = L("Update vereist", "Update required");
+                Notice = P("Vm_Update_required_7");
                 Status = ConnectionStatusText;
                 AddDiagnostic("WRN Status refresh blocked by version mismatch.");
                 return;
             }
 
             _backendAvailable = false;
-            Notice = L("Home Assistant niet bereikbaar", "Home Assistant is unreachable");
+            Notice = P("Vm_Home_Assistant_is_unreachable");
             Status = Notice;
             AddDiagnostic("WRN Status refresh failed: " + ex.GetType().Name);
             RaisePlaybackStateProperties();
@@ -1595,14 +1581,14 @@ public sealed class MainViewModel : ObservableObject
             if (string.Equals(response.Error, "version_mismatch", StringComparison.OrdinalIgnoreCase))
             {
                 ApplyVersionCompatibility(response);
-                Notice = L("Update vereist", "Update required");
+                Notice = P("Vm_Update_required_8");
                 Status = ConnectionStatusText;
                 AddDiagnostic("WRN Status response reported version mismatch.");
                 return;
             }
 
             _backendAvailable = false;
-            Notice = L("Home Assistant niet bereikbaar", "Home Assistant is unreachable");
+            Notice = P("Vm_Home_Assistant_is_unreachable_3");
             Status = Notice;
             AddDiagnostic("WRN Refresh failed.");
             RaisePlaybackStateProperties();
@@ -1618,8 +1604,8 @@ public sealed class MainViewModel : ObservableObject
         ReplaceQueueItems(response.ResolvedQueue());
         ReplacePlaylistItems(response.ResolvedPlaylists());
         Notice = _runtimeCompatible
-            ? HasActivePlayback ? "" : L("Geen actieve playback", "No active playback")
-            : L("Update vereist", "Update required");
+            ? HasActivePlayback ? "" : P("Vm_No_active_playback_3")
+            : P("Vm_Update_required_9");
         Status = ConnectionStatusText;
         AddDiagnostic("INF Status refreshed.");
         RaisePlaybackStateProperties();
@@ -1636,7 +1622,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (!CanUseAskDJ)
         {
-            AskDJNotice = !_runtimeCompatible ? L("Update vereist", "Update required") : L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
+            AskDJNotice = !_runtimeCompatible ? P("Vm_Update_required_10") : P("Vm_Ask_DJ_is_unavailable");
             return;
         }
 
@@ -1647,9 +1633,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (IsDemoMode)
         {
-            var answer = L(
-                "Demo: Ask DJ geeft echte antwoorden zodra Home Assistant gekoppeld is. Ik zou nu muziekcontext, aanbevelingen en acties via je DJConnect-integratie ophalen.",
-                "Demo: Ask DJ gives real answers once Home Assistant is paired. I would fetch music context, recommendations and actions through your DJConnect integration.");
+            var answer = P("Vm_DemoAskDJAnswer");
             MarkMessageSent(clientMessageId);
             MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", answer, null, DateTimeOffset.Now, "assistant", DemoPlaybackActions(), null, null, null, null));
             AskDJNotice = "";
@@ -1687,13 +1671,13 @@ public sealed class MainViewModel : ObservableObject
             if (ApplyVersionMismatch(ex))
             {
                 MarkMessageFailed(clientMessageId);
-                AskDJNotice = L("Update vereist", "Update required");
+                AskDJNotice = P("Vm_Update_required_11");
                 AddDiagnostic("WRN Ask DJ request blocked by version mismatch.");
                 return;
             }
 
             MarkMessageFailed(clientMessageId);
-            AskDJNotice = L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
+            AskDJNotice = P("Vm_Ask_DJ_is_unavailable_3");
             AddDiagnostic("WRN Ask DJ request failed: " + ex.GetType().Name);
             return;
         }
@@ -1774,7 +1758,7 @@ public sealed class MainViewModel : ObservableObject
         ReplaceRecentItems(assistantMessage?.Items ?? response.Items);
         await SaveSettingsIfMutableAsync();
         AskDJNotice = "";
-        Status = L("Ask DJ bijgewerkt", "Ask DJ updated");
+        Status = P("Vm_Ask_DJ_updated");
         AddDiagnostic("INF Ask DJ history updated through Home Assistant.");
     }
 
@@ -1793,7 +1777,7 @@ public sealed class MainViewModel : ObservableObject
         var response = await _apiClient.ClearAskDJHistoryAsync(_identity, CancellationToken.None);
         if (!response.Success)
         {
-            AskDJNotice = L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
+            AskDJNotice = P("Vm_Ask_DJ_is_unavailable_4");
             AddDiagnostic("WRN Ask DJ history clear failed.");
             return;
         }
@@ -1805,7 +1789,7 @@ public sealed class MainViewModel : ObservableObject
         _settings.ClearRevision = response.ClearRevision;
         await SaveSettingsIfMutableAsync();
         AskDJNotice = "";
-        Status = L("Ask DJ history gewist", "Ask DJ history cleared");
+        Status = P("Vm_Ask_DJ_history_cleared");
         AddDiagnostic("INF Ask DJ history clear requested.");
     }
 
@@ -1838,7 +1822,7 @@ public sealed class MainViewModel : ObservableObject
             {
                 if (showStatus)
                 {
-                    AskDJNotice = L("Update vereist", "Update required");
+                    AskDJNotice = P("Vm_Update_required_12");
                 }
 
                 AddDiagnostic("WRN Ask DJ history sync blocked by version mismatch.");
@@ -1847,7 +1831,7 @@ public sealed class MainViewModel : ObservableObject
 
             if (showStatus)
             {
-                AskDJNotice = L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
+                AskDJNotice = P("Vm_Ask_DJ_is_unavailable_5");
             }
 
             AddDiagnostic("WRN Ask DJ history sync failed: " + ex.GetType().Name);
@@ -1860,7 +1844,7 @@ public sealed class MainViewModel : ObservableObject
             {
                 if (showStatus)
                 {
-                    AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                    AskDJNotice = P("Vm_Pair_again_to_continue");
                 }
 
                 return;
@@ -1868,7 +1852,7 @@ public sealed class MainViewModel : ObservableObject
 
             if (showStatus)
             {
-                AskDJNotice = L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
+                AskDJNotice = P("Vm_Ask_DJ_is_unavailable_6");
             }
 
             return;
@@ -1898,7 +1882,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (IsDemoMode)
         {
-            Status = $"{L("Demo command", "Demo command")}: {command}";
+            Status = $"{P("Vm_Demo_command")}: {command}";
             AddDiagnostic("INF Demo command executed: " + command);
             return;
         }
@@ -1911,7 +1895,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
-            Status = L("Update vereist", "Update required");
+            Status = P("Vm_Update_required_13");
             return;
         }
 
@@ -1920,12 +1904,12 @@ public sealed class MainViewModel : ObservableObject
         ApplyBackendSummary(BackendSummaryFrom(response));
         if (!_runtimeCompatible)
         {
-            Status = L("Update vereist", "Update required");
+            Status = P("Vm_Update_required_14");
             return;
         }
 
         Status = response.Success
-            ? response.DjText ?? response.Message ?? $"{L("Command uitgevoerd", "Command executed")}: {command}"
+            ? response.DjText ?? response.Message ?? $"{P("Vm_Command_executed")}: {command}"
             : BackendActionErrorMessage(response.Error, response.Message);
         AddDiagnostic(response.Success ? "INF Command executed: " + command : "WRN Command failed: " + command);
         await RefreshAsync();
@@ -1936,8 +1920,8 @@ public sealed class MainViewModel : ObservableObject
         if (!CanStartPlayback)
         {
             Notice = !CanUsePlaybackFeatures
-                ? L("Playback niet beschikbaar", "Playback unavailable")
-                : L("Geen uitvoerapparaat geselecteerd", "No output device selected");
+                ? P("Vm_Playback_unavailable")
+                : P("Vm_No_output_device_selected_3");
             return;
         }
 
@@ -1949,7 +1933,7 @@ public sealed class MainViewModel : ObservableObject
         PlaybackPositionMs = positionMs;
         if (!CanUsePlaybackFeatures)
         {
-            Notice = L("Playback niet beschikbaar", "Playback unavailable");
+            Notice = P("Vm_Playback_unavailable_3");
             return;
         }
 
@@ -1972,7 +1956,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (!CanUsePlaybackFeatures)
         {
-            Notice = L("Playback niet beschikbaar", "Playback unavailable");
+            Notice = P("Vm_Playback_unavailable_4");
             return;
         }
 
@@ -1991,7 +1975,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
-            Notice = L("Update vereist", "Update required");
+            Notice = P("Vm_Update_required_15");
             AddDiagnostic("WRN Playback command blocked by version mismatch: " + command);
             return;
         }
@@ -2001,7 +1985,7 @@ public sealed class MainViewModel : ObservableObject
         ApplyBackendSummary(BackendSummaryFrom(response));
         if (!_runtimeCompatible)
         {
-            Notice = L("Update vereist", "Update required");
+            Notice = P("Vm_Update_required_16");
             AddDiagnostic("WRN Playback command blocked by incompatible runtime: " + command);
             return;
         }
@@ -2014,7 +1998,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         Notice = "";
-        Status = response.DjText ?? response.Message ?? L("Command uitgevoerd", "Command executed");
+        Status = response.DjText ?? response.Message ?? P("Vm_Command_executed_3");
         AddDiagnostic("INF Playback command executed: " + command);
         await RefreshAsync();
     }
@@ -2031,7 +2015,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (!CanUsePlaybackFeatures)
         {
-            TrackInsightNotice = !_runtimeCompatible ? L("Update vereist", "Update required") : L("Track Insight is niet bereikbaar", "Track Insight is unavailable");
+            TrackInsightNotice = !_runtimeCompatible ? P("Vm_Update_required_17") : P("Vm_Track_Insight_is_unavailable");
             return;
         }
 
@@ -2084,31 +2068,31 @@ public sealed class MainViewModel : ObservableObject
             if (!response.Success)
             {
                 TrackInsightNotice = string.Equals(response.Error, "no_track_playing", StringComparison.OrdinalIgnoreCase)
-                    ? L("Geen actieve track om te tonen.", "No active track to show.")
-                    : response.Message ?? response.Error ?? L("Track Insight is niet bereikbaar", "Track Insight is unavailable");
+                    ? P("Vm_No_active_track_to_show")
+                    : response.Message ?? response.Error ?? P("Vm_Track_Insight_is_unavailable_3");
                 return;
             }
 
             TrackInsightPanel = TrackInsightPresentation.From(response.TrackInsight);
-            TrackInsightNotice = HasTrackInsightPanel ? "" : L("Geen Track Insight beschikbaar.", "No Track Insight available.");
+            TrackInsightNotice = HasTrackInsightPanel ? "" : P("Vm_No_Track_Insight_available");
             AddDiagnostic("INF Track Insight loaded from Home Assistant.");
         }
         catch (Exception ex)
         {
             if (await ApplyStalePairingAsync(ex))
             {
-                TrackInsightNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                TrackInsightNotice = P("Vm_Pair_again_to_continue_3");
                 return;
             }
 
             if (ApplyVersionMismatch(ex))
             {
-                TrackInsightNotice = L("Update vereist", "Update required");
+                TrackInsightNotice = P("Vm_Update_required_18");
                 AddDiagnostic("WRN Track Insight blocked by version mismatch.");
                 return;
             }
 
-            TrackInsightNotice = L("Track Insight is niet bereikbaar", "Track Insight is unavailable");
+            TrackInsightNotice = P("Vm_Track_Insight_is_unavailable_4");
             AddDiagnostic("WRN Track Insight failed: " + ex.GetType().Name);
         }
     }
@@ -2123,7 +2107,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (IsDemoMode)
         {
-            var message = L("Nummer opgeslagen in favorieten.", "Track saved to favorites.");
+            var message = P("Vm_Track_saved_to_favorites");
             if (fromAskDJ)
             {
                 AskDJNotice = message;
@@ -2147,11 +2131,11 @@ public sealed class MainViewModel : ObservableObject
         {
             if (fromAskDJ)
             {
-                AskDJNotice = L("Update vereist", "Update required");
+                AskDJNotice = P("Vm_Update_required_19");
             }
             else
             {
-                Notice = L("Update vereist", "Update required");
+                Notice = P("Vm_Update_required_20");
             }
 
             AddDiagnostic("WRN Save current track blocked by version mismatch.");
@@ -2163,11 +2147,11 @@ public sealed class MainViewModel : ObservableObject
             {
                 if (fromAskDJ)
                 {
-                    AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                    AskDJNotice = P("Vm_Pair_again_to_continue_4");
                 }
                 else
                 {
-                    Notice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                    Notice = P("Vm_Pair_again_to_continue_5");
                 }
 
                 return null;
@@ -2183,11 +2167,11 @@ public sealed class MainViewModel : ObservableObject
         {
             if (fromAskDJ)
             {
-                AskDJNotice = L("Update vereist", "Update required");
+                AskDJNotice = P("Vm_Update_required_21");
             }
             else
             {
-                Notice = L("Update vereist", "Update required");
+                Notice = P("Vm_Update_required_22");
             }
 
             AddDiagnostic("WRN Save current track blocked by incompatible runtime.");
@@ -2201,7 +2185,7 @@ public sealed class MainViewModel : ObservableObject
             return response;
         }
 
-        var success = response.DjText ?? response.Message ?? L("Nummer opgeslagen in favorieten.", "Track saved to favorites.");
+        var success = response.DjText ?? response.Message ?? P("Vm_Track_saved_to_favorites_3");
         if (fromAskDJ)
         {
             AskDJNotice = success;
@@ -2219,7 +2203,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void SetSaveCurrentTrackFailureNotice(bool fromAskDJ)
     {
-        var message = L("Nummer kon niet worden opgeslagen.", "The track could not be saved.");
+        var message = P("Vm_The_track_could_not_be_saved");
         if (fromAskDJ)
         {
             AskDJNotice = message;
@@ -2234,14 +2218,14 @@ public sealed class MainViewModel : ObservableObject
     {
         if (!CanUsePlaybackFeatures)
         {
-            QueueNotice = !_runtimeCompatible ? L("Update vereist", "Update required") : L("Playback niet beschikbaar", "Playback unavailable");
+            QueueNotice = !_runtimeCompatible ? P("Vm_Update_required_23") : P("Vm_Playback_unavailable_5");
             return;
         }
 
         if (IsDemoMode)
         {
             LoadDemoQueueItems(reset: true);
-            QueueNotice = QueueItems.Count == 0 ? L("Geen wachtrij", "No queue") : "";
+            QueueNotice = QueueItems.Count == 0 ? P("Vm_No_queue") : "";
             return;
         }
 
@@ -2252,7 +2236,7 @@ public sealed class MainViewModel : ObservableObject
             var response = await _apiClient.GetStatusAsync(_identity, CancellationToken.None);
             if (!response.Success)
             {
-                QueueNotice = L("Home Assistant niet bereikbaar", "Home Assistant is unreachable");
+                QueueNotice = P("Vm_Home_Assistant_is_unreachable_4");
                 AddDiagnostic("WRN Queue refresh failed.");
                 return;
             }
@@ -2261,20 +2245,20 @@ public sealed class MainViewModel : ObservableObject
             ApplyVersionCompatibility(response);
             ReplaceQueueItems(response.ResolvedQueue());
             QueueNotice = !_runtimeCompatible
-                ? L("Update vereist", "Update required")
-                : QueueItems.Count == 0 ? L("Geen wachtrij", "No queue") : "";
+                ? P("Vm_Update_required_24")
+                : QueueItems.Count == 0 ? P("Vm_No_queue_3") : "";
             RaisePlaybackStateProperties();
         }
         catch (Exception ex)
         {
             if (ApplyVersionMismatch(ex))
             {
-                QueueNotice = L("Update vereist", "Update required");
+                QueueNotice = P("Vm_Update_required_25");
                 AddDiagnostic("WRN Queue refresh blocked by version mismatch.");
                 return;
             }
 
-            QueueNotice = L("Home Assistant niet bereikbaar", "Home Assistant is unreachable");
+            QueueNotice = P("Vm_Home_Assistant_is_unreachable_5");
             AddDiagnostic("WRN Queue refresh failed: " + ex.GetType().Name);
         }
         finally
@@ -2288,19 +2272,19 @@ public sealed class MainViewModel : ObservableObject
     {
         if (!CanUsePlaybackFeatures)
         {
-            QueueNotice = !_runtimeCompatible ? L("Update vereist", "Update required") : L("Playback niet beschikbaar", "Playback unavailable");
+            QueueNotice = !_runtimeCompatible ? P("Vm_Update_required_26") : P("Vm_Playback_unavailable_6");
             return;
         }
 
         if (SelectedOutput is null)
         {
-            QueueNotice = L("Geen uitvoerapparaat geselecteerd", "No output device selected");
+            QueueNotice = P("Vm_No_output_device_selected_4");
             return;
         }
 
         if (!item.IsPlayable)
         {
-            QueueNotice = L("Playback niet beschikbaar", "Playback unavailable");
+            QueueNotice = P("Vm_Playback_unavailable_7");
             return;
         }
 
@@ -2333,14 +2317,14 @@ public sealed class MainViewModel : ObservableObject
     {
         if (!CanUsePlaybackFeatures)
         {
-            PlaylistNotice = !_runtimeCompatible ? L("Update vereist", "Update required") : L("Playback niet beschikbaar", "Playback unavailable");
+            PlaylistNotice = !_runtimeCompatible ? P("Vm_Update_required_27") : P("Vm_Playback_unavailable_8");
             return;
         }
 
         if (IsDemoMode)
         {
             LoadDemoPlaylists(reset: true);
-            PlaylistNotice = FilteredPlaylistItems.Count == 0 ? L("Geen afspeellijsten", "No playlists") : "";
+            PlaylistNotice = FilteredPlaylistItems.Count == 0 ? P("Vm_No_playlists") : "";
             return;
         }
 
@@ -2352,7 +2336,7 @@ public sealed class MainViewModel : ObservableObject
             if (!response.Success)
             {
                 ReplacePlaylistItems([]);
-                PlaylistNotice = L("Home Assistant niet bereikbaar", "Home Assistant is unreachable");
+                PlaylistNotice = P("Vm_Home_Assistant_is_unreachable_6");
                 AddDiagnostic("WRN Playlist refresh failed.");
                 return;
             }
@@ -2361,21 +2345,21 @@ public sealed class MainViewModel : ObservableObject
             ApplyVersionCompatibility(response);
             ReplacePlaylistItems(response.ResolvedPlaylists());
             PlaylistNotice = !_runtimeCompatible
-                ? L("Update vereist", "Update required")
-                : PlaylistItems.Count == 0 ? L("Geen afspeellijsten", "No playlists") : "";
+                ? P("Vm_Update_required_28")
+                : PlaylistItems.Count == 0 ? P("Vm_No_playlists_3") : "";
             RaisePlaybackStateProperties();
         }
         catch (Exception ex)
         {
             if (ApplyVersionMismatch(ex))
             {
-                PlaylistNotice = L("Update vereist", "Update required");
+                PlaylistNotice = P("Vm_Update_required_29");
                 AddDiagnostic("WRN Playlist refresh blocked by version mismatch.");
                 return;
             }
 
             ReplacePlaylistItems([]);
-            PlaylistNotice = L("Home Assistant niet bereikbaar", "Home Assistant is unreachable");
+            PlaylistNotice = P("Vm_Home_Assistant_is_unreachable_7");
             AddDiagnostic("WRN Playlist refresh failed: " + ex.GetType().Name);
         }
         finally
@@ -2389,19 +2373,19 @@ public sealed class MainViewModel : ObservableObject
     {
         if (!CanUsePlaybackFeatures)
         {
-            PlaylistNotice = !_runtimeCompatible ? L("Update vereist", "Update required") : L("Playback niet beschikbaar", "Playback unavailable");
+            PlaylistNotice = !_runtimeCompatible ? P("Vm_Update_required_30") : P("Vm_Playback_unavailable_9");
             return;
         }
 
         if (SelectedOutput is null)
         {
-            PlaylistNotice = L("Geen uitvoerapparaat geselecteerd", "No output device selected");
+            PlaylistNotice = P("Vm_No_output_device_selected_5");
             return;
         }
 
         if (!playlist.IsPlayable)
         {
-            PlaylistNotice = L("Playback niet beschikbaar", "Playback unavailable");
+            PlaylistNotice = P("Vm_Playback_unavailable_10");
             return;
         }
 
@@ -2441,7 +2425,7 @@ public sealed class MainViewModel : ObservableObject
         IsDemoMode = true;
         _backendAvailable = true;
         _runtimeCompatible = true;
-        Status = L("Demo modus", "Demo Mode");
+        Status = P("Vm_Demo_mode_4");
         NowPlaying = "Midnight City - M83";
         ClearDemoState();
         ClearRuntimePlaybackState();
@@ -2454,7 +2438,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (IsMonkeyTestMode)
         {
-            Status = L("Monkeytest: Demo Mode blijft actief", "Monkey test: Demo Mode stays active");
+            Status = P("Vm_Monkey_test_Demo_Mode_stays_active");
             AddDiagnostic("INF Monkey test suppressed stopping Demo Mode.");
             return;
         }
@@ -2470,17 +2454,17 @@ public sealed class MainViewModel : ObservableObject
             _settings.DJConnectWelcomeSeen = true;
             _settings.HasCompletedOnboarding = true;
             IsPairingOverlayVisible = true;
-            Status = L("Niet gekoppeld", "Not paired");
+            Status = P("Vm_Not_paired_3");
             await SaveSettingsIfMutableAsync();
         }
         else
         {
             IsPairingOverlayVisible = false;
-            Status = L("Gekoppeld", "Paired");
+            Status = P("Vm_Paired_5");
             await RefreshAsync();
         }
 
-        Status = IsPaired ? L("Gekoppeld", "Paired") : L("Niet gekoppeld", "Not paired");
+        Status = IsPaired ? P("Vm_Paired_6") : P("Vm_Not_paired_4");
         AddDiagnostic("INF Demo mode stopped.");
     }
 
@@ -2531,8 +2515,8 @@ public sealed class MainViewModel : ObservableObject
     private async Task LoadWhatsNewAsync()
     {
         IsLoadingWhatsNew = true;
-        WhatsNewTitle = L("Wat is er nieuw?", "What's New");
-        WhatsNewBody = L("Release notes laden...", "Loading release notes...");
+        WhatsNewTitle = P("Vm_What_s_New_3");
+        WhatsNewBody = P("Vm_Loading_release_notes");
         var language = AppStrings.NormalizeLanguage(Language);
         var versionTag = $"v{AppVersion}";
         var candidates = new[]
@@ -2550,7 +2534,7 @@ public sealed class MainViewModel : ObservableObject
                 var note = await httpClient.GetFromJsonAsync<ReleaseNoteDocument>(url);
                 if (!string.IsNullOrWhiteSpace(note?.Body))
                 {
-                    WhatsNewTitle = SafeReleaseText(note.Name) ?? $"{L("Wat is er nieuw in", "What's New in")} DJConnect {AppVersion}";
+                    WhatsNewTitle = SafeReleaseText(note.Name) ?? $"{P("Vm_What_s_New_in")} DJConnect {AppVersion}";
                     WhatsNewBody = NormalizeReleaseMarkdown(note.Body);
                     WhatsNewOnlineUrl = url;
                     AddDiagnostic("INF What's New loaded from djconnect.dev release-notes.");
@@ -2564,10 +2548,8 @@ public sealed class MainViewModel : ObservableObject
             }
         }
 
-        WhatsNewTitle = L("Wat is er nieuw?", "What's New");
-        WhatsNewBody = L(
-            "Release notes konden niet worden geladen. Bekijk https://djconnect.dev voor meer informatie.",
-            "Release notes could not be loaded. Visit https://djconnect.dev for more information.");
+        WhatsNewTitle = P("Vm_What_s_New_4");
+        WhatsNewBody = P("Vm_WhatsNewLoadFailedBody");
         WhatsNewOnlineUrl = "https://djconnect.dev";
         IsLoadingWhatsNew = false;
     }
@@ -2597,7 +2579,7 @@ public sealed class MainViewModel : ObservableObject
                 "pair_path" => ApiErrorLocalizer.Pairing("invalid_client_type"),
                 "pair_code" => AppStrings.Get("Pairing_InvalidCode"),
                 "ha_url" => AppStrings.Get("Pairing_InvalidUrl"),
-                _ => ApiErrorLocalizer.Pairing(null)
+                _ => ApiErrorLocalizer.Pairing((string?)null)
             };
             Notice = Status;
             AddDiagnostic("WRN Pairing deeplink rejected: " + failureReason);
@@ -2632,7 +2614,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (IsMonkeyTestMode)
         {
-            Status = L("Monkeytest: opnieuw koppelen onderdrukt", "Monkey test: pairing reset suppressed");
+            Status = P("Vm_Monkey_test_pairing_reset_suppressed");
             AddDiagnostic("INF Monkey test suppressed pairing reset.");
             return;
         }
@@ -2675,7 +2657,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(ClientType));
         RaisePlaybackStateProperties();
         RaiseSettingsStatusProperties();
-        Status = L("Klaar om opnieuw te koppelen", "Ready to pair again");
+        Status = P("Vm_Ready_to_pair_again");
         AddDiagnostic("INF Pairing reset: identity rotated and local pair code entry cleared.");
     }
 
@@ -2683,14 +2665,14 @@ public sealed class MainViewModel : ObservableObject
     {
         if (IsMonkeyTestMode)
         {
-            LogNotice = L("Monkeytest: klembord niet gewijzigd", "Monkey test: clipboard unchanged");
+            LogNotice = P("Vm_Monkey_test_clipboard_unchanged");
             AddDiagnostic("INF Monkey test suppressed log copy.");
             return;
         }
 
         await Clipboard.Default.SetTextAsync(RedactedDiagnosticExport());
-        PermissionNotice = L("Logs gekopieerd met redactie.", "Logs copied with redaction.");
-        LogNotice = L("Logs gekopieerd naar klembord", "Logs copied to clipboard");
+        PermissionNotice = P("Vm_Logs_copied_with_redaction");
+        LogNotice = P("Vm_Logs_copied_to_clipboard");
         AddDiagnostic("INF Diagnostic logs copied with redaction.");
     }
 
@@ -2698,7 +2680,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (IsMonkeyTestMode)
         {
-            LogNotice = L("Monkeytest: logs niet gewist", "Monkey test: logs not cleared");
+            LogNotice = P("Vm_Monkey_test_logs_not_cleared");
             AddDiagnostic("INF Monkey test suppressed log clear.");
             return;
         }
@@ -2714,8 +2696,8 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(HasNoDiagnosticLogs));
         OnPropertyChanged(nameof(LogSearchResultCount));
         OnPropertyChanged(nameof(LogSearchResultLabel));
-        PermissionNotice = L("Logs gewist.", "Logs cleared.");
-        LogNotice = L("Logs gewist", "Logs cleared");
+        PermissionNotice = P("Vm_Logs_cleared");
+        LogNotice = P("Vm_Logs_cleared_3");
     }
 
     private Task ToggleLogSearchAsync()
@@ -2752,7 +2734,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (!WakewordFeatureAvailable)
         {
-            WakewordNotice = L("Stemactivatie is niet beschikbaar in deze build.", "Voice activation is not available in this build.");
+            WakewordNotice = P("Vm_Voice_activation_is_not_available_in_this_bu");
             AddDiagnostic("INF Wakeword enable requested but feature is unavailable.");
             return Task.CompletedTask;
         }
@@ -2766,7 +2748,7 @@ public sealed class MainViewModel : ObservableObject
         WakewordEnabled = true;
         _settings.WakewordPromptDismissed = false;
         IsWakewordPromptVisible = false;
-        WakewordNotice = L("Stemactivatie ingeschakeld.", "Voice activation enabled.");
+        WakewordNotice = P("Vm_Voice_activation_enabled");
         AddDiagnostic("INF Wakeword foreground listener enabled.");
         return SaveSettingsIfMutableAsync();
     }
@@ -2782,7 +2764,7 @@ public sealed class MainViewModel : ObservableObject
 
     private Task ShowPrivacyFromWakewordAsync()
     {
-        WakewordNotice = L("Open Privacy voor details over microfoon en Ask DJ.", "Open Privacy for microphone and Ask DJ details.");
+        WakewordNotice = P("Vm_Open_Privacy_for_microphone_and_Ask_DJ_detai");
         return Task.CompletedTask;
     }
 
@@ -2865,7 +2847,7 @@ public sealed class MainViewModel : ObservableObject
     private string BuildFeedbackBody()
     {
         var description = string.IsNullOrWhiteSpace(FeedbackText)
-            ? "<beschrijf wat er gebeurde en wat je verwachtte>"
+            ? P("Vm_FeedbackDescriptionPlaceholder")
             : FeedbackText.Trim();
 
         var body = new StringBuilder();
@@ -3146,7 +3128,7 @@ public sealed class MainViewModel : ObservableObject
     private void ApplyVersionCompatibilityResult(VersionCompatibilityResult result)
     {
         HomeAssistantVersionText = string.IsNullOrWhiteSpace(result.HomeAssistantMajorMinor)
-            ? L("Home Assistant integration: onbekend", "Home Assistant integration: unknown")
+            ? P("Vm_Home_Assistant_integration_unknown")
             : $"Home Assistant integration: {result.HomeAssistantMajorMinor}.x";
 
         if (result.IsCompatible)
@@ -3157,9 +3139,7 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        UpdateRequiredMessage = L(
-            $"Update DJConnect voordat je verdergaat. Deze app vereist Home Assistant DJConnect {result.RequiredMajorMinor}.x.",
-            $"Update DJConnect before continuing. This app requires Home Assistant DJConnect {result.RequiredMajorMinor}.x.");
+        UpdateRequiredMessage = AppStrings.Format("Format_UpdateRequiredMessage", result.RequiredMajorMinor);
         IsWhatsNewVisible = false;
         _runtimeCompatible = false;
         RaisePlaybackStateProperties();
@@ -3311,7 +3291,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch
         {
-            Notice = L("Versiecontrole mislukt", "Version check failed");
+            Notice = P("Vm_Version_check_failed");
         }
         finally
         {
@@ -3338,7 +3318,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (!CanUseAskDJ)
         {
-            AskDJNotice = !_runtimeCompatible ? L("Update vereist", "Update required") : L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
+            AskDJNotice = !_runtimeCompatible ? P("Vm_Update_required_31") : P("Vm_Ask_DJ_is_unavailable_7");
             return;
         }
 
@@ -3361,17 +3341,17 @@ public sealed class MainViewModel : ObservableObject
         {
             if (await ApplyStalePairingAsync(ex))
             {
-                AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                AskDJNotice = P("Vm_Pair_again_to_continue_6");
                 return;
             }
 
             if (ApplyVersionMismatch(ex))
             {
-                AskDJNotice = L("Update vereist", "Update required");
+                AskDJNotice = P("Vm_Update_required_32");
                 return;
             }
 
-            AskDJNotice = L("Ask DJ niet bereikbaar", "Ask DJ is unavailable");
+            AskDJNotice = P("Vm_Ask_DJ_is_unavailable_8");
             AddDiagnostic("WRN Ask DJ action failed: " + ex.GetType().Name);
             return;
         }
@@ -3379,7 +3359,7 @@ public sealed class MainViewModel : ObservableObject
         {
             if (await ApplyStalePairingAsync(response.Error))
             {
-                AskDJNotice = L("Opnieuw koppelen vereist", "Pair again to continue");
+                AskDJNotice = P("Vm_Pair_again_to_continue_7");
                 return;
             }
 
@@ -3391,7 +3371,7 @@ public sealed class MainViewModel : ObservableObject
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
         AskDJNotice = "";
-        Status = response.DjText ?? response.Message ?? L("Command uitgevoerd", "Command executed");
+        Status = response.DjText ?? response.Message ?? P("Vm_Command_executed_4");
         await RefreshAsync();
     }
 
@@ -3399,7 +3379,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (IsDemoMode)
         {
-            VoiceStatus = L("Demo: microfoon niet gebruikt. Ask DJ zou nu luisteren via Home Assistant.", "Demo: microphone not used. Ask DJ would listen through Home Assistant.");
+            VoiceStatus = P("Vm_Demo_microphone_not_used_Ask_DJ_would_listen");
             MergeMessage(new AskDJMessage(Guid.NewGuid().ToString("N"), "assistant", "Demo Mode: voice requests work after pairing Home Assistant.", null, DateTimeOffset.Now, "assistant", DemoPlaybackActions(), null, null, null, null));
             AddDiagnostic("INF Demo push-to-talk simulated locally.");
             return Task.CompletedTask;
@@ -3411,7 +3391,7 @@ public sealed class MainViewModel : ObservableObject
             return Task.CompletedTask;
         }
 
-        VoiceStatus = L("Microfoon niet beschikbaar", "Microphone unavailable");
+        VoiceStatus = P("Vm_Microphone_unavailable");
         AddDiagnostic("INF Push-to-talk requested but no Windows capture backend is implemented yet.");
         return Task.CompletedTask;
     }
@@ -3437,13 +3417,11 @@ public sealed class MainViewModel : ObservableObject
         switch (permission)
         {
             case PermissionExplanationKind.Microphone:
-                VoiceStatus = L("Microfoon niet beschikbaar", "Microphone unavailable");
+                VoiceStatus = P("Vm_Microphone_unavailable_3");
                 AddDiagnostic("INF Microphone explanation accepted; capture backend is not implemented yet.");
                 break;
             case PermissionExplanationKind.Notifications:
-                PermissionNotice = L(
-                    "Windows toast-meldingen zijn nog niet actief in deze build.",
-                    "Windows toast notifications are not active in this build yet.");
+                PermissionNotice = P("Vm_NotificationsNotActiveYet");
                 AddDiagnostic("INF Notification explanation accepted; toast backend is not implemented yet.");
                 break;
             case PermissionExplanationKind.LocalNetwork:
@@ -3458,11 +3436,11 @@ public sealed class MainViewModel : ObservableObject
         IsPermissionExplanationVisible = false;
         if (permission == PermissionExplanationKind.Microphone)
         {
-            VoiceStatus = L("Microfoon niet beschikbaar", "Microphone unavailable");
+            VoiceStatus = P("Vm_Microphone_unavailable_4");
         }
         else if (permission == PermissionExplanationKind.Notifications)
         {
-            PermissionNotice = L("Notificaties blijven uitgeschakeld.", "Notifications remain disabled.");
+            PermissionNotice = P("Vm_Notifications_remain_disabled");
         }
 
         AddDiagnostic("INF Permission explanation dismissed: " + permission);
@@ -3489,7 +3467,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (IsMonkeyTestMode)
         {
-            PermissionNotice = L("Monkeytest: permissieprompt onderdrukt", "Monkey test: permission prompt suppressed");
+            PermissionNotice = P("Vm_Monkey_test_permission_prompt_suppressed");
             AddDiagnostic("INF Monkey test suppressed permission explanation: " + permission);
             return;
         }
@@ -3797,8 +3775,8 @@ public sealed class MainViewModel : ObservableObject
 
     private void LoadDemoAskDJMessages()
     {
-        MergeMessage(new AskDJMessage("demo-system", "assistant", "Demo mode is lokaal. Koppel Home Assistant voor echte Ask DJ antwoorden, audio en acties.", null, DateTimeOffset.Now.AddSeconds(-2), "system", null, null, null, null, null, Origin: "history_retention"));
-        MergeMessage(new AskDJMessage("demo-assistant", "assistant", "Vraag om muziek, context of een gesproken antwoord. Ik toon hier hoe acties en antwoorden eruitzien.", null, DateTimeOffset.Now.AddSeconds(-1), "assistant", DemoPlaybackActions(), null, null, null, null));
+        MergeMessage(new AskDJMessage("demo-system", "assistant", P("Vm_DemoAskDJSystemMessage"), null, DateTimeOffset.Now.AddSeconds(-2), "system", null, null, null, null, null, Origin: "history_retention"));
+        MergeMessage(new AskDJMessage("demo-assistant", "assistant", P("Vm_DemoAskDJAssistantMessage"), null, DateTimeOffset.Now.AddSeconds(-1), "assistant", DemoPlaybackActions(), null, null, null, null));
     }
 
     private void ReplaceRecentItems(IReadOnlyList<RecentItem>? items)
@@ -3825,7 +3803,7 @@ public sealed class MainViewModel : ObservableObject
         _suppressVolumeCommand = false;
         NowPlaying = HasActivePlayback
             ? $"{TrackTitle} - {TrackArtist}".Trim(' ', '-')
-            : L("Geen actieve playback", "No active playback");
+            : P("Vm_No_active_playback_4");
 
         var activeOutput = playback?.OutputDevice ?? playback?.ActiveOutput;
         if (activeOutput is not null)
@@ -3918,7 +3896,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (output is null || string.IsNullOrWhiteSpace(output.CommandValue))
         {
-            Notice = L("Geen uitvoerapparaat geselecteerd", "No output device selected");
+            Notice = P("Vm_No_output_device_selected_6");
             return;
         }
 
@@ -3983,7 +3961,7 @@ public sealed class MainViewModel : ObservableObject
 
         NowPlaying = $"{TrackTitle} - {TrackArtist}";
         HasActivePlayback = true;
-        Status = L("Demo modus", "Demo Mode");
+        Status = P("Vm_Demo_mode_5");
     }
 
     private void ClearRuntimePlaybackState()
@@ -3996,7 +3974,7 @@ public sealed class MainViewModel : ObservableObject
         ArtworkUrl = "";
         PlaybackPositionMs = 0;
         PlaybackDurationMs = 1;
-        NowPlaying = L("Geen actieve playback", "No active playback");
+        NowPlaying = P("Vm_No_active_playback_5");
         _suppressOutputCommand = true;
         SelectedOutput = null;
         _suppressOutputCommand = false;
@@ -4029,7 +4007,7 @@ public sealed class MainViewModel : ObservableObject
         IsPlaying = true;
         HasActivePlayback = true;
         NowPlaying = $"{TrackTitle} - {TrackArtist}".Trim(' ', '-');
-        Status = L("Demo modus", "Demo Mode");
+        Status = P("Vm_Demo_mode_6");
         AddDiagnostic("INF Demo queue item started.");
     }
 
@@ -4044,7 +4022,7 @@ public sealed class MainViewModel : ObservableObject
         IsPlaying = true;
         HasActivePlayback = true;
         NowPlaying = $"{TrackTitle} - {TrackArtist}".Trim(' ', '-');
-        Status = L("Demo modus", "Demo Mode");
+        Status = P("Vm_Demo_mode_7");
         LoadDemoQueueItems(reset: true);
         AddDiagnostic("INF Demo playlist started.");
     }
@@ -4210,9 +4188,9 @@ public sealed class MainViewModel : ObservableObject
         ApplyLogFilter();
     }
 
-    private string L(string dutch, string english) => Language == "nl" ? dutch : english;
-
     private string S(string key) => AppStrings.Get(key);
+
+    private string P(string key) => T.Get(key);
 
     private static bool ShouldSuppressCrashReportPrompt()
     {
@@ -4321,7 +4299,7 @@ public sealed class MainViewModel : ObservableObject
     {
         if (DiagnosticLogLines.Count == 0)
         {
-            return L("Geen logs beschikbaar.", "No logs available.");
+            return P("Vm_No_logs_available");
         }
 
         return RedactFeedbackText(string.Join(Environment.NewLine, DiagnosticLogLines.Select(line => line.ExportText)));
@@ -4416,6 +4394,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(AboutConnectionTypeText));
         OnPropertyChanged(nameof(AboutFastPathText));
         OnPropertyChanged(nameof(RemoteSupportText));
+        OnPropertyChanged(nameof(MusicServiceStatusText));
         OnPropertyChanged(nameof(MusicBackendNameText));
         OnPropertyChanged(nameof(MusicBackendStatusText));
         OnPropertyChanged(nameof(MusicBackendRevisionText));

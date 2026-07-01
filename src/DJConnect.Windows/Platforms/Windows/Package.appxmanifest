@@ -6,7 +6,7 @@
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
   IgnorableNamespaces="uap rescap">
 
-  <Identity Name="dev.djconnect.windows" Publisher="CN=Peter van Tol" Version="3.1.10.0" />
+  <Identity Name="dev.djconnect.windows" Publisher="CN=Peter van Tol" Version="3.2.5.0" />
 
   <mp:PhoneIdentity PhoneProductId="f3bbfd33-61f8-4f81-8e0d-58dfdd60a99f" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
 
@@ -36,6 +36,13 @@
         <uap:DefaultTile Square71x71Logo="appicon.png" Wide310x150Logo="appicon.png" Square310x310Logo="appicon.png" />
         <uap:SplashScreen Image="appicon.png" />
       </uap:VisualElements>
+      <uap:Extensions>
+        <uap:Extension Category="windows.protocol">
+          <uap:Protocol Name="djconnect">
+            <uap:DisplayName>DJConnect</uap:DisplayName>
+          </uap:Protocol>
+        </uap:Extension>
+      </uap:Extensions>
     </Application>
   </Applications>
 

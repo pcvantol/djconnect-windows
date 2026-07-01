@@ -4,6 +4,20 @@
 
 - Nothing yet.
 
+## 3.2.5 - 2026-07-01
+
+- Completed app-wide localization for the Windows client across English,
+  Dutch, German, French and Spanish, including XAML, code-behind alerts,
+  onboarding, settings, mini-games, empty states and user-facing API guidance.
+- Added Windows `djconnect://` protocol activation wiring so QR/deeplink
+  payloads enter the existing pairing flow on cold start or while the app is
+  already running.
+- Tightened localization tooling with resource formatting, placeholder parity,
+  duplicate key checks and developer documentation for future translated UI
+  changes.
+- Polished ordinary Windows UI copy so technical terms stay in About, feedback
+  and diagnostics rather than primary settings and alerts.
+
 ## 3.2.4 - 2026-07-01
 
 - Implemented the Home Assistant pairing screen and pairing flow for the

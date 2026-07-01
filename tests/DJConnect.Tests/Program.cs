@@ -13,6 +13,8 @@ var tests = new (string Name, Action Run)[]
     ("Pairing deeplink accepts Windows payload", PairingDeepLinkAcceptsWindowsPayload),
     ("Pairing deeplink rejects wrong client type", PairingDeepLinkRejectsWrongClientType),
     ("Pairing deeplink rejects wrong pair path", PairingDeepLinkRejectsWrongPairPath),
+    ("Pairing deeplink activation queues payloads", PairingDeepLinkActivationQueuesPayloads),
+    ("Windows manifest registers DJConnect protocol", WindowsManifestRegistersDjConnectProtocol),
     ("Pairing errors show localized user guidance", PairingErrorsShowLocalizedUserGuidance),
     ("Authenticated requests include bearer token and device header", AuthenticatedRequestsIncludeBearerTokenAndDeviceHeader),
     ("Status payload serializes app protocol metadata", StatusPayloadSerializesAppProtocolMetadata),
@@ -76,6 +78,7 @@ var tests = new (string Name, Action Run)[]
     ("WebSocket payload includes identity and token without diagnostic leaks", WebSocketPayloadIncludesIdentityAndTokenWithoutDiagnosticLeaks),
     ("Backend error responses deserialize stale and unsupported contracts", BackendErrorResponsesDeserializeStaleAndUnsupportedContracts),
     ("Localization supports required locales", LocalizationSupportsRequiredLocales),
+    ("Settings localization avoids diagnostic jargon", SettingsLocalizationAvoidsDiagnosticJargon),
     ("API error localizer maps user-facing guidance", ApiErrorLocalizerMapsUserFacingGuidance),
     ("API error localization preserves protocol values", ApiErrorLocalizationPreservesProtocolValues),
     ("Protocol 3.2 advertises no client callback endpoint", Protocol32AdvertisesNoClientCallbackEndpoint)
@@ -214,6 +217,40 @@ static void PairingDeepLinkRejectsWrongPairPath()
 
     AssertTrue(!accepted, "wrong pair_path must be rejected");
     AssertEqual("pair_path", reason);
+}
+
+static void PairingDeepLinkActivationQueuesPayloads()
+{
+    while (PairingDeepLinkActivation.TryDequeue(out _))
+    {
+    }
+
+    var eventCount = 0;
+    void OnQueued(object? sender, EventArgs args) => eventCount++;
+
+    PairingDeepLinkActivation.PayloadQueued += OnQueued;
+    try
+    {
+        PairingDeepLinkActivation.Queue("   ");
+        PairingDeepLinkActivation.Queue("djconnect://pair?ha_url=http%3A%2F%2Fhomeassistant.local%3A8123&pair_code=123456&client_type=windows&pair_path=%2Fapi%2Fdjconnect%2Fpair");
+
+        AssertEqual(1, eventCount);
+        AssertTrue(PairingDeepLinkActivation.TryDequeue(out var payload), "queued deeplink should be available to MainPage after activation");
+        AssertTrue(payload.StartsWith("djconnect://pair?", StringComparison.Ordinal), "queued payload must preserve original URI");
+        AssertTrue(!PairingDeepLinkActivation.TryDequeue(out _), "queue should be empty after consuming the payload");
+    }
+    finally
+    {
+        PairingDeepLinkActivation.PayloadQueued -= OnQueued;
+    }
+}
+
+static void WindowsManifestRegistersDjConnectProtocol()
+{
+    var manifest = File.ReadAllText(Path.Combine(ProjectRoot(), "src", "DJConnect.Windows", "Platforms", "Windows", "Package.appxmanifest"));
+
+    AssertTrue(manifest.Contains("Category=\"windows.protocol\"", StringComparison.Ordinal), "Windows manifest must register protocol activation");
+    AssertTrue(manifest.Contains("<uap:Protocol Name=\"djconnect\">", StringComparison.Ordinal), "Windows manifest must register djconnect:// scheme");
 }
 
 static void PairingErrorsShowLocalizedUserGuidance()
@@ -1040,17 +1077,18 @@ static void PairingUiHasOutboundOnlyCopy()
     var codeBehind = File.ReadAllText(Path.Combine("src", "DJConnect.Windows", "MainPage.xaml.cs"));
     var viewModel = File.ReadAllText(Path.Combine("src", "DJConnect.Windows", "ViewModels", "MainViewModel.cs"));
 
-    AssertTrue(xaml.Contains("DJConnect koppelen", StringComparison.Ordinal), "pairing UI must show the DJConnect pairing title");
-    AssertTrue(xaml.Contains("Vul of scan de code uit Home Assistant", StringComparison.Ordinal), "pairing UI must explain QR/manual pairing");
-    AssertTrue(xaml.Contains("Lokale Home Assistant URL", StringComparison.Ordinal), "pairing UI must ask for local HA URL");
-    AssertTrue(xaml.Contains("Koppelcode", StringComparison.Ordinal), "pairing UI must ask for HA pair code");
-    AssertTrue(xaml.Contains("Koppel met Home Assistant", StringComparison.Ordinal), "pairing UI must expose the primary HA pairing action");
+    AppStrings.UseLanguage("nl");
+    AssertEqual("DJConnect koppelen", AppStrings.Get("Xaml_DJConnect_koppelen"));
+    AssertTrue(AppStrings.Get("Xaml_Vul_of_scan_de_code_uit_Home_Assistant_terwi").Contains("Vul of scan de code uit Home Assistant", StringComparison.Ordinal), "pairing resource must explain QR/manual pairing");
+    AssertTrue(xaml.Contains("Xaml_Lokale_Home_Assistant_URL", StringComparison.Ordinal), "pairing UI must ask for local HA URL through resources");
+    AssertTrue(xaml.Contains("Xaml_Koppelcode", StringComparison.Ordinal), "pairing UI must ask for HA pair code through resources");
+    AssertTrue(xaml.Contains("Xaml_Koppel_met_Home_Assistant", StringComparison.Ordinal), "pairing UI must expose the primary HA pairing action through resources");
     AssertTrue(xaml.Contains("IsEnabled=\"{Binding CanPair}\"", StringComparison.Ordinal), "pairing button must be disabled until input is valid");
     AssertTrue(xaml.Contains("Command=\"{Binding PairCommand}\"", StringComparison.Ordinal), "pairing UI must submit through PairCommand");
     AssertTrue(!xaml.Contains("Client adres", StringComparison.OrdinalIgnoreCase), "pairing UI must not show a Windows client address");
     AssertTrue(!xaml.Contains("Wacht op koppeling", StringComparison.OrdinalIgnoreCase), "pairing UI must not wait for an inbound Home Assistant callback");
     AssertTrue(!xaml.Contains("Koppelgegevens voor Home Assistant", StringComparison.OrdinalIgnoreCase), "pairing UI must not present data for HA to call back to Windows");
-    AssertTrue(xaml.Contains("Demo Mode starten", StringComparison.OrdinalIgnoreCase), "pairing UI should expose demo mode when supported");
+    AssertTrue(xaml.Contains("Xaml_Demo_Mode_starten", StringComparison.OrdinalIgnoreCase), "pairing UI should expose demo mode when supported");
     AssertTrue(!codeBehind.Contains("CopyPairingCode", StringComparison.OrdinalIgnoreCase), "Windows must not expose copy-code actions for app-generated pairing codes");
     AssertTrue(!viewModel.Contains("030610", StringComparison.Ordinal), "Windows must not ship a default pair code");
 }
@@ -1608,6 +1646,35 @@ static void LocalizationSupportsRequiredLocales()
     }
 }
 
+static void SettingsLocalizationAvoidsDiagnosticJargon()
+{
+    var keys = new[]
+    {
+        "Xaml_Configuratie_pairing_permissions_en_diagnost",
+        "Xaml_Runtime",
+        "Xaml_Music_backend",
+        "Xaml_Backend_status",
+        "Xaml_Backend_revision",
+        "Format_SettingsRuntimeSummary",
+        "Vm_Music_backend_unavailable",
+        "ApiError_UnsupportedBackendCapability"
+    };
+    var banned = new[] { "backend", "runtime", "fast path" };
+
+    foreach (var locale in AppStrings.SupportedLanguages)
+    {
+        AppStrings.UseLanguage(locale);
+        foreach (var key in keys)
+        {
+            var value = AppStrings.Get(key);
+            foreach (var term in banned)
+            {
+                AssertTrue(!value.Contains(term, StringComparison.OrdinalIgnoreCase), $"{locale}:{key} should not expose diagnostic term '{term}' in ordinary UI");
+            }
+        }
+    }
+}
+
 static void ApiErrorLocalizerMapsUserFacingGuidance()
 {
     AppStrings.UseLanguage("en");
@@ -1619,7 +1686,7 @@ static void ApiErrorLocalizerMapsUserFacingGuidance()
     AssertEqual("Your pairing has expired. Pair DJConnect again to continue.", ApiErrorLocalizer.BackendAction("unauthorized"));
     AssertEqual("This pairing is no longer valid. Generate a new pairing code in Home Assistant and try again.", ApiErrorLocalizer.StaleAuth());
     AssertEqual("This action is from an older music session. Ask DJConnect for a fresh recommendation.", ApiErrorLocalizer.BackendAction("stale_backend_action"));
-    AssertEqual("This music backend does not support that action.", ApiErrorLocalizer.BackendAction("unsupported_backend_capability"));
+    AssertEqual("This music service does not support that action.", ApiErrorLocalizer.BackendAction("unsupported_backend_capability"));
 }
 
 static void ApiErrorLocalizationPreservesProtocolValues()
@@ -1670,6 +1737,22 @@ static TrackInsightRequest TestTrackInsightRequest() => new(
 static DJConnectApiClient NewClientWithFastPath(FakeFastPath fastPath, FakeHttpHandler http)
 {
     return new DJConnectApiClient(new HttpClient(http), fastPath);
+}
+
+static string ProjectRoot()
+{
+    var directory = new DirectoryInfo(AppContext.BaseDirectory);
+    while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "DJConnect.Windows.sln")))
+    {
+        directory = directory.Parent;
+    }
+
+    if (directory is null)
+    {
+        throw new InvalidOperationException("Could not locate project root.");
+    }
+
+    return directory.FullName;
 }
 
 static void AssertEqual<T>(T expected, T actual)
