@@ -158,11 +158,29 @@ public sealed record AskDJHistoryResponse(
     [property: JsonPropertyName("success")] bool Success,
     [property: JsonPropertyName("history_revision")] long HistoryRevision,
     [property: JsonPropertyName("clear_revision")] long ClearRevision,
+    [property: JsonPropertyName("cleared")] bool? Cleared,
+    [property: JsonPropertyName("ask_dj_clear_required")] bool? AskDJClearRequired,
     [property: JsonPropertyName("history_limit")] int? HistoryLimit,
     [property: JsonPropertyName("history_trimmed_before")] DateTimeOffset? HistoryTrimmedBefore,
     [property: JsonPropertyName("history_trimmed_count")] int? HistoryTrimmedCount,
     [property: JsonPropertyName("messages")] IReadOnlyList<AskDJMessage> Messages,
-    [property: JsonPropertyName("error")] string? Error = null);
+    [property: JsonPropertyName("error")] string? Error = null)
+{
+    public bool RequiresLocalClearAfterClearResponse(long localClearRevision)
+    {
+        return Success
+            || Cleared == true
+            || AskDJClearRequired == true
+            || ClearRevision > localClearRevision;
+    }
+
+    public bool RequiresLocalClearBeforeHistoryMerge(long localClearRevision)
+    {
+        return Cleared == true
+            || AskDJClearRequired == true
+            || ClearRevision > localClearRevision;
+    }
+}
 
 public sealed record AskDJMessage(
     [property: JsonPropertyName("id")] string? Id,
@@ -284,7 +302,8 @@ public sealed record TrackInsightRequest(
     [property: JsonPropertyName("music_backend")] string? MusicBackend = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
     [property: JsonPropertyName("force_refresh")] bool ForceRefresh = false,
-    [property: JsonPropertyName("include_visual_profile")] bool IncludeVisualProfile = true);
+    [property: JsonPropertyName("include_visual_profile")] bool IncludeVisualProfile = true,
+    [property: JsonPropertyName("client_id")] string? ClientId = null);
 
 public sealed record TrackInsightResponse(
     [property: JsonPropertyName("success")] bool Success,

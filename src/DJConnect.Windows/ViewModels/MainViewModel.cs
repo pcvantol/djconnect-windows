@@ -1777,18 +1777,15 @@ public sealed class MainViewModel : ObservableObject
 
         ConfigureClient();
         var response = await _apiClient.ClearAskDJHistoryAsync(_identity, CancellationToken.None);
-        if (!response.Success)
+        if (!response.RequiresLocalClearAfterClearResponse(_settings.ClearRevision))
         {
             AskDJNotice = P("Vm_Ask_DJ_is_unavailable_4");
             AddDiagnostic("WRN Ask DJ history clear failed.");
             return;
         }
 
-        Messages.Clear();
-        Actions.Clear();
-        RecentItems.Clear();
-        _settings.HistoryRevision = response.HistoryRevision;
-        _settings.ClearRevision = response.ClearRevision;
+        ClearLocalAskDJState();
+        ApplyHistoryRevisions(response);
         await SaveSettingsIfMutableAsync();
         AskDJNotice = "";
         Status = P("Vm_Ask_DJ_history_cleared");
@@ -1860,11 +1857,9 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        if (response.ClearRevision > _settings.ClearRevision)
+        if (response.RequiresLocalClearBeforeHistoryMerge(_settings.ClearRevision))
         {
-            Messages.Clear();
-            Actions.Clear();
-            RecentItems.Clear();
+            ClearLocalAskDJState();
         }
 
         for (var i = 0; i < response.Messages.Count; i++)
@@ -1875,9 +1870,21 @@ public sealed class MainViewModel : ObservableObject
         PruneMessagesOlderThan(response.HistoryTrimmedBefore);
         SortMessages();
 
-        _settings.HistoryRevision = response.HistoryRevision;
-        _settings.ClearRevision = response.ClearRevision;
+        ApplyHistoryRevisions(response);
         await SaveSettingsIfMutableAsync();
+    }
+
+    private void ClearLocalAskDJState()
+    {
+        Messages.Clear();
+        Actions.Clear();
+        RecentItems.Clear();
+    }
+
+    private void ApplyHistoryRevisions(AskDJHistoryResponse response)
+    {
+        _settings.HistoryRevision = Math.Max(_settings.HistoryRevision, response.HistoryRevision);
+        _settings.ClearRevision = Math.Max(_settings.ClearRevision, response.ClearRevision);
     }
 
     private async Task RunCommandAsync(string command)
@@ -2062,7 +2069,8 @@ public sealed class MainViewModel : ObservableObject
             string.IsNullOrWhiteSpace(_trackAlbum) ? null : _trackAlbum,
             MusicBackend: _musicBackendSummary.Backend,
             Locale: _language,
-            IncludeVisualProfile: true);
+            IncludeVisualProfile: true,
+            ClientId: _identity.DeviceId);
 
         try
         {
@@ -2070,6 +2078,7 @@ public sealed class MainViewModel : ObservableObject
             if (!response.Success)
             {
                 TrackInsightNotice = string.Equals(response.Error, "no_track_playing", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(response.Error, "track_insight_failed", StringComparison.OrdinalIgnoreCase)
                     ? P("Vm_No_active_track_to_show")
                     : response.Message ?? response.Error ?? P("Vm_Track_Insight_is_unavailable_3");
                 return;

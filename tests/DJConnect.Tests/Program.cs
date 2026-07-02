@@ -36,6 +36,11 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ track insight without playback actions has no stale buttons", AskDJTrackInsightWithoutPlaybackActionsHasNoStaleButtons),
     ("Ask DJ message presentation supports system audio and confirmations", AskDJMessagePresentationSupportsSystemAudioAndConfirmations),
     ("Ask DJ history deserializes revisions trim metadata and recent items", AskDJHistoryDeserializesRevisionsTrimMetadataAndRecentItems),
+    ("Ask DJ clear response flags clear local cache", AskDJClearResponseFlagsClearLocalCache),
+    ("Ask DJ history clear HTTP sends identity", AskDJHistoryClearHttpSendsIdentity),
+    ("Ask DJ history clear WebSocket sends identity", AskDJHistoryClearWebSocketSendsIdentity),
+    ("Ask DJ higher clear revision clears before merge", AskDJHigherClearRevisionClearsBeforeMerge),
+    ("Ask DJ empty messages after clear do not restore old messages", AskDJEmptyMessagesAfterClearDoNotRestoreOldMessages),
     ("Playback action deserializes confirmation command", PlaybackActionDeserializesConfirmationCommand),
     ("Playback action detects backend play now recommendations", PlaybackActionDetectsBackendPlayNowRecommendations),
     ("Playback action detects save current track control", PlaybackActionDetectsSaveCurrentTrackControl),
@@ -77,6 +82,7 @@ var tests = new (string Name, Action Run)[]
     ("WebSocket Ask DJ message success uses revisions", WebSocketAskDJMessageSuccessUsesRevisions),
     ("WebSocket Ask DJ payload includes current locale", WebSocketAskDJPayloadIncludesCurrentLocale),
     ("WebSocket Track Insight success renders Music DNA", WebSocketTrackInsightSuccessRendersMusicDna),
+    ("Track Insight payload includes identity and title artist", TrackInsightPayloadIncludesIdentityAndTitleArtist),
     ("WebSocket timeout falls back to HTTP exactly once", WebSocketTimeoutFallsBackToHttpExactlyOnce),
     ("WebSocket auth error falls back to HTTP", WebSocketAuthErrorFallsBackToHttp),
     ("Remote connection stays HTTP", RemoteConnectionStaysHttp),
@@ -86,7 +92,8 @@ var tests = new (string Name, Action Run)[]
     ("Settings localization avoids diagnostic jargon", SettingsLocalizationAvoidsDiagnosticJargon),
     ("API error localizer maps user-facing guidance", ApiErrorLocalizerMapsUserFacingGuidance),
     ("API error localization preserves protocol values", ApiErrorLocalizationPreservesProtocolValues),
-    ("Protocol 3.2 advertises no client callback endpoint", Protocol32AdvertisesNoClientCallbackEndpoint)
+    ("Protocol 3.2 advertises no client callback endpoint", Protocol32AdvertisesNoClientCallbackEndpoint),
+    ("Windows client code avoids removed DJConnect HA playback entities", WindowsClientCodeAvoidsRemovedDjconnectHaPlaybackEntities)
 };
 
 var failed = 0;
@@ -927,6 +934,141 @@ static void AskDJHistoryDeserializesRevisionsTrimMetadataAndRecentItems()
     AssertEqual("Even Flow", response.Messages[0].Items![0].Title);
 }
 
+static void AskDJClearResponseFlagsClearLocalCache()
+{
+    const string json = """
+    {
+      "success": true,
+      "cleared": true,
+      "ask_dj_clear_required": true,
+      "history_revision": 51,
+      "clear_revision": 9,
+      "messages": []
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<AskDJHistoryResponse>(json, JsonOptions());
+
+    AssertNotNull(response);
+    AssertTrue(response!.RequiresLocalClearAfterClearResponse(8), "clear response must clear local cache immediately");
+    AssertTrue(response.RequiresLocalClearBeforeHistoryMerge(8), "higher clear revision must clear before merging history");
+    AssertEqual(0, response.Messages.Count);
+}
+
+static void AskDJHistoryClearHttpSendsIdentity()
+{
+    var http = new FakeHttpHandler("""
+    {
+      "success": true,
+      "cleared": true,
+      "ask_dj_clear_required": true,
+      "history_revision": 12,
+      "clear_revision": 5,
+      "messages": []
+    }
+    """);
+    var client = NewClientWithFastPath(new FakeFastPath([]), http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123");
+
+    var response = client.ClearAskDJHistoryAsync(TestIdentity(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.RequiresLocalClearAfterClearResponse(4), "HTTP clear response should require immediate local cache clear");
+    AssertEqual("POST", http.LastMethod);
+    AssertEqual("api/djconnect/ask_dj/history/clear", http.LastPath.TrimStart('/'));
+    AssertTrue(http.LastBody.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\""), "clear payload must include device_id");
+    AssertTrue(http.LastBody.Contains("\"client_id\":\"djconnect-windows-ABC123DEF456\""), "clear payload must include client_id");
+    AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "clear payload must preserve Windows client_type");
+    AssertTrue(!http.LastBody.Contains("device-token-123", StringComparison.Ordinal), "clear HTTP body must not duplicate bearer token");
+}
+
+static void AskDJHistoryClearWebSocketSendsIdentity()
+{
+    var clearResponse = JsonSerializer.Deserialize<AskDJHistoryResponse>("""
+    {
+      "success": true,
+      "cleared": true,
+      "ask_dj_clear_required": true,
+      "history_revision": 19,
+      "clear_revision": 6,
+      "messages": []
+    }
+    """, JsonOptions())!;
+    var fastPath = new FakeFastPath(["djconnect/ask_dj/history/clear"])
+        .WithResponse("djconnect/ask_dj/history/clear", clearResponse);
+    var http = new FakeHttpHandler("""{"success":false,"history_revision":0,"clear_revision":0,"messages":[]}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
+
+    var response = client.ClearAskDJHistoryAsync(TestIdentity(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.RequiresLocalClearAfterClearResponse(5), "websocket clear response should require immediate local cache clear");
+    AssertEqual(0, http.RequestCount);
+    AssertEqual("djconnect/ask_dj/history/clear", fastPath.Routes.Single());
+    AssertEqual("djconnect-windows-ABC123DEF456", fastPath.LastPayload!["device_id"]);
+    AssertEqual("djconnect-windows-ABC123DEF456", fastPath.LastPayload["client_id"]);
+    AssertEqual("windows", fastPath.LastPayload["client_type"]);
+    AssertEqual("device-token-123", fastPath.LastPayload["device_token"]);
+}
+
+static void AskDJHigherClearRevisionClearsBeforeMerge()
+{
+    const string json = """
+    {
+      "success": true,
+      "history_revision": 30,
+      "clear_revision": 11,
+      "messages": [
+        { "id": "fresh-assistant", "role": "assistant", "text": "Fresh history only." }
+      ]
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<AskDJHistoryResponse>(json, JsonOptions());
+    var localMessages = new List<AskDJMessage>
+    {
+        new("old-user", "user", "old", null, DateTimeOffset.UtcNow, "user", null, null, null, null, null)
+    };
+
+    if (response!.RequiresLocalClearBeforeHistoryMerge(10))
+    {
+        localMessages.Clear();
+    }
+
+    localMessages.AddRange(response.Messages);
+
+    AssertEqual(1, localMessages.Count);
+    AssertEqual("fresh-assistant", localMessages[0].Id);
+}
+
+static void AskDJEmptyMessagesAfterClearDoNotRestoreOldMessages()
+{
+    const string json = """
+    {
+      "success": true,
+      "cleared": true,
+      "ask_dj_clear_required": true,
+      "history_revision": 31,
+      "clear_revision": 12,
+      "messages": []
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<AskDJHistoryResponse>(json, JsonOptions());
+    var localMessages = new List<AskDJMessage>
+    {
+        new("old-assistant", "assistant", "old", null, DateTimeOffset.UtcNow, "assistant", null, null, null, null, null)
+    };
+
+    if (response!.RequiresLocalClearBeforeHistoryMerge(12))
+    {
+        localMessages.Clear();
+    }
+
+    localMessages.AddRange(response.Messages);
+
+    AssertEqual(0, localMessages.Count);
+}
+
 static void PlaybackActionDeserializesConfirmationCommand()
 {
     const string json = """
@@ -1632,6 +1774,31 @@ static void WebSocketTrackInsightSuccessRendersMusicDna()
     AssertEqual(0, http.RequestCount);
 }
 
+static void TrackInsightPayloadIncludesIdentityAndTitleArtist()
+{
+    var http = new FakeHttpHandler("""
+    {
+      "success": false,
+      "error": "no_track_playing",
+      "message": "No track playing."
+    }
+    """);
+    var client = NewClientWithFastPath(new FakeFastPath([]), http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123");
+
+    _ = client.GetTrackInsightAsync(TestTrackInsightRequest(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual("POST", http.LastMethod);
+    AssertEqual("api/djconnect/track_insight", http.LastPath.TrimStart('/'));
+    AssertTrue(http.LastBody.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\""), "Track Insight payload must include device_id");
+    AssertTrue(http.LastBody.Contains("\"client_id\":\"djconnect-windows-ABC123DEF456\""), "Track Insight payload must include client_id");
+    AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "Track Insight payload must preserve Windows client_type");
+    AssertTrue(http.LastBody.Contains("\"title\":\"Strobe\""), "Track Insight payload must prefer title");
+    AssertTrue(http.LastBody.Contains("\"artist\":\"deadmau5\""), "Track Insight payload must prefer artist");
+    AssertTrue(!http.LastBody.Contains("track_name", StringComparison.OrdinalIgnoreCase), "Track Insight request should not send track_name alias when title is known");
+    AssertTrue(!http.LastBody.Contains("artist_name", StringComparison.OrdinalIgnoreCase), "Track Insight request should not send artist_name alias when artist is known");
+}
+
 static void WebSocketTimeoutFallsBackToHttpExactlyOnce()
 {
     var fastPath = new FakeFastPath(["djconnect/command"]) { Error = "timeout" };
@@ -1801,6 +1968,34 @@ static void Protocol32AdvertisesNoClientCallbackEndpoint()
     AssertTrue(!DJConnectApiClient.BuildCommandPayload(ClientIdentity.CreateOrLoad("abc123def4567890"), "status").ContainsKey("local_url"), "Windows command payload must not expose a client-hosted local URL");
 }
 
+static void WindowsClientCodeAvoidsRemovedDjconnectHaPlaybackEntities()
+{
+    var banned = new[]
+    {
+        "djconnect_volume",
+        "djconnect_shuffle",
+        "djconnect_repeat_state",
+        "djconnect_sound_output",
+        "djconnect_spotify_status",
+        "djconnect_playback_available",
+        "djconnect_queue",
+        "djconnect_playlists",
+        "djconnect_outputs",
+        "sensor.djconnect_",
+        "number.djconnect_volume",
+        "select.djconnect_sound_output",
+        "switch.djconnect_shuffle"
+    };
+    var sourceRoot = Path.Combine(ProjectRoot(), "src", "DJConnect.Windows");
+    var source = string.Join('\n', Directory.GetFiles(sourceRoot, "*.cs", SearchOption.AllDirectories)
+        .Select(File.ReadAllText));
+
+    foreach (var entity in banned)
+    {
+        AssertTrue(!source.Contains(entity, StringComparison.OrdinalIgnoreCase), $"Windows client code must not reference removed HA playback entity '{entity}'");
+    }
+}
+
 static JsonSerializerOptions JsonOptions() => new(JsonSerializerDefaults.Web);
 
 static ClientIdentity TestIdentity() => ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
@@ -1824,7 +2019,8 @@ static TrackInsightRequest TestTrackInsightRequest() => new(
     "For Lack of a Better Name",
     MusicBackend: "music_assistant",
     Locale: "en",
-    IncludeVisualProfile: true);
+    IncludeVisualProfile: true,
+    ClientId: "djconnect-windows-ABC123DEF456");
 
 static DJConnectApiClient NewClientWithFastPath(FakeFastPath fastPath, FakeHttpHandler http)
 {

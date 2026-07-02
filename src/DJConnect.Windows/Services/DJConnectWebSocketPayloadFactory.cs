@@ -32,7 +32,7 @@ public sealed class DJConnectWebSocketPayloadFactory
     {
         var payload = BuildIdentityEnvelope(
             request.DeviceId,
-            request.DeviceId,
+            request.ClientId,
             request.DeviceName,
             request.ClientType,
             deviceToken);
@@ -47,6 +47,16 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["force_refresh"] = request.ForceRefresh;
         payload["include_visual_profile"] = request.IncludeVisualProfile;
         return payload;
+    }
+
+    public Dictionary<string, object?> BuildAskDJHistoryClear(ClientIdentity identity, string? deviceToken)
+    {
+        return BuildIdentityEnvelope(
+            identity.DeviceId,
+            identity.DeviceId,
+            identity.DeviceName,
+            identity.ClientType,
+            deviceToken);
     }
 
     public Dictionary<string, object?> BuildCommand(Dictionary<string, object?> httpPayload, string? deviceToken)

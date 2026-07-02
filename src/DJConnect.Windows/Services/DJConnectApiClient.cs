@@ -167,12 +167,23 @@ public sealed class DJConnectApiClient
 
     public async Task<AskDJHistoryResponse> ClearAskDJHistoryAsync(ClientIdentity identity, CancellationToken cancellationToken)
     {
-        var payload = new
+        var payload = new Dictionary<string, object?>
         {
-            device_id = identity.DeviceId,
-            device_name = identity.DeviceName,
-            client_type = identity.ClientType
+            ["device_id"] = identity.DeviceId,
+            ["client_id"] = identity.DeviceId,
+            ["device_name"] = identity.DeviceName,
+            ["client_type"] = identity.ClientType
         };
+        var fastPath = await TryWebSocketAsync<AskDJHistoryResponse>(
+            "djconnect/ask_dj/history/clear",
+            _webSocketPayloadFactory.BuildAskDJHistoryClear(identity, _deviceToken),
+            TimeSpan.FromSeconds(5),
+            cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/ask_dj/history/clear", payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<AskDJHistoryResponse>(response, cancellationToken);
     }
