@@ -49,6 +49,7 @@ var tests = new (string Name, Action Run)[]
     ("Diagnostic redaction removes secrets", DiagnosticRedactionRemovesSecrets),
     ("Version compatibility enforces app protocol minor", VersionCompatibilityEnforcesAppProtocolMinor),
     ("Queue normalization deduplicates and limits items", QueueNormalizationDeduplicatesAndLimitsItems),
+    ("Queue command response supports artist metadata and nested shapes", QueueCommandResponseSupportsArtistMetadataAndNestedShapes),
     ("Playlist normalization supports aliases dedupe and limits", PlaylistNormalizationSupportsAliasesDedupeAndLimits),
     ("Pairing code is entered from Home Assistant", PairingCodeIsEnteredFromHomeAssistant),
     ("Pairing UI has outbound-only copy", PairingUiHasOutboundOnlyCopy),
@@ -1195,20 +1196,82 @@ static void VersionCompatibilityEnforcesAppProtocolMinor()
 
 static void QueueNormalizationDeduplicatesAndLimitsItems()
 {
-    var repeated = new QueueItem("same", null, "Song", null, null, "Artist", null, "Album", 120_000, null, "uri:same", null, null, null, null, null, null, false, false, true, null);
-    var items = new List<QueueItem> { repeated, repeated, new(null, null, "", null, null, null, null, null, null, null, null, null, null, null, null, null, null, false, false, true, null) };
+    var repeated = new QueueItem("same", null, "Song", null, null, "Artist", null, null, "Album", null, 120_000, null, "uri:same", null, null, null, null, null, null, false, false, true, null);
+    var items = new List<QueueItem> { repeated, repeated, new(null, null, "", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, false, false, true, null) };
     for (var i = 0; i < 150; i++)
     {
-        items.Add(new QueueItem($"id-{i}", null, $"Song {i}", null, null, "Artist", null, null, 100_000, null, $"uri:{i}", null, null, null, null, null, null, false, false, true, null));
+        items.Add(new QueueItem($"id-{i}", null, $"Song {i}", null, null, "Artist", null, null, null, null, 100_000, null, $"uri:{i}", null, null, null, null, null, null, false, false, true, null));
     }
 
     var normalized = QueueItemNormalizer.Normalize(items);
 
     AssertEqual(100, normalized.Count);
-    AssertEqual("same", normalized[0].StableId);
+    AssertEqual("uri:same", normalized[0].StableId);
     AssertEqual("01", normalized[0].PositionLabel);
     AssertTrue(normalized.All(item => !string.IsNullOrWhiteSpace(item.DisplayTitleValue)), "queue normalization must skip untitled items");
     AssertEqual(normalized.Count, normalized.Select(item => item.StableId).Distinct(StringComparer.OrdinalIgnoreCase).Count());
+}
+
+static void QueueCommandResponseSupportsArtistMetadataAndNestedShapes()
+{
+    const string nestedJson = """
+        {
+          "success": true,
+          "queue": {
+            "context_uri": "spotify:playlist:queue-context",
+            "items": [
+              {
+                "id": "backend-id-1",
+                "uri": "spotify:track:1",
+                "title": "Nothing Else Matters",
+                "artist_name": "Scala & Kolacny Brothers",
+                "album_name": "Scala On The Rocks",
+                "album_image_url": "https://example.com/album.jpg",
+                "image_url": "https://example.com/image.jpg",
+                "thumbnail_url": "https://example.com/thumb.jpg",
+                "duration_ms": 312000
+              }
+            ]
+          }
+        }
+        """;
+
+    var nested = JsonSerializer.Deserialize<CommandResponse>(nestedJson, JsonOptions())!;
+    var nestedItems = QueueItemNormalizer.Normalize(nested.ResolvedQueue());
+
+    AssertEqual(1, nestedItems.Count);
+    AssertEqual("Nothing Else Matters", nestedItems[0].DisplayTitleValue);
+    AssertEqual("Scala & Kolacny Brothers", nestedItems[0].DisplaySubtitle);
+    AssertEqual("Scala On The Rocks", nestedItems[0].DisplayAlbum);
+    AssertEqual("https://example.com/album.jpg", nestedItems[0].Artwork);
+    AssertEqual("spotify:track:1", nestedItems[0].StableId);
+    AssertEqual("spotify:playlist:queue-context", nestedItems[0].ContextUri);
+
+    const string flatJson = """
+        {
+          "success": true,
+          "contextUri": "spotify:album:flat-context",
+          "queue": [
+            {
+              "id": "backend-id-2",
+              "title": "Fallback Song",
+              "subtitle": "Subtitle Artist",
+              "album": "Album Title",
+              "thumbnail_url": "https://example.com/thumb.jpg"
+            }
+          ]
+        }
+        """;
+
+    var flat = JsonSerializer.Deserialize<CommandResponse>(flatJson, JsonOptions())!;
+    var flatItems = QueueItemNormalizer.Normalize(flat.ResolvedQueue());
+
+    AssertEqual(1, flatItems.Count);
+    AssertEqual("Subtitle Artist", flatItems[0].DisplaySubtitle);
+    AssertEqual("Album Title", flatItems[0].DisplayAlbum);
+    AssertEqual("https://example.com/thumb.jpg", flatItems[0].Artwork);
+    AssertEqual("backend-id-2", flatItems[0].StableId);
+    AssertEqual("spotify:album:flat-context", flatItems[0].ContextUri);
 }
 
 static void PlaylistNormalizationSupportsAliasesDedupeAndLimits()

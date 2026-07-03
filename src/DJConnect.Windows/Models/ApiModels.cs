@@ -852,8 +852,13 @@ public sealed record CommandResponse(
     [property: JsonPropertyName("ha_version")] string? HaVersion = null,
     [property: JsonPropertyName("ha_major_minor")] string? HaMajorMinor = null,
     [property: JsonPropertyName("backend_version")] string? BackendVersion = null,
-    [property: JsonPropertyName("queue")] IReadOnlyList<QueueItem>? Queue = null,
+    [property: JsonPropertyName("queue")]
+    [property: JsonConverter(typeof(QueueItemsJsonConverter))]
+    IReadOnlyList<QueueItem>? Queue = null,
     [property: JsonPropertyName("items")] IReadOnlyList<QueueItem>? Items = null,
+    [property: JsonPropertyName("context")] string? Context = null,
+    [property: JsonPropertyName("context_uri")] string? ContextUri = null,
+    [property: JsonPropertyName("contextUri")] string? ContextUriCamel = null,
     [property: JsonPropertyName("playlists")] IReadOnlyList<PlaylistItem>? Playlists = null,
     [property: JsonPropertyName("collection")] PlaylistEnvelope? Collection = null,
     [property: JsonPropertyName("ha_local_url")] string? HomeAssistantLocalUrl = null,
@@ -881,7 +886,9 @@ public sealed record StatusResponse(
     [property: JsonPropertyName("backend_version")] string? BackendVersion,
     [property: JsonPropertyName("minimum_app_version")] string? MinimumAppVersion,
     [property: JsonPropertyName("playback")] PlaybackState? Playback,
-    [property: JsonPropertyName("queue")] IReadOnlyList<QueueItem>? Queue,
+    [property: JsonPropertyName("queue")]
+    [property: JsonConverter(typeof(QueueItemsJsonConverter))]
+    IReadOnlyList<QueueItem>? Queue,
     [property: JsonPropertyName("items")] IReadOnlyList<QueueItem>? Items,
     [property: JsonPropertyName("queue_items")] IReadOnlyList<QueueItem>? QueueItems,
     [property: JsonPropertyName("collection")] QueueEnvelope? Collection,
@@ -983,8 +990,10 @@ public sealed record QueueItem(
     [property: JsonPropertyName("name")] string? Name,
     [property: JsonPropertyName("display_title")] string? DisplayTitle,
     [property: JsonPropertyName("artist")] string? Artist,
+    [property: JsonPropertyName("artist_name")] string? ArtistName,
     [property: JsonPropertyName("subtitle")] string? Subtitle,
     [property: JsonPropertyName("album")] string? Album,
+    [property: JsonPropertyName("album_name")] string? AlbumName,
     [property: JsonPropertyName("duration_ms")] int? DurationMs,
     [property: JsonPropertyName("duration")] string? Duration,
     [property: JsonPropertyName("uri")] string? Uri,
@@ -1001,11 +1010,11 @@ public sealed record QueueItem(
     [property: JsonIgnore] int Position = 0)
 {
     public string DisplayTitleValue => FirstNonEmpty(Title, Name, DisplayTitle);
-    public string DisplaySubtitle => FirstNonEmpty(Artist, Subtitle, Album);
-    public string DisplayAlbum => Album ?? "";
-    public string Artwork => FirstNonEmpty(AlbumImageUrl, ImageUrl, ArtworkUrl, ThumbnailUrl);
-    public string CommandUri => FirstNonEmpty(Uri, TrackUri, ContextUri);
-    public string StableId => FirstNonEmpty(Id, ItemId, CommandUri, $"{DisplayTitleValue}|{DisplaySubtitle}|{Position}");
+    public string DisplaySubtitle => FirstNonEmpty(Artist, ArtistName, Subtitle);
+    public string DisplayAlbum => FirstNonEmpty(Album, AlbumName);
+    public string Artwork => FirstNonEmpty(AlbumImageUrl, ImageUrl, ThumbnailUrl, ArtworkUrl);
+    public string CommandUri => FirstNonEmpty(Uri, TrackUri);
+    public string StableId => FirstNonEmpty(CommandUri, Id, ItemId, $"{DisplayTitleValue}|{DisplaySubtitle}|{Position}");
     public bool IsPlayable => Playable ?? PlaybackAction is not null || !string.IsNullOrWhiteSpace(CommandUri);
     public bool IsActive => IsPlaying == true || IsCurrent == true;
     public bool HasArtwork => !string.IsNullOrWhiteSpace(Artwork);
@@ -1033,6 +1042,11 @@ public static class StatusResponseExtensions
         return response.Queue ?? response.QueueItems ?? response.Items ?? response.Collection?.Items ?? response.Collection?.Queue;
     }
 
+    public static IReadOnlyList<QueueItem>? ResolvedQueue(this CommandResponse response)
+    {
+        return ApplyQueueContext(response.Queue ?? response.Items, FirstNonEmpty(response.ContextUri, response.ContextUriCamel, response.Context));
+    }
+
     public static IReadOnlyList<PlaylistItem>? ResolvedPlaylists(this StatusResponse response)
     {
         return response.Playlists
@@ -1040,6 +1054,82 @@ public static class StatusResponseExtensions
             ?? response.PlaylistCollection?.Items
             ?? response.PlaylistCollection?.Playlists
             ?? response.PlaylistCollection?.Collection;
+    }
+
+    private static IReadOnlyList<QueueItem>? ApplyQueueContext(IReadOnlyList<QueueItem>? items, string contextUri)
+    {
+        if (items is null || string.IsNullOrWhiteSpace(contextUri))
+        {
+            return items;
+        }
+
+        return items.Select(item => string.IsNullOrWhiteSpace(item.ContextUri)
+            ? item with { ContextUri = contextUri }
+            : item).ToArray();
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    }
+}
+
+public sealed class QueueItemsJsonConverter : JsonConverter<IReadOnlyList<QueueItem>?>
+{
+    public override IReadOnlyList<QueueItem>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        if (root.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (root.ValueKind == JsonValueKind.Array)
+        {
+            return JsonSerializer.Deserialize<IReadOnlyList<QueueItem>>(root.GetRawText(), options);
+        }
+
+        if (root.ValueKind != JsonValueKind.Object)
+        {
+            return null;
+        }
+
+        var contextUri = ReadString(root, "context_uri")
+            ?? ReadString(root, "contextUri")
+            ?? ReadString(root, "context");
+        var itemsElement = root.TryGetProperty("items", out var nestedItems) && nestedItems.ValueKind == JsonValueKind.Array
+            ? nestedItems
+            : root.TryGetProperty("queue", out var nestedQueue) && nestedQueue.ValueKind == JsonValueKind.Array
+                ? nestedQueue
+                : default;
+
+        if (itemsElement.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        var items = JsonSerializer.Deserialize<IReadOnlyList<QueueItem>>(itemsElement.GetRawText(), options);
+        if (items is null || string.IsNullOrWhiteSpace(contextUri))
+        {
+            return items;
+        }
+
+        return items.Select(item => string.IsNullOrWhiteSpace(item.ContextUri)
+            ? item with { ContextUri = contextUri }
+            : item).ToArray();
+    }
+
+    public override void Write(Utf8JsonWriter writer, IReadOnlyList<QueueItem>? value, JsonSerializerOptions options)
+    {
+        JsonSerializer.Serialize(writer, value?.ToArray(), options);
+    }
+
+    private static string? ReadString(JsonElement element, string propertyName)
+    {
+        return element.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
     }
 }
 

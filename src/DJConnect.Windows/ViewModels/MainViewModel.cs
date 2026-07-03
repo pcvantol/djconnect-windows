@@ -2244,7 +2244,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             ConfigureClient();
-            var response = await _apiClient.GetStatusAsync(_identity, _language, CancellationToken.None);
+            var response = await _apiClient.RunCommandAsync(_identity, "queue", new { limit = 100 }, _language, CancellationToken.None);
             if (!response.Success)
             {
                 QueueNotice = P("Vm_Home_Assistant_is_unreachable_4");
@@ -2252,7 +2252,6 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            _backendAvailable = response.BackendAvailable ?? true;
             ApplyVersionCompatibility(response);
             ReplaceQueueItems(response.ResolvedQueue());
             QueueNotice = !_runtimeCompatible
@@ -4142,13 +4141,13 @@ public sealed class MainViewModel : ObservableObject
 
         ReplaceQueueItems(
         [
-            new QueueItem("demo-1", null, "Midnight City", null, null, "M83", null, "Hurry Up, We're Dreaming", 244_000, null, "demo:midnight-city", null, null, null, null, null, null, true, true, true, null),
-            new QueueItem("demo-2", null, "Sweet Disposition", null, null, "The Temper Trap", null, "Conditions", 232_000, null, "demo:sweet-disposition", null, null, null, null, null, null, false, false, true, null),
-            new QueueItem("demo-3", null, "Electric Feel", null, null, "MGMT", null, "Oracular Spectacular", 229_000, null, "demo:electric-feel", null, null, null, null, null, null, false, false, true, null),
-            new QueueItem("demo-4", null, "1901", null, null, "Phoenix", null, "Wolfgang Amadeus Phoenix", 193_000, null, "demo:1901", null, null, null, null, null, null, false, false, true, null),
-            new QueueItem("demo-5", null, "Tadow", null, null, "Masego & FKJ", null, "Lady Lady", 301_000, null, "demo:tadow", null, null, null, null, null, null, false, false, true, null),
-            new QueueItem("demo-6", null, "Innerbloom", null, null, "RÜFÜS DU SOL", null, "Bloom", 589_000, null, "demo:innerbloom", null, null, null, null, null, null, false, false, true, null),
-            new QueueItem("demo-7", null, "A Moment Apart", null, null, "ODESZA", null, "A Moment Apart", 234_000, null, "demo:a-moment-apart", null, null, null, null, null, null, false, false, true, null)
+            new QueueItem("demo-1", null, "Midnight City", null, null, "M83", null, null, "Hurry Up, We're Dreaming", null, 244_000, null, "demo:midnight-city", null, null, null, null, null, null, true, true, true, null),
+            new QueueItem("demo-2", null, "Sweet Disposition", null, null, "The Temper Trap", null, null, "Conditions", null, 232_000, null, "demo:sweet-disposition", null, null, null, null, null, null, false, false, true, null),
+            new QueueItem("demo-3", null, "Electric Feel", null, null, "MGMT", null, null, "Oracular Spectacular", null, 229_000, null, "demo:electric-feel", null, null, null, null, null, null, false, false, true, null),
+            new QueueItem("demo-4", null, "1901", null, null, "Phoenix", null, null, "Wolfgang Amadeus Phoenix", null, 193_000, null, "demo:1901", null, null, null, null, null, null, false, false, true, null),
+            new QueueItem("demo-5", null, "Tadow", null, null, "Masego & FKJ", null, null, "Lady Lady", null, 301_000, null, "demo:tadow", null, null, null, null, null, null, false, false, true, null),
+            new QueueItem("demo-6", null, "Innerbloom", null, null, "RÜFÜS DU SOL", null, null, "Bloom", null, 589_000, null, "demo:innerbloom", null, null, null, null, null, null, false, false, true, null),
+            new QueueItem("demo-7", null, "A Moment Apart", null, null, "ODESZA", null, null, "A Moment Apart", null, 234_000, null, "demo:a-moment-apart", null, null, null, null, null, null, false, false, true, null)
         ]);
     }
 
