@@ -59,8 +59,11 @@ public sealed class MainViewModel : ObservableObject
     private string _trackArtist = "";
     private string _trackAlbum = "";
     private string _trackInsightNotice = "";
+    private string _musicDnaNotice = "";
+    private string _discoverNotice = "";
     private string _artworkUrl = "";
     private TrackInsightPresentation? _trackInsight;
+    private MusicDnaDashboard _musicDnaDashboard = new(false, "", [], "");
     private double _playbackPositionMs;
     private double _playbackDurationMs = 1;
     private double _volumePercent = 42;
@@ -94,6 +97,9 @@ public sealed class MainViewModel : ObservableObject
     private bool _isLoadingWhatsNew;
     private bool _isLoadingQueue;
     private bool _isLoadingPlaylists;
+    private bool _isLoadingMusicDna;
+    private bool _isLoadingDiscover;
+    private bool _discoverConsentRejected;
     private bool _suppressOutputCommand;
     private bool _suppressVolumeCommand;
     private int _selectedLogSearchResultIndex;
@@ -117,6 +123,18 @@ public sealed class MainViewModel : ObservableObject
         SeekForwardCommand = new AsyncCommand(() => SeekRelativeAsync(15_000), () => CanUsePlaybackFeatures);
         SaveCurrentTrackCommand = new AsyncCommand(SaveCurrentTrackAsync, () => CanUsePlaybackFeatures);
         OpenTrackInsightCommand = new AsyncCommand(OpenTrackInsightAsync, () => CanUsePlaybackFeatures);
+        RefreshMusicDnaCommand = new AsyncCommand(RefreshMusicDnaAsync, () => CanUseMusicDna);
+        EnableMusicDnaCommand = new AsyncCommand(() => UpdateMusicDnaEnabledAsync(true), () => CanUseMusicDna);
+        DisableMusicDnaCommand = new AsyncCommand(() => UpdateMusicDnaEnabledAsync(false), () => CanUseMusicDna && MusicDnaDashboard.Enabled);
+        ClearMusicDnaCommand = new AsyncCommand(ClearMusicDnaAsync, () => CanUseMusicDna && MusicDnaDashboard.Enabled);
+        RefreshDiscoverCommand = new AsyncCommand(() => LoadDiscoverAsync(forceRefresh: true), () => CanUseMusicDna);
+        EnableDiscoverMusicDnaCommand = new AsyncCommand(EnableDiscoverMusicDnaAsync, () => CanUseMusicDna);
+        RejectDiscoverConsentCommand = new AsyncCommand(() =>
+        {
+            _discoverConsentRejected = true;
+            RaiseDiscoverProperties();
+            return Task.CompletedTask;
+        });
         StartDemoModeCommand = new AsyncCommand(StartDemoModeAsync);
         StopDemoModeCommand = new AsyncCommand(StopDemoModeAsync, () => IsDemoMode);
         CompleteOnboardingCommand = new AsyncCommand(CompleteOnboardingAsync);
@@ -156,6 +174,8 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<QueueItem> QueueItems { get; } = [];
     public ObservableCollection<PlaylistItem> PlaylistItems { get; } = [];
     public ObservableCollection<PlaylistItem> FilteredPlaylistItems { get; } = [];
+    public ObservableCollection<MusicDnaDashboardBlock> MusicDnaBlocks { get; } = [];
+    public ObservableCollection<MusicDiscoveryItem> DiscoverItems { get; } = [];
     public ObservableCollection<PlaybackOutput> OutputDevices { get; } = [];
     public ObservableCollection<DiagnosticLogEntry> DiagnosticLogLines { get; } = [];
     public ObservableCollection<DiagnosticLogEntry> FilteredDiagnosticLogLines { get; } = [];
@@ -541,6 +561,72 @@ public sealed class MainViewModel : ObservableObject
 
     public bool HasTrackInsightNotice => !string.IsNullOrWhiteSpace(TrackInsightNotice);
 
+    public MusicDnaDashboard MusicDnaDashboard
+    {
+        get => _musicDnaDashboard;
+        set
+        {
+            if (SetProperty(ref _musicDnaDashboard, value))
+            {
+                ReplaceMusicDnaBlocks(value.Blocks);
+                RaiseMusicDnaProperties();
+            }
+        }
+    }
+
+    public bool IsMusicDnaEnabled => MusicDnaDashboard.Enabled;
+    public bool IsMusicDnaDisabled => !MusicDnaDashboard.Enabled;
+    public string MusicDnaSummary => MusicDnaDashboard.Summary;
+    public bool HasMusicDnaSummary => MusicDnaDashboard.HasSummary;
+    public bool HasMusicDnaBlocks => MusicDnaBlocks.Count > 0;
+    public string MusicDnaUpdatedAt => MusicDnaDashboard.UpdatedAt;
+    public bool HasMusicDnaUpdatedAt => !string.IsNullOrWhiteSpace(MusicDnaUpdatedAt);
+
+    public string MusicDnaNotice
+    {
+        get => _musicDnaNotice;
+        set
+        {
+            if (SetProperty(ref _musicDnaNotice, value))
+            {
+                OnPropertyChanged(nameof(HasMusicDnaNotice));
+            }
+        }
+    }
+
+    public bool HasMusicDnaNotice => !string.IsNullOrWhiteSpace(MusicDnaNotice);
+
+    public bool IsLoadingMusicDna
+    {
+        get => _isLoadingMusicDna;
+        set => SetProperty(ref _isLoadingMusicDna, value);
+    }
+
+    public string DiscoverNotice
+    {
+        get => _discoverNotice;
+        set
+        {
+            if (SetProperty(ref _discoverNotice, value))
+            {
+                OnPropertyChanged(nameof(HasDiscoverNotice));
+            }
+        }
+    }
+
+    public bool HasDiscoverNotice => !string.IsNullOrWhiteSpace(DiscoverNotice);
+
+    public bool IsLoadingDiscover
+    {
+        get => _isLoadingDiscover;
+        set => SetProperty(ref _isLoadingDiscover, value);
+    }
+
+    public bool HasDiscoverItems => DiscoverItems.Count > 0;
+    public bool HasNoDiscoverItems => DiscoverItems.Count == 0 && IsMusicDnaEnabled && !IsLoadingDiscover;
+    public bool IsDiscoverConsentVisible => !IsMusicDnaEnabled && !_discoverConsentRejected;
+    public bool IsDiscoverRejectedStateVisible => !IsMusicDnaEnabled && _discoverConsentRejected;
+
     public double PlaybackPositionMs
     {
         get => _playbackPositionMs;
@@ -699,6 +785,83 @@ public sealed class MainViewModel : ObservableObject
     };
 
     private string MusicDnaKey() => $"{_identity.DeviceId}:{AskDJMessage.MoodZoneFromValue(AskDJMoodValue())}";
+
+    private MusicDnaProfileRequest MusicDnaProfileRequest()
+    {
+        var locale = AppStrings.NormalizeApiLocale(_language);
+        return new MusicDnaProfileRequest(
+            _identity.DeviceId,
+            _identity.DeviceId,
+            _identity.DeviceName,
+            _identity.ClientType,
+            locale,
+            locale,
+            AskDJMoodValue(),
+            MusicDnaKey());
+    }
+
+    private MusicDnaSettingsRequest MusicDnaSettingsRequest(bool enabled)
+    {
+        var locale = AppStrings.NormalizeApiLocale(_language);
+        return new MusicDnaSettingsRequest(
+            _identity.DeviceId,
+            _identity.DeviceId,
+            _identity.DeviceName,
+            _identity.ClientType,
+            enabled,
+            locale,
+            locale,
+            AskDJMoodValue(),
+            MusicDnaKey());
+    }
+
+    private MusicDnaClearRequest MusicDnaClearRequest()
+    {
+        var locale = AppStrings.NormalizeApiLocale(_language);
+        return new MusicDnaClearRequest(
+            _identity.DeviceId,
+            _identity.DeviceId,
+            _identity.DeviceName,
+            _identity.ClientType,
+            locale,
+            locale,
+            AskDJMoodValue(),
+            MusicDnaKey());
+    }
+
+    private MusicDiscoveryRequest MusicDiscoveryRequest()
+    {
+        var locale = AppStrings.NormalizeApiLocale(_language);
+        return new MusicDiscoveryRequest(
+            _identity.DeviceId,
+            _identity.DeviceId,
+            _identity.DeviceName,
+            _identity.ClientType,
+            locale,
+            locale,
+            AskDJMoodValue(),
+            MusicDnaKey());
+    }
+
+    private MusicDiscoveryPlayRequest MusicDiscoveryPlayRequest(MusicDiscoveryItem item)
+    {
+        var locale = AppStrings.NormalizeApiLocale(_language);
+        return new MusicDiscoveryPlayRequest(
+            _identity.DeviceId,
+            _identity.DeviceId,
+            _identity.DeviceName,
+            _identity.ClientType,
+            item.Id,
+            item.ItemId,
+            item.DisplayKind,
+            item.Uri,
+            item.SpotifyUri,
+            "music_discovery",
+            locale,
+            locale,
+            AskDJMoodValue(),
+            MusicDnaKey());
+    }
 
     public bool WakewordFeatureAvailable => false;
 
@@ -929,6 +1092,7 @@ public sealed class MainViewModel : ObservableObject
     public bool CanUsePlaybackFeatures => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && !_musicBackendSummary.IsUnavailable && _connectionMode != HomeAssistantConnectionMode.Offline);
     public bool CanStartPlayback => CanUsePlaybackFeatures && SelectedOutput is not null;
     public bool CanUseAskDJ => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && _connectionMode != HomeAssistantConnectionMode.Offline);
+    public bool CanUseMusicDna => IsDemoMode || (IsPaired && _runtimeCompatible && _connectionMode != HomeAssistantConnectionMode.Offline);
     public bool CanSendAskDJ => CanUseAskDJ && !string.IsNullOrWhiteSpace(AskDJText);
     public string AskDJPlaceholder => P("Vm_Ask_DJ_anything_e_g_save_this_track_to_liked");
     public bool IsMonkeyTestMode => MonkeyTestMode.IsEnabled;
@@ -1224,6 +1388,13 @@ public sealed class MainViewModel : ObservableObject
     public AsyncCommand SeekForwardCommand { get; }
     public AsyncCommand SaveCurrentTrackCommand { get; }
     public AsyncCommand OpenTrackInsightCommand { get; }
+    public AsyncCommand RefreshMusicDnaCommand { get; }
+    public AsyncCommand EnableMusicDnaCommand { get; }
+    public AsyncCommand DisableMusicDnaCommand { get; }
+    public AsyncCommand ClearMusicDnaCommand { get; }
+    public AsyncCommand RefreshDiscoverCommand { get; }
+    public AsyncCommand EnableDiscoverMusicDnaCommand { get; }
+    public AsyncCommand RejectDiscoverConsentCommand { get; }
     public AsyncCommand StartDemoModeCommand { get; }
     public AsyncCommand StopDemoModeCommand { get; }
     public AsyncCommand CompleteOnboardingCommand { get; }
@@ -2120,6 +2291,332 @@ public sealed class MainViewModel : ObservableObject
 
             TrackInsightNotice = P("Vm_Track_Insight_is_unavailable_4");
             AddDiagnostic("WRN Track Insight failed: " + ex.GetType().Name);
+        }
+    }
+
+    private async Task RefreshMusicDnaAsync()
+    {
+        MusicDnaNotice = "";
+
+        if (IsDemoMode)
+        {
+            MusicDnaDashboard = MusicDnaDashboard.From(new MusicDnaProfileResponse(true, true, DemoMusicDnaProfile()));
+            AddDiagnostic("INF Demo Music DNA loaded.");
+            return;
+        }
+
+        if (!CanUseMusicDna)
+        {
+            MusicDnaNotice = !_runtimeCompatible ? P("Vm_Update_required_17") : "Music DNA is unavailable";
+            return;
+        }
+
+        IsLoadingMusicDna = true;
+        try
+        {
+            ConfigureClient();
+            var response = await _apiClient.GetMusicDnaProfileAsync(MusicDnaProfileRequest(), CancellationToken.None);
+            if (!response.Success)
+            {
+                if (await ApplyStalePairingAsync(response.Error))
+                {
+                    MusicDnaNotice = AppStrings.Get("Status_PairAgain");
+                    return;
+                }
+
+                MusicDnaNotice = response.Message ?? response.Error ?? "Music DNA is unavailable";
+                AddDiagnostic("WRN Music DNA profile request failed.");
+                return;
+            }
+
+            MusicDnaDashboard = MusicDnaDashboard.From(response);
+            MusicDnaNotice = response.Enabled == false ? "Music DNA is off. Enable it to build your profile in Home Assistant." : "";
+            AddDiagnostic("INF Music DNA profile refreshed.");
+        }
+        catch (Exception ex)
+        {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                MusicDnaNotice = AppStrings.Get("Status_PairAgain");
+                return;
+            }
+
+            if (ApplyVersionMismatch(ex))
+            {
+                MusicDnaNotice = P("Vm_Update_required_18");
+                return;
+            }
+
+            MusicDnaNotice = "Music DNA is unavailable";
+            AddDiagnostic("WRN Music DNA profile request failed: " + ex.GetType().Name);
+        }
+        finally
+        {
+            IsLoadingMusicDna = false;
+        }
+    }
+
+    private async Task UpdateMusicDnaEnabledAsync(bool enabled)
+    {
+        if (!CanUseMusicDna)
+        {
+            MusicDnaNotice = "Music DNA is unavailable";
+            return;
+        }
+
+        if (IsDemoMode)
+        {
+            MusicDnaDashboard = enabled
+                ? MusicDnaDashboard.From(new MusicDnaProfileResponse(true, true, DemoMusicDnaProfile()))
+                : new MusicDnaDashboard(false, "", [], "");
+            MusicDnaNotice = enabled ? "Music DNA enabled in Demo Mode." : "Music DNA disabled in Demo Mode.";
+            return;
+        }
+
+        IsLoadingMusicDna = true;
+        try
+        {
+            ConfigureClient();
+            var response = await _apiClient.UpdateMusicDnaSettingsAsync(MusicDnaSettingsRequest(enabled), CancellationToken.None);
+            if (!response.Success)
+            {
+                if (await ApplyStalePairingAsync(response.Error))
+                {
+                    MusicDnaNotice = AppStrings.Get("Status_PairAgain");
+                    return;
+                }
+
+                MusicDnaNotice = response.Message ?? response.Error ?? "Music DNA settings could not be saved.";
+                return;
+            }
+
+            MusicDnaNotice = enabled ? "Music DNA enabled." : "Music DNA disabled and server knowledge cleared.";
+            await RefreshMusicDnaAsync();
+        }
+        catch (Exception ex)
+        {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                MusicDnaNotice = AppStrings.Get("Status_PairAgain");
+                return;
+            }
+
+            MusicDnaNotice = "Music DNA settings could not be saved.";
+            AddDiagnostic("WRN Music DNA settings request failed: " + ex.GetType().Name);
+        }
+        finally
+        {
+            IsLoadingMusicDna = false;
+        }
+    }
+
+    private async Task ClearMusicDnaAsync()
+    {
+        if (!CanUseMusicDna || !MusicDnaDashboard.Enabled)
+        {
+            return;
+        }
+
+        if (IsDemoMode)
+        {
+            MusicDnaDashboard = MusicDnaDashboard.From(new MusicDnaProfileResponse(
+                true,
+                true,
+                new MusicDnaProfile(
+                    "Music DNA is enabled. New listening signals will appear here after playback.",
+                    FavoriteGenres: null,
+                    FavoriteArtists: null,
+                    RecentTracks: null,
+                    RecentFavoriteTracks: null,
+                    EnergyProfile: null,
+                    MoodProfile: null,
+                    Mood: null,
+                    TasteDirection: null,
+                    BasedOn: null,
+                    UpdatedAt: null)));
+            MusicDnaNotice = "Music DNA profile cleared in Demo Mode.";
+            return;
+        }
+
+        IsLoadingMusicDna = true;
+        try
+        {
+            ConfigureClient();
+            var response = await _apiClient.ClearMusicDnaAsync(MusicDnaClearRequest(), CancellationToken.None);
+            if (!response.Success)
+            {
+                if (await ApplyStalePairingAsync(response.Error))
+                {
+                    MusicDnaNotice = AppStrings.Get("Status_PairAgain");
+                    return;
+                }
+
+                MusicDnaNotice = response.Message ?? response.Error ?? "Music DNA could not be cleared.";
+                return;
+            }
+
+            MusicDnaNotice = "Music DNA profile cleared. Opt-in setting was kept.";
+            await RefreshMusicDnaAsync();
+        }
+        catch (Exception ex)
+        {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                MusicDnaNotice = AppStrings.Get("Status_PairAgain");
+                return;
+            }
+
+            MusicDnaNotice = "Music DNA could not be cleared.";
+            AddDiagnostic("WRN Music DNA clear request failed: " + ex.GetType().Name);
+        }
+        finally
+        {
+            IsLoadingMusicDna = false;
+        }
+    }
+
+    public async Task OpenDiscoverAsync()
+    {
+        DiscoverNotice = "";
+        if (!MusicDnaDashboard.Enabled)
+        {
+            await RefreshMusicDnaAsync();
+        }
+
+        if (MusicDnaDashboard.Enabled)
+        {
+            await LoadDiscoverAsync(forceRefresh: false);
+        }
+        else
+        {
+            ReplaceDiscoverItems([]);
+            RaiseDiscoverProperties();
+        }
+    }
+
+    private async Task EnableDiscoverMusicDnaAsync()
+    {
+        _discoverConsentRejected = false;
+        await UpdateMusicDnaEnabledAsync(true);
+        if (MusicDnaDashboard.Enabled)
+        {
+            await LoadDiscoverAsync(forceRefresh: false);
+        }
+        RaiseDiscoverProperties();
+    }
+
+    private async Task LoadDiscoverAsync(bool forceRefresh)
+    {
+        DiscoverNotice = "";
+        if (!CanUseMusicDna)
+        {
+            DiscoverNotice = "Ontdek is unavailable.";
+            return;
+        }
+
+        if (!MusicDnaDashboard.Enabled)
+        {
+            ReplaceDiscoverItems([]);
+            RaiseDiscoverProperties();
+            return;
+        }
+
+        IsLoadingDiscover = true;
+        try
+        {
+            ConfigureClient();
+            var response = forceRefresh
+                ? await _apiClient.RefreshMusicDiscoveryAsync(MusicDiscoveryRequest(), CancellationToken.None)
+                : await _apiClient.GetMusicDiscoveryAsync(MusicDiscoveryRequest(), CancellationToken.None);
+            if (!response.Success)
+            {
+                if (await ApplyStalePairingAsync(response.Error))
+                {
+                    DiscoverNotice = AppStrings.Get("Status_PairAgain");
+                    return;
+                }
+
+                if (response.Enabled == false || string.Equals(response.Error, "music_dna_disabled", StringComparison.OrdinalIgnoreCase))
+                {
+                    MusicDnaDashboard = new MusicDnaDashboard(false, "", [], "");
+                    DiscoverNotice = "Ontdek werkt alleen als Music DNA is geactiveerd.";
+                    return;
+                }
+
+                DiscoverNotice = response.EmptyState ?? response.Message ?? response.Error ?? "Ontdek kon niet worden geladen.";
+                return;
+            }
+
+            if (!response.CanRenderFeed)
+            {
+                MusicDnaDashboard = new MusicDnaDashboard(false, "", [], "");
+                ReplaceDiscoverItems([]);
+                DiscoverNotice = "Ontdek werkt alleen als Music DNA is geactiveerd.";
+                return;
+            }
+
+            ReplaceDiscoverItems(response.DisplayItems);
+            DiscoverNotice = DiscoverItems.Count == 0 ? response.EmptyState ?? response.Message ?? "Nog geen aanbevelingen beschikbaar." : "";
+            AddDiagnostic(forceRefresh ? "INF Music Discovery refreshed." : "INF Music Discovery loaded.");
+        }
+        catch (Exception ex)
+        {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                DiscoverNotice = AppStrings.Get("Status_PairAgain");
+                return;
+            }
+
+            DiscoverNotice = DiscoverItems.Count == 0 ? "Ontdek kon niet worden geladen." : "Ontdek refresh is niet gelukt.";
+            AddDiagnostic("WRN Music Discovery request failed: " + ex.GetType().Name);
+        }
+        finally
+        {
+            IsLoadingDiscover = false;
+            RaiseDiscoverProperties();
+        }
+    }
+
+    public async Task PlayDiscoveryItemAsync(MusicDiscoveryItem item)
+    {
+        if (!MusicDnaDashboard.Enabled || !item.HasContent)
+        {
+            return;
+        }
+
+        ReplaceDiscoverItem(item, item with { IsPlaying = true, PlaySucceeded = false });
+        try
+        {
+            ConfigureClient();
+            var response = await _apiClient.PlayMusicDiscoveryAsync(MusicDiscoveryPlayRequest(item), CancellationToken.None);
+            if (!response.Success)
+            {
+                if (await ApplyStalePairingAsync(response.Error))
+                {
+                    DiscoverNotice = AppStrings.Get("Status_PairAgain");
+                    return;
+                }
+
+                DiscoverNotice = response.Message ?? response.Error ?? "Play Now failed.";
+                ReplaceDiscoverItem(item, item with { IsPlaying = false, PlaySucceeded = false });
+                return;
+            }
+
+            ReplaceDiscoverItem(item, item with { IsPlaying = false, PlaySucceeded = true });
+            DiscoverNotice = response.Message ?? "Started from Ontdek.";
+            await RefreshAsync();
+        }
+        catch (Exception ex)
+        {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                DiscoverNotice = AppStrings.Get("Status_PairAgain");
+                return;
+            }
+
+            DiscoverNotice = "Play Now failed.";
+            ReplaceDiscoverItem(item, item with { IsPlaying = false, PlaySucceeded = false });
+            AddDiagnostic("WRN Music Discovery play failed: " + ex.GetType().Name);
         }
     }
 
@@ -3215,6 +3712,8 @@ public sealed class MainViewModel : ObservableObject
         Messages.Clear();
         Actions.Clear();
         RecentItems.Clear();
+        MusicDnaDashboard = new MusicDnaDashboard(false, "", [], "");
+        ReplaceDiscoverItems([]);
         IsPairingSuccessVisible = false;
         IsPairingOverlayVisible = !IsOnboardingVisible;
         await SaveSettingsIfMutableAsync();
@@ -3891,6 +4390,43 @@ public sealed class MainViewModel : ObservableObject
         ApplyPlaylistFilter();
     }
 
+    private void ReplaceMusicDnaBlocks(IReadOnlyList<MusicDnaDashboardBlock>? blocks)
+    {
+        MusicDnaBlocks.Clear();
+        foreach (var block in blocks ?? [])
+        {
+            MusicDnaBlocks.Add(block);
+        }
+
+        OnPropertyChanged(nameof(HasMusicDnaBlocks));
+    }
+
+    private void ReplaceDiscoverItems(IReadOnlyList<MusicDiscoveryItem>? items)
+    {
+        DiscoverItems.Clear();
+        foreach (var item in items ?? [])
+        {
+            if (item.HasContent)
+            {
+                DiscoverItems.Add(item);
+            }
+        }
+
+        RaiseDiscoverProperties();
+    }
+
+    private void ReplaceDiscoverItem(MusicDiscoveryItem original, MusicDiscoveryItem updated)
+    {
+        for (var i = 0; i < DiscoverItems.Count; i++)
+        {
+            if (string.Equals(DiscoverItems[i].StableId, original.StableId, StringComparison.OrdinalIgnoreCase))
+            {
+                DiscoverItems[i] = updated;
+                return;
+            }
+        }
+    }
+
     private void ApplyPlaylistFilter()
     {
         var query = PlaylistSearchText.Trim();
@@ -4063,6 +4599,7 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(CanUsePlaybackFeatures));
         OnPropertyChanged(nameof(CanStartPlayback));
         OnPropertyChanged(nameof(CanUseAskDJ));
+        OnPropertyChanged(nameof(CanUseMusicDna));
         OnPropertyChanged(nameof(CanSendAskDJ));
         OnPropertyChanged(nameof(PlaybackAvailabilityText));
         OnPropertyChanged(nameof(IsUpdateRequiredScreenVisible));
@@ -4072,6 +4609,30 @@ public sealed class MainViewModel : ObservableObject
         RaiseFeedbackContextProperties();
         EvaluateWakewordPrompt();
         RaiseCommandStates();
+    }
+
+    private void RaiseMusicDnaProperties()
+    {
+        OnPropertyChanged(nameof(IsMusicDnaEnabled));
+        OnPropertyChanged(nameof(IsMusicDnaDisabled));
+        OnPropertyChanged(nameof(MusicDnaSummary));
+        OnPropertyChanged(nameof(HasMusicDnaSummary));
+        OnPropertyChanged(nameof(HasMusicDnaBlocks));
+        OnPropertyChanged(nameof(MusicDnaUpdatedAt));
+        OnPropertyChanged(nameof(HasMusicDnaUpdatedAt));
+        DisableMusicDnaCommand.RaiseCanExecuteChanged();
+        ClearMusicDnaCommand.RaiseCanExecuteChanged();
+        RaiseDiscoverProperties();
+    }
+
+    private void RaiseDiscoverProperties()
+    {
+        OnPropertyChanged(nameof(HasDiscoverItems));
+        OnPropertyChanged(nameof(HasNoDiscoverItems));
+        OnPropertyChanged(nameof(IsDiscoverConsentVisible));
+        OnPropertyChanged(nameof(IsDiscoverRejectedStateVisible));
+        RefreshDiscoverCommand.RaiseCanExecuteChanged();
+        EnableDiscoverMusicDnaCommand.RaiseCanExecuteChanged();
     }
 
     private void RaiseNowPlayingStatusProperties()
@@ -4144,6 +4705,34 @@ public sealed class MainViewModel : ObservableObject
             AddDiagnostic("WRN Refresh failed: not configured: DJConnect is not configured.");
             AddDiagnostic("INF Polling Home Assistant pairing endpoint");
         }
+    }
+
+    private static MusicDnaProfile DemoMusicDnaProfile()
+    {
+        return new MusicDnaProfile(
+            "Your recent listening leans toward neon synth-pop, melodic electronic tracks and high-energy favorites.",
+            FavoriteGenres:
+            [
+                new MusicDnaProfileItem("Synth-pop", null, null, null, 8, null, null, null, null, null, null, null, null, null, null),
+                new MusicDnaProfileItem("Electronic", null, null, null, 6, null, null, null, null, null, null, null, null, null, null)
+            ],
+            FavoriteArtists:
+            [
+                new MusicDnaProfileItem("M83", null, null, null, 5, null, null, null, null, null, null, null, null, null, null),
+                new MusicDnaProfileItem("ODESZA", null, null, null, 4, null, null, null, null, null, null, null, null, null, null)
+            ],
+            RecentTracks:
+            [
+                new MusicDnaProfileItem(null, "Midnight City", "Hurry Up, We're Dreaming", "M83", null, null, null, null, null, null, null, null, null, null, null),
+                new MusicDnaProfileItem(null, "A Moment Apart", "A Moment Apart", "ODESZA", null, null, null, null, null, null, null, null, null, null, null)
+            ],
+            RecentFavoriteTracks: null,
+            EnergyProfile: new MusicDnaProfileItem("Energy", null, null, null, 6, null, null, 6, null, null, null, "Energy", 72, 68, 74),
+            MoodProfile: new MusicDnaProfileItem("Groove", null, null, null, 6, null, null, 6, 57, null, "Groove", null, null, null, null),
+            Mood: null,
+            TasteDirection: null,
+            BasedOn: "demo listening signals",
+            UpdatedAt: DateTimeOffset.UtcNow);
     }
 
     private void LoadDemoQueueItems(bool reset)
@@ -4358,6 +4947,10 @@ public sealed class MainViewModel : ObservableObject
         SeekForwardCommand.RaiseCanExecuteChanged();
         SaveCurrentTrackCommand.RaiseCanExecuteChanged();
         OpenTrackInsightCommand.RaiseCanExecuteChanged();
+        RefreshMusicDnaCommand.RaiseCanExecuteChanged();
+        EnableMusicDnaCommand.RaiseCanExecuteChanged();
+        DisableMusicDnaCommand.RaiseCanExecuteChanged();
+        ClearMusicDnaCommand.RaiseCanExecuteChanged();
         RetryVersionCheckCommand.RaiseCanExecuteChanged();
     }
 

@@ -7,7 +7,7 @@ Windows and macOS. The app targets the DJConnect `3.2.x` Home Assistant
 protocol line and remains a thin client for Home Assistant-owned playback,
 Ask DJ and Music DNA state.
 
-Current app release: `3.2.7`.
+Current app release: `3.2.8`.
 
 ## Project Shape
 
@@ -56,6 +56,13 @@ state, playlist state, message history and returned actions are backend-owned
 by Home Assistant DJConnect. The Windows client normalizes render models,
 applies feature gating and sends generic commands only; it does not hardcode
 Spotify-specific queue, playlist or intent families.
+
+Track Insight, Music DNA and Ontdek follow the same thin-client boundary.
+Track Insight is a primary navigation destination, Music DNA is opt-in and
+server-authoritative, and Ontdek requests recommendations only after Music DNA
+is enabled. The client filters unsupported recommendation kinds, hides missing
+reasons, treats disabled discovery responses as non-renderable and sends Play
+Now through the backend-owned Music Discovery play endpoint.
 
 First launch is gated by the interactive welcome wizard. `DJConnectWelcomeSeen`
 is stored locally once the user skips or finishes it. Dismissing onboarding

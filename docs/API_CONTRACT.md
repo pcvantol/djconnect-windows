@@ -240,10 +240,19 @@ numeric `mood`. Settings and clear requests keep the same identity/context;
 clear removes profile data but preserves the opt-in setting.
 
 The profile renderer may use only backend-provided `summary`,
-`favorite_genres`, `favorite_artists`, `recent_tracks`, `energy_profile`,
-`mood_profile` or `mood`, `taste_direction`, `based_on` and `updated_at`.
-Backend array order is preserved. Compact top values are shown without local
-re-sorting.
+`favorite_genres`, `favorite_artists`, `recent_tracks`,
+`recent_favorite_tracks`, `playtime`, `listening_rhythm`, `mood_mix`,
+`energy_profile`, `repeat_magnets`, `explicit_positives`, `taste_anchors`,
+`recommendation_signals`, `mood_profile` or `mood`, `taste_direction`,
+`based_on` and `updated_at`. Backend array order is preserved. Compact top
+values are shown without local re-sorting. Missing blocks, empty arrays and
+empty objects are hidden.
+
+Music DNA is explicitly opt-in. `settings` with `enabled: true` enables the
+server profile. `settings` with `enabled: false` disables Music DNA and clears
+learned knowledge server-side. `clear` clears learned knowledge while keeping
+the current opt-in setting. If `profile` returns `enabled: false`, Windows shows
+the opt-in state instead of dashboard cards.
 
 Mood rendering prefers `average` plus `average_zone`, then falls back to
 `value` plus `zone`. It must not show a dash or "too little data" copy when
@@ -253,7 +262,48 @@ Mood rendering prefers `average` plus `average_zone`, then falls back to
 signals, never a local guess. Track signal text is formatted as
 `title — artist` or `title — artist · album`.
 
+Dashboard block visibility follows backend eligibility:
+
+- `playtime` renders only when `total_seconds > 0` and uses backend
+  `formatted_total` when present.
+- `listening_rhythm` renders only when `sample_count >= 3`.
+- `mood_mix` and `energy_profile` render only when `sample_count > 0`.
+- `repeat_magnets`, `explicit_positives` and `taste_anchors` render only when
+  `eligible == true` and their item arrays are non-empty.
+- `blocked_artists` and `blocked_items` are not prominent dashboard cards.
+
 ## Queue And Playlists
+
+## Music Discovery
+
+Ontdek / Music Discovery is a first-class feature gated by Music DNA opt-in.
+Windows must not request recommendations while Music DNA is disabled. If Music
+DNA is disabled, the app shows the consent/empty state and may enable Music DNA
+through the normal Music DNA settings endpoint before loading the feed.
+Responses with `enabled: false` or `error: "music_dna_disabled"` are treated as
+non-renderable feeds even when item arrays are present. Stale pairing errors
+follow the shared DJConnect cleanup path and show the pair-again state.
+
+Endpoints:
+
+```http
+GET /api/djconnect/music_discovery
+POST /api/djconnect/music_discovery/refresh
+POST /api/djconnect/music_discovery/play
+```
+
+Requests include the Windows DJConnect identity (`client_type: "windows"`,
+`client_id`, `device_id`, `device_name`) plus `language`, `locale`, `mood` and
+`music_dna_key` where supported. The feed endpoint sends that identity as GET
+query parameters; refresh and play send JSON bodies. Feed and refresh responses are server-owned;
+the client renders supported recommendation kinds (`track`, `album`, `artist`,
+`playlist`) with backend title, subtitle/context, artwork, subtle
+confidence/relevance and optional backend `reason`. Reasons are shown through
+an explicit info action and are hidden when missing.
+
+Play Now sends the recommendation id or item id, kind, available URI metadata
+and `source: "music_discovery"` to `/music_discovery/play`. Positive Music DNA
+signals are handled by Home Assistant; Windows does not calculate them locally.
 
 Queue state may appear as `queue`, `items`, `queue_items` or inside collection
 envelopes. Playlist state may appear as `playlists`, `playlist_items` or inside
@@ -295,6 +345,12 @@ contains the required route:
 - `djconnect/command`;
 - `djconnect/ask_dj/message`;
 - `djconnect/track_insight`.
+- `djconnect/music_dna/profile`;
+- `djconnect/music_dna/settings`;
+- `djconnect/music_dna/clear`.
+- `djconnect/music_discovery/feed`;
+- `djconnect/music_discovery/refresh`;
+- `djconnect/music_discovery/play`.
 
 DJConnect websocket payloads still include DJConnect identity and auth fields:
 `device_token`, `device_id`, `client_id`, `device_name` and canonical

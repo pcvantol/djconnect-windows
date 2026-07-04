@@ -51,6 +51,63 @@ public sealed class DJConnectWebSocketPayloadFactory
         return payload;
     }
 
+    public Dictionary<string, object?> BuildMusicDnaProfile(MusicDnaProfileRequest request, string? deviceToken)
+    {
+        var payload = BuildIdentityEnvelope(request.DeviceId, request.ClientId, request.DeviceName, request.ClientType, deviceToken);
+        payload["language"] = request.Language;
+        payload["locale"] = request.Locale;
+        payload["mood"] = request.Mood;
+        payload["music_dna_key"] = request.MusicDnaKey;
+        return payload;
+    }
+
+    public Dictionary<string, object?> BuildMusicDnaSettings(MusicDnaSettingsRequest request, string? deviceToken)
+    {
+        var payload = BuildIdentityEnvelope(request.DeviceId, request.ClientId, request.DeviceName, request.ClientType, deviceToken);
+        payload["enabled"] = request.Enabled;
+        payload["language"] = request.Language;
+        payload["locale"] = request.Locale;
+        payload["mood"] = request.Mood;
+        payload["music_dna_key"] = request.MusicDnaKey;
+        return payload;
+    }
+
+    public Dictionary<string, object?> BuildMusicDnaClear(MusicDnaClearRequest request, string? deviceToken)
+    {
+        var payload = BuildIdentityEnvelope(request.DeviceId, request.ClientId, request.DeviceName, request.ClientType, deviceToken);
+        payload["language"] = request.Language;
+        payload["locale"] = request.Locale;
+        payload["mood"] = request.Mood;
+        payload["music_dna_key"] = request.MusicDnaKey;
+        return payload;
+    }
+
+    public Dictionary<string, object?> BuildMusicDiscovery(MusicDiscoveryRequest request, string? deviceToken)
+    {
+        var payload = BuildIdentityEnvelope(request.DeviceId, request.ClientId, request.DeviceName, request.ClientType, deviceToken);
+        payload["language"] = request.Language;
+        payload["locale"] = request.Locale;
+        payload["mood"] = request.Mood;
+        payload["music_dna_key"] = request.MusicDnaKey;
+        return payload;
+    }
+
+    public Dictionary<string, object?> BuildMusicDiscoveryPlay(MusicDiscoveryPlayRequest request, string? deviceToken)
+    {
+        var payload = BuildIdentityEnvelope(request.DeviceId, request.ClientId, request.DeviceName, request.ClientType, deviceToken);
+        payload["recommendation_id"] = request.RecommendationId;
+        payload["item_id"] = request.ItemId;
+        payload["kind"] = request.Kind;
+        payload["uri"] = request.Uri;
+        payload["spotify_uri"] = request.SpotifyUri;
+        payload["source"] = request.Source;
+        payload["language"] = request.Language;
+        payload["locale"] = request.Locale;
+        payload["mood"] = request.Mood;
+        payload["music_dna_key"] = request.MusicDnaKey;
+        return payload;
+    }
+
     public Dictionary<string, object?> BuildAskDJHistoryClear(ClientIdentity identity, string? deviceToken)
     {
         return BuildIdentityEnvelope(

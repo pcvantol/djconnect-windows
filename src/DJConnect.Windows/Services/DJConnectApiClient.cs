@@ -419,6 +419,13 @@ public sealed class DJConnectApiClient
     public async Task<MusicDnaProfileResponse> GetMusicDnaProfileAsync(MusicDnaProfileRequest request, CancellationToken cancellationToken)
     {
         ApplyRequestContext(request.Language ?? request.Locale, request.Mood);
+        var fastPathPayload = _webSocketPayloadFactory.BuildMusicDnaProfile(request, _deviceToken);
+        var fastPath = await TryWebSocketAsync<MusicDnaProfileResponse>("djconnect/music_dna/profile", fastPathPayload, TimeSpan.FromSeconds(5), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/music_dna/profile", request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<MusicDnaProfileResponse>(response, cancellationToken);
     }
@@ -426,6 +433,13 @@ public sealed class DJConnectApiClient
     public async Task<MusicDnaSettingsResponse> UpdateMusicDnaSettingsAsync(MusicDnaSettingsRequest request, CancellationToken cancellationToken)
     {
         ApplyRequestContext(request.Language ?? request.Locale, request.Mood);
+        var fastPathPayload = _webSocketPayloadFactory.BuildMusicDnaSettings(request, _deviceToken);
+        var fastPath = await TryWebSocketAsync<MusicDnaSettingsResponse>("djconnect/music_dna/settings", fastPathPayload, TimeSpan.FromSeconds(5), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/music_dna/settings", request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<MusicDnaSettingsResponse>(response, cancellationToken);
     }
@@ -433,8 +447,76 @@ public sealed class DJConnectApiClient
     public async Task<MusicDnaClearResponse> ClearMusicDnaAsync(MusicDnaClearRequest request, CancellationToken cancellationToken)
     {
         ApplyRequestContext(request.Language ?? request.Locale, request.Mood);
+        var fastPathPayload = _webSocketPayloadFactory.BuildMusicDnaClear(request, _deviceToken);
+        var fastPath = await TryWebSocketAsync<MusicDnaClearResponse>("djconnect/music_dna/clear", fastPathPayload, TimeSpan.FromSeconds(5), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
         var response = await _httpClient.PostAsJsonAsync("api/djconnect/music_dna/clear", request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<MusicDnaClearResponse>(response, cancellationToken);
+    }
+
+    public async Task<MusicDiscoveryResponse> GetMusicDiscoveryAsync(MusicDiscoveryRequest request, CancellationToken cancellationToken)
+    {
+        ApplyRequestContext(request.Language ?? request.Locale, request.Mood);
+        var fastPathPayload = _webSocketPayloadFactory.BuildMusicDiscovery(request, _deviceToken);
+        var fastPath = await TryWebSocketAsync<MusicDiscoveryResponse>("djconnect/music_discovery/feed", fastPathPayload, TimeSpan.FromSeconds(5), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
+        var response = await _httpClient.GetAsync("api/djconnect/music_discovery" + MusicDiscoveryQuery(request), cancellationToken);
+        return await ReadJsonAsync<MusicDiscoveryResponse>(response, cancellationToken);
+    }
+
+    public async Task<MusicDiscoveryResponse> RefreshMusicDiscoveryAsync(MusicDiscoveryRequest request, CancellationToken cancellationToken)
+    {
+        ApplyRequestContext(request.Language ?? request.Locale, request.Mood);
+        var fastPathPayload = _webSocketPayloadFactory.BuildMusicDiscovery(request, _deviceToken);
+        var fastPath = await TryWebSocketAsync<MusicDiscoveryResponse>("djconnect/music_discovery/refresh", fastPathPayload, TimeSpan.FromSeconds(8), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
+        var response = await _httpClient.PostAsJsonAsync("api/djconnect/music_discovery/refresh", request, JsonOptions, cancellationToken);
+        return await ReadJsonAsync<MusicDiscoveryResponse>(response, cancellationToken);
+    }
+
+    public async Task<CommandResponse> PlayMusicDiscoveryAsync(MusicDiscoveryPlayRequest request, CancellationToken cancellationToken)
+    {
+        ApplyRequestContext(request.Language ?? request.Locale, request.Mood);
+        var fastPathPayload = _webSocketPayloadFactory.BuildMusicDiscoveryPlay(request, _deviceToken);
+        var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/music_discovery/play", fastPathPayload, TimeSpan.FromSeconds(5), cancellationToken);
+        if (fastPath.Success && fastPath.Value is not null)
+        {
+            return fastPath.Value;
+        }
+
+        var response = await _httpClient.PostAsJsonAsync("api/djconnect/music_discovery/play", request, JsonOptions, cancellationToken);
+        return await ReadJsonAsync<CommandResponse>(response, cancellationToken);
+    }
+
+    private static string MusicDiscoveryQuery(MusicDiscoveryRequest request)
+    {
+        var values = new Dictionary<string, string?>
+        {
+            ["client_id"] = request.ClientId,
+            ["device_id"] = request.DeviceId,
+            ["device_name"] = request.DeviceName,
+            ["client_type"] = request.ClientType,
+            ["language"] = request.Language,
+            ["locale"] = request.Locale,
+            ["mood"] = request.Mood?.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["music_dna_key"] = request.MusicDnaKey
+        };
+        var query = string.Join("&", values
+            .Where(pair => !string.IsNullOrWhiteSpace(pair.Value))
+            .Select(pair => $"{Uri.EscapeDataString(pair.Key)}={Uri.EscapeDataString(pair.Value!)}"));
+        return string.IsNullOrWhiteSpace(query) ? "" : "?" + query;
     }
 
     private static void AddLanguage(Dictionary<string, object?> payload, string? language)

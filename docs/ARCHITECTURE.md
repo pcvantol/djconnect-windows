@@ -87,12 +87,24 @@ connection flow rather than in a mobile-style tab bar.
     client-side intent, Music DNA, follow-up or playback reconstruction.
 12. Playback actions and follow-up buttons are sent through
    `POST /api/djconnect/command`.
-13. Playlists render backend-provided playlist shapes (`playlists`,
+13. Track Insight is a first-class navigation destination and sends the current
+    playback identity plus optional mood/Music DNA context to Home Assistant.
+    The client renders backend-owned analysis only and does not infer BPM,
+    musical key or Music DNA match values locally.
+14. Music DNA profile/settings/clear is opt-in and server-authoritative. The
+    app renders eligible dashboard blocks returned by Home Assistant, forwards
+    `music_dna_key` context where available and clears local display state when
+    the profile is disabled, stale or reset.
+15. Ontdek / Music Discovery is gated by Music DNA opt-in. The app shows consent
+    UI while Music DNA is disabled, does not request recommendations until
+    Music DNA is enabled, renders only supported backend recommendation kinds
+    and sends Play Now through the server-owned music discovery play endpoint.
+16. Playlists render backend-provided playlist shapes (`playlists`,
     `playlist_items` and collection envelopes), normalize title/subtitle/artwork
     aliases, dedupe deterministically, cap rendering at 100 rows and start a
     selected playlist only through a generic `playlist_start` command or
     backend-returned action.
-14. Logs, feedback bodies and crash reports are redacted before persistence,
+17. Logs, feedback bodies and crash reports are redacted before persistence,
     preview, clipboard copy or issue URL creation. The app never uploads these
     diagnostics automatically.
 
@@ -111,10 +123,9 @@ connection flow rather than in a mobile-style tab bar.
 - Privacy explains local data, Home Assistant-owned state, permissions and
   deletion/reset actions without exposing private identifiers.
 - Track Insight is a first-class feature rather than an Ask DJ sub-view. The
-  current Windows client supports a direct Now Playing entry point and shared
-  `track_insight` renderer; the dedicated navigation destination, demo provider
-  boundary, Auto Track Insight and visualizer roadmap are tracked in
-  [TRACK_INSIGHT_PLATFORM.md](TRACK_INSIGHT_PLATFORM.md).
+  current Windows client supports direct navigation and shared `track_insight`
+  rendering; demo provider boundaries, Auto Track Insight and the visualizer
+  roadmap are tracked in [TRACK_INSIGHT_PLATFORM.md](TRACK_INSIGHT_PLATFORM.md).
 - Demo Mode is session-only. It loads local sample status, queue, playlists and
   Ask DJ responses only after explicit start, disables Home Assistant calls and
   clears demo runtime state when stopped.

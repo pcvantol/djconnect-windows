@@ -431,7 +431,8 @@ public sealed record MusicDnaSettingsRequest(
     [property: JsonPropertyName("enabled")] bool Enabled,
     [property: JsonPropertyName("language")] string? Language = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
-    [property: JsonPropertyName("mood")] int? Mood = null);
+    [property: JsonPropertyName("mood")] int? Mood = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
 
 public sealed record MusicDnaClearRequest(
     [property: JsonPropertyName("client_id")] string ClientId,
@@ -440,7 +441,8 @@ public sealed record MusicDnaClearRequest(
     [property: JsonPropertyName("client_type")] string ClientType,
     [property: JsonPropertyName("language")] string? Language = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
-    [property: JsonPropertyName("mood")] int? Mood = null);
+    [property: JsonPropertyName("mood")] int? Mood = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
 
 public sealed record MusicDnaProfileResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -466,12 +468,22 @@ public sealed record MusicDnaProfile(
     [property: JsonPropertyName("favorite_genres")] IReadOnlyList<MusicDnaProfileItem>? FavoriteGenres,
     [property: JsonPropertyName("favorite_artists")] IReadOnlyList<MusicDnaProfileItem>? FavoriteArtists,
     [property: JsonPropertyName("recent_tracks")] IReadOnlyList<MusicDnaProfileItem>? RecentTracks,
+    [property: JsonPropertyName("recent_favorite_tracks")] IReadOnlyList<MusicDnaProfileItem>? RecentFavoriteTracks,
     [property: JsonPropertyName("energy_profile")] MusicDnaProfileItem? EnergyProfile,
     [property: JsonPropertyName("mood_profile")] MusicDnaProfileItem? MoodProfile,
     [property: JsonPropertyName("mood")] MusicDnaProfileItem? Mood,
     [property: JsonPropertyName("taste_direction")] MusicDnaProfileItem? TasteDirection,
     [property: JsonPropertyName("based_on")] string? BasedOn,
-    [property: JsonPropertyName("updated_at")] DateTimeOffset? UpdatedAt)
+    [property: JsonPropertyName("updated_at")] DateTimeOffset? UpdatedAt,
+    [property: JsonPropertyName("playtime")] JsonElement? Playtime = null,
+    [property: JsonPropertyName("listening_rhythm")] JsonElement? ListeningRhythm = null,
+    [property: JsonPropertyName("mood_mix")] JsonElement? MoodMix = null,
+    [property: JsonPropertyName("repeat_magnets")] JsonElement? RepeatMagnets = null,
+    [property: JsonPropertyName("explicit_positives")] JsonElement? ExplicitPositives = null,
+    [property: JsonPropertyName("taste_anchors")] JsonElement? TasteAnchors = null,
+    [property: JsonPropertyName("recommendation_signals")] JsonElement? RecommendationSignals = null,
+    [property: JsonPropertyName("blocked_artists")] JsonElement? BlockedArtists = null,
+    [property: JsonPropertyName("blocked_items")] JsonElement? BlockedItems = null)
 {
     public MusicDnaProfileItem? ResolvedMoodProfile => MoodProfile ?? Mood;
 }
@@ -627,6 +639,336 @@ public sealed class MusicDnaProfileItemJsonConverter : JsonConverter<MusicDnaPro
             .ToArray();
     }
 
+}
+
+public sealed record MusicDnaDashboard(
+    bool Enabled,
+    string Summary,
+    IReadOnlyList<MusicDnaDashboardBlock> Blocks,
+    string UpdatedAt)
+{
+    public bool HasSummary => !string.IsNullOrWhiteSpace(Summary);
+    public bool HasBlocks => Blocks.Count > 0;
+    public bool IsDisabled => !Enabled;
+
+    public static MusicDnaDashboard From(MusicDnaProfileResponse response)
+    {
+        var enabled = response.Enabled == true;
+        if (!enabled)
+        {
+            return new MusicDnaDashboard(false, "", [], "");
+        }
+
+        var profile = response.Profile;
+        if (profile is null)
+        {
+            return new MusicDnaDashboard(true, "", [], "");
+        }
+
+        var blocks = new List<MusicDnaDashboardBlock>();
+        AddItemList(blocks, "Favorite genres", profile.FavoriteGenres, max: 8, asChips: true);
+        AddItemList(blocks, "Favorite artists", profile.FavoriteArtists, max: 6);
+        AddItemList(blocks, "Recent tracks", profile.RecentTracks, max: 6);
+        AddItemList(blocks, "Recent favorites", profile.RecentFavoriteTracks, max: 6);
+        AddPlaytime(blocks, profile.Playtime);
+        AddListeningRhythm(blocks, profile.ListeningRhythm);
+        AddMoodMix(blocks, profile.MoodMix);
+        AddEnergy(blocks, profile.EnergyProfile);
+        AddEligibleItems(blocks, "Repeat magnets", profile.RepeatMagnets, "items");
+        AddExplicitPositives(blocks, profile.ExplicitPositives);
+        AddEligibleItems(blocks, "Taste anchors", profile.TasteAnchors, "items");
+        AddJsonItems(blocks, "Recommendation signals", profile.RecommendationSignals, false, "items");
+
+        return new MusicDnaDashboard(
+            true,
+            profile.Summary ?? "",
+            blocks,
+            profile.UpdatedAt?.ToString("u") ?? "");
+    }
+
+    private static void AddItemList(List<MusicDnaDashboardBlock> blocks, string title, IReadOnlyList<MusicDnaProfileItem>? values, int max, bool asChips = false)
+    {
+        var items = (values ?? [])
+            .Where(item => item.HasContent)
+            .Take(max)
+            .Select(item => new MusicDnaDashboardItem(item.DisplayTitle, item.DisplaySubtitle, asChips))
+            .Where(item => item.HasText)
+            .ToArray();
+        AddBlock(blocks, title, "", items);
+    }
+
+    private static void AddPlaytime(List<MusicDnaDashboardBlock> blocks, JsonElement? value)
+    {
+        if (!IsObject(value) || ReadDouble(value!.Value, "total_seconds") <= 0)
+        {
+            return;
+        }
+
+        var detail = ReadString(value.Value, "formatted_total");
+        if (string.IsNullOrWhiteSpace(detail))
+        {
+            detail = $"{Math.Round(ReadDouble(value.Value, "total_seconds")):0} seconds";
+        }
+
+        var items = JsonArrayItems(value.Value, "top_artists")
+            .Concat(JsonArrayItems(value.Value, "top_albums"))
+            .Take(8)
+            .ToArray();
+        AddBlock(blocks, "Playtime", detail, items);
+    }
+
+    private static void AddListeningRhythm(List<MusicDnaDashboardBlock> blocks, JsonElement? value)
+    {
+        if (!IsObject(value) || ReadInt(value!.Value, "sample_count") < 3)
+        {
+            return;
+        }
+
+        var detail = JoinNonEmpty(
+            LabelValue("Daypart", ReadString(value.Value, "top_daypart")),
+            LabelValue("Weekday", ReadString(value.Value, "top_weekday")));
+        var items = ObjectDistributionItems(value.Value, "dayparts")
+            .Concat(ObjectDistributionItems(value.Value, "weekdays"))
+            .Take(10)
+            .ToArray();
+        AddBlock(blocks, "Listening rhythm", detail, items);
+    }
+
+    private static void AddMoodMix(List<MusicDnaDashboardBlock> blocks, JsonElement? value)
+    {
+        if (!IsObject(value) || ReadInt(value!.Value, "sample_count") <= 0)
+        {
+            return;
+        }
+
+        var items = new[] { "chill", "groove", "energy", "party" }
+            .Select(name => new MusicDnaDashboardItem(Humanize(name), FormatPercent(ReadDouble(value.Value, name))))
+            .Where(item => item.HasDetail)
+            .ToArray();
+        AddBlock(blocks, "Mood mix", $"{ReadInt(value.Value, "sample_count")} signals", items);
+    }
+
+    private static void AddEnergy(List<MusicDnaDashboardBlock> blocks, MusicDnaProfileItem? value)
+    {
+        if (value is null || value.EffectiveSampleCount <= 0)
+        {
+            return;
+        }
+
+        AddBlock(blocks, "Energy profile", value.EnergySummary, []);
+    }
+
+    private static void AddEligibleItems(List<MusicDnaDashboardBlock> blocks, string title, JsonElement? value, string propertyName)
+    {
+        AddJsonItems(blocks, title, value, eligibleRequired: true, propertyName);
+    }
+
+    private static void AddExplicitPositives(List<MusicDnaDashboardBlock> blocks, JsonElement? value)
+    {
+        if (!IsObject(value) || !ReadBool(value!.Value, "eligible"))
+        {
+            return;
+        }
+
+        var items = JsonArrayItems(value.Value, "favorites")
+            .Concat(JsonArrayItems(value.Value, "recommendations"))
+            .Take(8)
+            .ToArray();
+        AddBlock(blocks, "Explicit positives", "", items);
+    }
+
+    private static void AddJsonItems(List<MusicDnaDashboardBlock> blocks, string title, JsonElement? value, bool eligibleRequired, string propertyName)
+    {
+        if (!IsObject(value) || (eligibleRequired && !ReadBool(value!.Value, "eligible")))
+        {
+            return;
+        }
+
+        var items = JsonArrayItems(value!.Value, propertyName).Take(8).ToArray();
+        AddBlock(blocks, title, "", items);
+    }
+
+    private static void AddBlock(List<MusicDnaDashboardBlock> blocks, string title, string detail, IReadOnlyList<MusicDnaDashboardItem> items)
+    {
+        if (!string.IsNullOrWhiteSpace(detail) || items.Any(item => item.HasText))
+        {
+            blocks.Add(new MusicDnaDashboardBlock(title, detail, items.Where(item => item.HasText).ToArray()));
+        }
+    }
+
+    private static IEnumerable<MusicDnaDashboardItem> JsonArrayItems(JsonElement value, string propertyName)
+    {
+        if (!value.TryGetProperty(propertyName, out var array) || array.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        return array.EnumerateArray()
+            .Select(JsonItem)
+            .Where(item => item.HasText);
+    }
+
+    private static IEnumerable<MusicDnaDashboardItem> ObjectDistributionItems(JsonElement value, string propertyName)
+    {
+        if (!value.TryGetProperty(propertyName, out var obj) || obj.ValueKind != JsonValueKind.Object)
+        {
+            return [];
+        }
+
+        return obj.EnumerateObject()
+            .Select(prop => new MusicDnaDashboardItem(Humanize(prop.Name), DisplayJson(prop.Value)))
+            .Where(item => item.HasText);
+    }
+
+    private static MusicDnaDashboardItem JsonItem(JsonElement value)
+    {
+        if (value.ValueKind == JsonValueKind.String)
+        {
+            return new MusicDnaDashboardItem(value.GetString() ?? "", "");
+        }
+
+        if (value.ValueKind != JsonValueKind.Object)
+        {
+            return new MusicDnaDashboardItem(DisplayJson(value), "");
+        }
+
+        var title = FirstNonEmpty(ReadString(value, "title"), ReadString(value, "name"), ReadString(value, "artist"), ReadString(value, "genre"), ReadString(value, "label"));
+        var artist = ReadString(value, "artist");
+        var album = ReadString(value, "album");
+        var detail = FirstNonEmpty(
+            ReadString(value, "formatted_total"),
+            JoinNonEmpty(artist, album),
+            ReadString(value, "reason"),
+            DisplayJsonProperty(value, "value"),
+            DisplayJsonProperty(value, "count"));
+        return new MusicDnaDashboardItem(title, detail);
+    }
+
+    private static bool IsObject(JsonElement? value) => value.HasValue && value.Value.ValueKind == JsonValueKind.Object;
+    private static bool ReadBool(JsonElement value, string name) => value.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.True;
+    private static int ReadInt(JsonElement value, string name) => value.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.Number && prop.TryGetInt32(out var result) ? result : 0;
+    private static double ReadDouble(JsonElement value, string name) => value.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.Number && prop.TryGetDouble(out var result) ? result : 0;
+    private static string ReadString(JsonElement value, string name) => value.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.String ? prop.GetString() ?? "" : "";
+    private static string DisplayJsonProperty(JsonElement value, string name) => value.TryGetProperty(name, out var prop) ? DisplayJson(prop) : "";
+    private static string FormatPercent(double value) => value > 0 ? $"{Math.Round(value):0}%" : "";
+    private static string LabelValue(string label, string value) => string.IsNullOrWhiteSpace(value) ? "" : $"{label}: {value}";
+    private static string FirstNonEmpty(params string?[] values) => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    private static string JoinNonEmpty(params string?[] values) => string.Join(" · ", values.Where(value => !string.IsNullOrWhiteSpace(value)));
+    private static string Humanize(string value) => value.Replace('_', ' ');
+
+    private static string DisplayJson(JsonElement value)
+    {
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString() ?? "",
+            JsonValueKind.Number => value.GetRawText(),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            _ => ""
+        };
+    }
+}
+
+public sealed record MusicDnaDashboardBlock(string Title, string Detail, IReadOnlyList<MusicDnaDashboardItem> Items)
+{
+    public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
+    public bool HasItems => Items.Count > 0;
+}
+
+public sealed record MusicDnaDashboardItem(string Title, string Detail, bool IsChip = false)
+{
+    public bool HasText => !string.IsNullOrWhiteSpace(Title) || !string.IsNullOrWhiteSpace(Detail);
+    public bool HasDetail => !string.IsNullOrWhiteSpace(Detail);
+}
+
+public sealed record MusicDiscoveryRequest(
+    [property: JsonPropertyName("client_id")] string ClientId,
+    [property: JsonPropertyName("device_id")] string DeviceId,
+    [property: JsonPropertyName("device_name")] string DeviceName,
+    [property: JsonPropertyName("client_type")] string ClientType,
+    [property: JsonPropertyName("language")] string? Language = null,
+    [property: JsonPropertyName("locale")] string? Locale = null,
+    [property: JsonPropertyName("mood")] int? Mood = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
+
+public sealed record MusicDiscoveryPlayRequest(
+    [property: JsonPropertyName("client_id")] string ClientId,
+    [property: JsonPropertyName("device_id")] string DeviceId,
+    [property: JsonPropertyName("device_name")] string DeviceName,
+    [property: JsonPropertyName("client_type")] string ClientType,
+    [property: JsonPropertyName("recommendation_id")] string? RecommendationId,
+    [property: JsonPropertyName("item_id")] string? ItemId,
+    [property: JsonPropertyName("kind")] string? Kind,
+    [property: JsonPropertyName("uri")] string? Uri,
+    [property: JsonPropertyName("spotify_uri")] string? SpotifyUri,
+    [property: JsonPropertyName("source")] string Source = "music_discovery",
+    [property: JsonPropertyName("language")] string? Language = null,
+    [property: JsonPropertyName("locale")] string? Locale = null,
+    [property: JsonPropertyName("mood")] int? Mood = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
+
+public sealed record MusicDiscoveryResponse(
+    [property: JsonPropertyName("success")] bool Success,
+    [property: JsonPropertyName("enabled")] bool? Enabled,
+    [property: JsonPropertyName("items")] IReadOnlyList<MusicDiscoveryItem>? Items,
+    [property: JsonPropertyName("recommendations")] IReadOnlyList<MusicDiscoveryItem>? Recommendations = null,
+    [property: JsonPropertyName("sections")] IReadOnlyList<MusicDiscoverySection>? Sections = null,
+    [property: JsonPropertyName("message")] string? Message = null,
+    [property: JsonPropertyName("empty_state")] string? EmptyState = null,
+    [property: JsonPropertyName("cache")] TrackInsightCache? Cache = null,
+    [property: JsonPropertyName("revision")] long? Revision = null,
+    [property: JsonPropertyName("error")] string? Error = null)
+{
+    public bool CanRenderFeed => Success && Enabled != false;
+
+    public IReadOnlyList<MusicDiscoveryItem> DisplayItems => (Items ?? Recommendations ?? Sections?.SelectMany(section => section.Items ?? []) ?? [])
+        .Where(item => item.HasContent)
+        .ToArray();
+}
+
+public sealed record MusicDiscoverySection(
+    [property: JsonPropertyName("id")] string? Id,
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("items")] IReadOnlyList<MusicDiscoveryItem>? Items);
+
+public sealed record MusicDiscoveryItem(
+    [property: JsonPropertyName("id")] string? Id,
+    [property: JsonPropertyName("item_id")] string? ItemId,
+    [property: JsonPropertyName("kind")] string? Kind,
+    [property: JsonPropertyName("type")] string? Type,
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("subtitle")] string? Subtitle,
+    [property: JsonPropertyName("artist")] string? Artist,
+    [property: JsonPropertyName("context")] string? Context,
+    [property: JsonPropertyName("artwork_url")] string? ArtworkUrl,
+    [property: JsonPropertyName("image_url")] string? ImageUrl,
+    [property: JsonPropertyName("uri")] string? Uri,
+    [property: JsonPropertyName("spotify_uri")] string? SpotifyUri,
+    [property: JsonPropertyName("confidence")] string? Confidence,
+    [property: JsonPropertyName("relevance")] string? Relevance,
+    [property: JsonPropertyName("reason")] string? Reason)
+{
+    public string StableId => FirstNonEmpty(Id, ItemId, Uri, SpotifyUri, Title);
+    public string DisplayKind => FirstNonEmpty(Kind, Type, "item");
+    public string DisplayTitle => Title ?? "";
+    public string DisplaySubtitle => FirstNonEmpty(Subtitle, Artist, Context);
+    public string Artwork => ArtworkUrl ?? ImageUrl ?? "";
+    public bool HasArtwork => !string.IsNullOrWhiteSpace(Artwork);
+    public bool HasNoArtwork => !HasArtwork;
+    public bool HasReason => !string.IsNullOrWhiteSpace(Reason);
+    public bool HasConfidence => !string.IsNullOrWhiteSpace(ConfidenceLabel);
+    public string ConfidenceLabel => FirstNonEmpty(Relevance, Confidence);
+    public bool HasContent => !string.IsNullOrWhiteSpace(DisplayTitle) && IsSupportedKind(DisplayKind);
+    public bool IsPlaying { get; init; }
+    public bool PlaySucceeded { get; init; }
+    public string PlayState => IsPlaying ? "Playing..." : PlaySucceeded ? "Started" : "";
+    public bool HasPlayState => !string.IsNullOrWhiteSpace(PlayState);
+
+    private static string FirstNonEmpty(params string?[] values) => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    private static bool IsSupportedKind(string value) => value.Equals("track", StringComparison.OrdinalIgnoreCase)
+        || value.Equals("album", StringComparison.OrdinalIgnoreCase)
+        || value.Equals("artist", StringComparison.OrdinalIgnoreCase)
+        || value.Equals("playlist", StringComparison.OrdinalIgnoreCase);
 }
 
 public sealed record TrackInsightMusicDna(

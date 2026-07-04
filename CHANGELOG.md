@@ -2,7 +2,16 @@
 
 ## Unreleased
 
-- Nothing yet.
+## 3.2.8 - 2026-07-04
+
+- Added the Windows Music DNA dashboard with opt-in, disable and clear flows
+  backed by Home Assistant `music_dna` profile/settings/clear endpoints.
+- Added Music DNA websocket fast-path support with canonical HTTP fallback and
+  expanded parser/viewmodel tests for optional dashboard blocks.
+- Added the first-class Ontdek / Music Discovery page with Music DNA consent
+  gating, backend-rendered recommendations, reason info, refresh and Play Now.
+- Expanded Music Discovery tests and docs for disabled feeds, consent wiring,
+  identity query parameters and websocket feed/refresh fallbacks.
 
 ## 3.2.7 - 2026-07-04
 

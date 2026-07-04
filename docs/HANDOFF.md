@@ -2,7 +2,7 @@
 
 ## Current Status
 
-DJConnect desktop `3.2.7` has been scaffolded as a .NET MAUI app targeting
+DJConnect desktop `3.2.8` has been scaffolded as a .NET MAUI app targeting
 Windows and macOS. It includes:
 
 - local Home Assistant app-pairing through `/api/djconnect/pair`;
@@ -14,8 +14,11 @@ Windows and macOS. It includes:
 - Ask DJ mood values, optional audio-response mode, `links[]`/`sources[]`,
   generated-text metadata sparks, stale backend action and unsupported backend
   capability handling aligned with the Home Assistant `3.2.x` contract;
-- Music DNA profile/settings/clear client models with server-authoritative
-  mood/energy decoding and `music_dna_key` context forwarding;
+- Music DNA profile/settings/clear dashboard, opt-in/disable/clear flow,
+  server-authoritative optional block rendering, websocket fast path and
+  `music_dna_key` context forwarding;
+- Ontdek / Music Discovery navigation, Music DNA consent gating, backend
+  recommendation feed rendering, reason info actions, refresh and Play Now;
 - Track Insight mood and Music DNA context forwarding, plus explicit test
   coverage that BPM and musical-key fields are not rendered;
 - Now Playing, Queue and Playlists rendering with generic playback/start
@@ -45,9 +48,10 @@ Windows and macOS. It includes:
   contract paths: local app pairing, remote fallback, Music Assistant
   unsupported-capability fallbacks, stale backend action rejection, Ask DJ
   links/sources/generated-text metadata rendering, Track Insight mood refresh
-  and Music DNA profile/settings/clear behavior.
+  Music DNA profile/settings/clear behavior and Ontdek recommendation
+  feed/refresh/play behavior while Music DNA is enabled and disabled.
 - GitHub Actions CI and public unsigned Windows publication passed for
-  `v3.1.9`. The `3.2.7` Home Assistant client contract and Ask DJ/Track Insight/Music DNA parity release still needs CI/release validation after push.
+  `v3.1.9`. The `3.2.8` Home Assistant client contract, Music DNA dashboard and Ontdek release still needs CI/release validation after push.
   Mac Catalyst release artifacts continue to skip on hosted runners
   without the required Xcode 26.4.x toolchain.
 - Public unsigned release automation exists; signed Windows installers,
@@ -59,5 +63,7 @@ Windows and macOS. It includes:
 
 1. Validate local pairing, remote fallback and Ask DJ against Home Assistant
    DJConnect `3.2.x`.
-2. Extend tests for stale-pairing handling and any future real wakeword engine.
-3. Add signed Windows packaging and signed/notarized Mac Catalyst distribution.
+2. Validate Ontdek consent, refresh, reason info and Play Now against a live
+   Home Assistant DJConnect backend with Music DNA enabled and disabled.
+3. Extend tests for stale-pairing handling and any future real wakeword engine.
+4. Add signed Windows packaging and signed/notarized Mac Catalyst distribution.

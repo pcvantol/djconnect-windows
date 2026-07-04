@@ -14,6 +14,9 @@
                 <VerticalStackLayout Padding="20,24" Spacing="10">
                     <Button x:Name="NowPlayingNavButton" Text="{Binding T[Xaml_Speelt_Nu]}" Clicked="ShowNowPlaying" HorizontalOptions="Fill" Padding="20,9" />
                     <Button x:Name="AskDJNavButton" Text="{Binding T[Xaml_Ask_DJ]}" Clicked="ShowAskDJ" HorizontalOptions="Fill" Padding="20,9" />
+                    <Button x:Name="TrackInsightNavButton" Text="{Binding T[Xaml_Track_Insight]}" Clicked="ShowTrackInsight" HorizontalOptions="Fill" Padding="20,9" />
+                    <Button x:Name="DiscoverNavButton" Text="Ontdek" Clicked="ShowDiscover" HorizontalOptions="Fill" Padding="20,9" />
+                    <Button x:Name="MusicDnaNavButton" Text="Music DNA" Clicked="ShowMusicDna" HorizontalOptions="Fill" Padding="20,9" />
                     <Button x:Name="QueueNavButton" Text="{Binding T[Xaml_Wachtrij]}" Clicked="ShowQueue" HorizontalOptions="Fill" Padding="20,9" />
                     <Button x:Name="PlaylistsNavButton" Text="{Binding T[Xaml_Afspeellijsten]}" Clicked="ShowPlaylists" HorizontalOptions="Fill" Padding="20,9" />
                     <Button x:Name="GamesNavButton" Text="{Binding T[Xaml_Games]}" Clicked="ShowGames" HorizontalOptions="Fill" Padding="20,9" />
@@ -410,6 +413,164 @@
                             <Button Grid.Column="2" Text="➤" Command="{Binding SendAskDJCommand}" IsEnabled="{Binding CanSendAskDJ}" />
                         </Grid>
                     </Grid>
+                </Grid>
+
+                <Grid x:Name="TrackInsightPanel" IsVisible="False" RowDefinitions="Auto,Auto,*" RowSpacing="16">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="{Binding T[Xaml_Track_Insight]}" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="{Binding ConnectionStatusText}" TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="Analyze" Command="{Binding OpenTrackInsightCommand}" IsEnabled="{Binding CanUsePlaybackFeatures}" WidthRequest="120" />
+                    </Grid>
+                    <Border Grid.Row="1" IsVisible="{Binding HasTrackInsightNotice}" Padding="14" BackgroundColor="#2A2352" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                        <Label Text="{Binding TrackInsightNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                    </Border>
+                    <Border Grid.Row="2" IsVisible="{Binding HasTrackInsightPanel}" Padding="16" Background="{StaticResource CardBrush}" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                        <VerticalStackLayout Spacing="10" BindingContext="{Binding TrackInsightPanel}">
+                            <Label Text="{Binding Header}" FontSize="22" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="{Binding MetaLabel}" TextColor="{StaticResource TextSecondary}" />
+                            <CollectionView ItemsSource="{Binding Sections}" IsVisible="{Binding HasSections}">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Padding="0,5" ColumnDefinitions="170,*" ColumnSpacing="10">
+                                            <Label Text="{Binding Title}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                                            <Label Grid.Column="1" Text="{Binding Detail}" TextColor="{StaticResource TextPrimary}" LineBreakMode="WordWrap" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                            <CollectionView ItemsSource="{Binding Context}" IsVisible="{Binding HasContext}">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Padding="0,5" ColumnDefinitions="170,*" ColumnSpacing="10">
+                                            <Label Text="{Binding Title}" TextColor="{StaticResource TextSecondary}" />
+                                            <Label Grid.Column="1" Text="{Binding Detail}" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Border>
+                </Grid>
+
+                <Grid x:Name="DiscoverPanel" IsVisible="False" RowDefinitions="Auto,Auto,*" RowSpacing="16">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Ontdek" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="{Binding ConnectionStatusText}" TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="↻" Command="{Binding RefreshDiscoverCommand}" IsEnabled="{Binding IsMusicDnaEnabled}" WidthRequest="56" />
+                    </Grid>
+                    <VerticalStackLayout Grid.Row="1" Spacing="10">
+                        <Border IsVisible="{Binding HasDiscoverNotice}" Padding="14" BackgroundColor="#2A2352" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Label Text="{Binding DiscoverNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                        </Border>
+                        <ActivityIndicator IsRunning="{Binding IsLoadingDiscover}" IsVisible="{Binding IsLoadingDiscover}" Color="{StaticResource Accent}" />
+                        <Border IsVisible="{Binding IsDiscoverConsentVisible}" Padding="18" BackgroundColor="#202657" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="12">
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="Ontdek gebruikt Music DNA" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="20" />
+                                    <Label Text="Activeer Music DNA om aanbevelingen uit Home Assistant te laden. Windows berekent geen profiel lokaal." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                                </VerticalStackLayout>
+                                <Button Grid.Column="1" Text="Inschakelen" Command="{Binding EnableDiscoverMusicDnaCommand}" WidthRequest="130" />
+                                <Button Grid.Column="2" Text="Niet nu" Command="{Binding RejectDiscoverConsentCommand}" WidthRequest="100" />
+                            </Grid>
+                        </Border>
+                        <Border IsVisible="{Binding IsDiscoverRejectedStateVisible}" Padding="18" BackgroundColor="#202657" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                <Label Text="Ontdek werkt alleen als Music DNA is geactiveerd." TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" VerticalOptions="Center" />
+                                <Button Grid.Column="1" Text="Music DNA inschakelen" Command="{Binding EnableDiscoverMusicDnaCommand}" WidthRequest="180" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+                    <CollectionView Grid.Row="2" ItemsSource="{Binding DiscoverItems}" IsVisible="{Binding HasDiscoverItems}">
+                        <CollectionView.ItemsLayout>
+                            <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="14" VerticalItemSpacing="14" />
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="14" Background="{StaticResource CardBrush}" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                    <Grid ColumnDefinitions="82,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="12" RowSpacing="5">
+                                        <Grid WidthRequest="82" HeightRequest="82" BackgroundColor="#151936">
+                                            <Image Source="{Binding Artwork}" Aspect="AspectFill" IsVisible="{Binding HasArtwork}" />
+                                            <Label Text="♪" FontSize="28" TextColor="{StaticResource TextSecondary}" HorizontalOptions="Center" VerticalOptions="Center" IsVisible="{Binding HasNoArtwork}" />
+                                        </Grid>
+                                        <Label Grid.Column="1" Text="{Binding DisplayKind}" TextColor="{StaticResource Accent}" FontAttributes="Bold" FontSize="11" />
+                                        <Label Grid.Row="1" Grid.Column="1" Text="{Binding DisplayTitle}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="18" LineBreakMode="TailTruncation" />
+                                        <Label Grid.Row="2" Grid.Column="1" Text="{Binding DisplaySubtitle}" TextColor="{StaticResource TextSecondary}" LineBreakMode="TailTruncation" />
+                                        <HorizontalStackLayout Grid.Row="3" Grid.Column="1" Spacing="8">
+                                            <Button Text="▶" Clicked="DiscoverItemPlayClicked" WidthRequest="48" />
+                                            <Button Text="i" IsVisible="{Binding HasReason}" Clicked="DiscoverItemInfoClicked" WidthRequest="44" />
+                                            <Label Text="{Binding ConfidenceLabel}" IsVisible="{Binding HasConfidence}" TextColor="{StaticResource TextSecondary}" FontSize="12" VerticalOptions="Center" />
+                                            <Label Text="{Binding PlayState}" IsVisible="{Binding HasPlayState}" TextColor="{StaticResource Accent}" FontSize="12" VerticalOptions="Center" />
+                                        </HorizontalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </Grid>
+
+                <Grid x:Name="MusicDnaPanel" IsVisible="False" RowDefinitions="Auto,Auto,*" RowSpacing="16">
+                    <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10">
+                        <VerticalStackLayout Spacing="2">
+                            <Label Text="Music DNA" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource TextPrimary}" />
+                            <Label Text="{Binding ConnectionStatusText}" TextColor="{StaticResource TextSecondary}" />
+                        </VerticalStackLayout>
+                        <Button Grid.Column="1" Text="↻" Command="{Binding RefreshMusicDnaCommand}" IsEnabled="{Binding CanUseMusicDna}" WidthRequest="56" />
+                        <Button Grid.Column="2" Text="Enable" Command="{Binding EnableMusicDnaCommand}" IsEnabled="{Binding CanUseMusicDna}" WidthRequest="108" />
+                        <Button Grid.Column="3" Text="Clear" Command="{Binding ClearMusicDnaCommand}" IsEnabled="{Binding IsMusicDnaEnabled}" WidthRequest="92" />
+                    </Grid>
+
+                    <VerticalStackLayout Grid.Row="1" Spacing="10">
+                        <Border IsVisible="{Binding HasMusicDnaNotice}" Padding="14" BackgroundColor="#2A2352" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Label Text="{Binding MusicDnaNotice}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" />
+                        </Border>
+                        <ActivityIndicator IsRunning="{Binding IsLoadingMusicDna}" IsVisible="{Binding IsLoadingMusicDna}" Color="{StaticResource Accent}" />
+                        <Border IsVisible="{Binding IsMusicDnaDisabled}" Padding="18" BackgroundColor="#202657" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                                <VerticalStackLayout Spacing="6">
+                                    <Label Text="Music DNA is off" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="20" />
+                                    <Label Text="Enable Music DNA to let Home Assistant build your listening profile. Windows only renders the server profile." TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                                </VerticalStackLayout>
+                                <Button Grid.Column="1" Text="Enable Music DNA" Command="{Binding EnableMusicDnaCommand}" IsEnabled="{Binding CanUseMusicDna}" WidthRequest="180" />
+                            </Grid>
+                        </Border>
+                        <Border IsVisible="{Binding IsMusicDnaEnabled}" Padding="18" BackgroundColor="#202657" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="8">
+                                <Label Text="{Binding MusicDnaSummary}" IsVisible="{Binding HasMusicDnaSummary}" TextColor="{StaticResource TextPrimary}" FontSize="16" LineBreakMode="WordWrap" />
+                                <Button Grid.Column="1" Text="Disable" Command="{Binding DisableMusicDnaCommand}" WidthRequest="104" />
+                                <Label Grid.Row="1" Text="{Binding MusicDnaUpdatedAt}" IsVisible="{Binding HasMusicDnaUpdatedAt}" TextColor="{StaticResource TextSecondary}" FontSize="12" />
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <CollectionView Grid.Row="2" ItemsSource="{Binding MusicDnaBlocks}" IsVisible="{Binding HasMusicDnaBlocks}">
+                        <CollectionView.ItemsLayout>
+                            <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="14" VerticalItemSpacing="14" />
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="14" Background="{StaticResource CardBrush}" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
+                                    <VerticalStackLayout Spacing="8">
+                                        <Label Text="{Binding Title}" TextColor="{StaticResource TextPrimary}" FontAttributes="Bold" FontSize="17" />
+                                        <Label Text="{Binding Detail}" IsVisible="{Binding HasDetail}" TextColor="{StaticResource Accent}" FontAttributes="Bold" LineBreakMode="WordWrap" />
+                                        <CollectionView ItemsSource="{Binding Items}" IsVisible="{Binding HasItems}">
+                                            <CollectionView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Padding="0,3" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                                        <Label Text="{Binding Title}" TextColor="{StaticResource TextPrimary}" LineBreakMode="TailTruncation" />
+                                                        <Label Grid.Column="1" Text="{Binding Detail}" IsVisible="{Binding HasDetail}" TextColor="{StaticResource TextSecondary}" HorizontalTextAlignment="End" LineBreakMode="TailTruncation" />
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </CollectionView.ItemTemplate>
+                                        </CollectionView>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
                 </Grid>
 
                 <Grid x:Name="QueuePanel" IsVisible="False" RowDefinitions="Auto,Auto,*" RowSpacing="16">

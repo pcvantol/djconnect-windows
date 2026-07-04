@@ -88,6 +88,19 @@ var tests = new (string Name, Action Run)[]
     ("Track Insight payload includes identity and title artist", TrackInsightPayloadIncludesIdentityAndTitleArtist),
     ("Track Insight payload includes mood and Music DNA key", TrackInsightPayloadIncludesMoodAndMusicDnaKey),
     ("Music DNA profile decodes mood and energy backend shapes", MusicDnaProfileDecodesMoodAndEnergyBackendShapes),
+    ("Music DNA dashboard hides disabled and empty blocks", MusicDnaDashboardHidesDisabledAndEmptyBlocks),
+    ("Music DNA dashboard renders optional eligible blocks", MusicDnaDashboardRendersOptionalEligibleBlocks),
+    ("Music DNA settings and clear payloads include identity context", MusicDnaSettingsAndClearPayloadsIncludeIdentityContext),
+    ("WebSocket Music DNA profile success skips HTTP", WebSocketMusicDnaProfileSuccessSkipsHttp),
+    ("WebSocket Music DNA unsupported falls back to HTTP", WebSocketMusicDnaUnsupportedFallsBackToHttp),
+    ("Discover nav appears in Apple order", DiscoverNavAppearsInAppleOrder),
+    ("Discover consent UI is wired to Music DNA commands", DiscoverConsentUiIsWiredToMusicDnaCommands),
+    ("Music Discovery feed renders supported items and reasons", MusicDiscoveryFeedRendersSupportedItemsAndReasons),
+    ("Music Discovery disabled response does not render feed", MusicDiscoveryDisabledResponseDoesNotRenderFeed),
+    ("Music Discovery feed request carries identity query", MusicDiscoveryFeedRequestCarriesIdentityQuery),
+    ("WebSocket Music Discovery feed success skips HTTP", WebSocketMusicDiscoveryFeedSuccessSkipsHttp),
+    ("Music Discovery refresh uses endpoint and websocket", MusicDiscoveryRefreshUsesEndpointAndWebSocket),
+    ("Music Discovery play sends source and identity", MusicDiscoveryPlaySendsSourceAndIdentity),
     ("WebSocket timeout falls back to HTTP exactly once", WebSocketTimeoutFallsBackToHttpExactlyOnce),
     ("WebSocket auth error falls back to HTTP", WebSocketAuthErrorFallsBackToHttp),
     ("Remote connection stays HTTP", RemoteConnectionStaysHttp),
@@ -1987,6 +2000,327 @@ static void MusicDnaProfileDecodesMoodAndEnergyBackendShapes()
     AssertEqual("recent listening", profile.BasedOn);
 }
 
+static void MusicDnaDashboardHidesDisabledAndEmptyBlocks()
+{
+    const string disabledJson = """
+    { "success": true, "enabled": false, "profile": {} }
+    """;
+    const string summaryOnlyJson = """
+    {
+      "success": true,
+      "enabled": true,
+      "profile": {
+        "summary": "Server summary",
+        "favorite_genres": [],
+        "repeat_magnets": { "eligible": false, "reason": "not enough data", "items": [ { "title": "Hidden" } ] },
+        "taste_anchors": { "eligible": true, "items": [] },
+        "blocked_artists": [ "Hidden Artist" ]
+      }
+    }
+    """;
+
+    var disabled = MusicDnaDashboard.From(JsonSerializer.Deserialize<MusicDnaProfileResponse>(disabledJson, JsonOptions())!);
+    var summaryOnly = MusicDnaDashboard.From(JsonSerializer.Deserialize<MusicDnaProfileResponse>(summaryOnlyJson, JsonOptions())!);
+
+    AssertTrue(disabled.IsDisabled, "enabled:false profile should render opt-in state");
+    AssertEqual(0, disabled.Blocks.Count);
+    AssertEqual("Server summary", summaryOnly.Summary);
+    AssertEqual(0, summaryOnly.Blocks.Count);
+}
+
+static void MusicDnaDashboardRendersOptionalEligibleBlocks()
+{
+    const string json = """
+    {
+      "success": true,
+      "enabled": true,
+      "profile": {
+        "summary": "Server summary",
+        "favorite_genres": [ { "name": "Synth-pop" } ],
+        "favorite_artists": [ { "name": "M83" } ],
+        "recent_tracks": [ { "title": "Midnight City", "artist": "M83", "album": "Hurry Up" } ],
+        "recent_favorite_tracks": [ { "title": "Innerbloom", "artist": "RÜFÜS DU SOL" } ],
+        "playtime": {
+          "total_seconds": 3661,
+          "formatted_total": "1 h 1 min",
+          "top_artists": [ { "name": "M83", "formatted_total": "30 min" } ],
+          "top_albums": [ { "title": "Hurry Up", "artist": "M83" } ]
+        },
+        "listening_rhythm": {
+          "sample_count": 3,
+          "top_daypart": "evening",
+          "top_weekday": "Friday",
+          "dayparts": { "evening": 2 },
+          "weekdays": { "Friday": 2 }
+        },
+        "mood_mix": { "sample_count": 4, "chill": 10, "groove": 40, "energy": 35, "party": 15 },
+        "energy_profile": { "energy_percent": 68, "zone": "Energy", "sample_count": 4 },
+        "repeat_magnets": { "eligible": true, "items": [ { "title": "Strobe", "artist": "deadmau5" } ] },
+        "explicit_positives": {
+          "eligible": true,
+          "favorites": [ { "title": "Sweet Disposition", "artist": "The Temper Trap" } ],
+          "recommendations": [ { "title": "1901", "artist": "Phoenix" } ]
+        },
+        "taste_anchors": { "eligible": true, "items": [ { "name": "night drive synths" } ] },
+        "recommendation_signals": { "items": [ { "name": "melodic electronic" } ] }
+      }
+    }
+    """;
+
+    var dashboard = MusicDnaDashboard.From(JsonSerializer.Deserialize<MusicDnaProfileResponse>(json, JsonOptions())!);
+    var titles = dashboard.Blocks.Select(block => block.Title).ToArray();
+
+    AssertTrue(titles.Contains("Favorite genres"), "favorite genres should render when non-empty");
+    AssertTrue(titles.Contains("Recent favorites"), "recent favorite tracks should render when non-empty");
+    AssertTrue(dashboard.Blocks.Any(block => block.Title == "Playtime" && block.Detail == "1 h 1 min"), "playtime should use backend formatted_total");
+    AssertTrue(dashboard.Blocks.Any(block => block.Title == "Listening rhythm"), "listening rhythm should render when sample_count >= 3");
+    AssertTrue(dashboard.Blocks.Any(block => block.Title == "Mood mix" && block.Items.Count == 4), "mood mix distribution should render");
+    AssertTrue(titles.Contains("Repeat magnets"), "eligible repeat magnets should render");
+    AssertTrue(titles.Contains("Explicit positives"), "eligible explicit positives should render");
+    AssertTrue(titles.Contains("Taste anchors"), "eligible taste anchors should render");
+    AssertTrue(titles.Contains("Recommendation signals"), "recommendation signals should render when non-empty");
+    AssertTrue(!titles.Contains("Blocked artists"), "blocked artists must not render as a dashboard card");
+}
+
+static void MusicDnaSettingsAndClearPayloadsIncludeIdentityContext()
+{
+    var settingsHttp = new FakeHttpHandler("""{"success":true,"enabled":true}""");
+    var settingsClient = NewClientWithFastPath(new FakeFastPath([]), settingsHttp);
+    settingsClient.Configure("http://homeassistant.local:8123", "device-token-123");
+
+    var settings = new MusicDnaSettingsRequest(
+        "djconnect-windows-ABC123DEF456",
+        "djconnect-windows-ABC123DEF456",
+        "Studio PC",
+        "windows",
+        true,
+        "nl-NL",
+        "nl-NL",
+        72,
+        "dna-studio");
+    _ = settingsClient.UpdateMusicDnaSettingsAsync(settings, CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual("api/djconnect/music_dna/settings", settingsHttp.LastPath.TrimStart('/'));
+    AssertTrue(settingsHttp.LastBody.Contains("\"enabled\":true"), "settings payload must include enabled:true");
+    AssertTrue(settingsHttp.LastBody.Contains("\"client_type\":\"windows\""), "settings payload must include windows client_type");
+    AssertTrue(settingsHttp.LastBody.Contains("\"music_dna_key\":\"dna-studio\""), "settings payload must include music_dna_key");
+
+    var clearHttp = new FakeHttpHandler("""{"success":true,"enabled":true}""");
+    var clearClient = NewClientWithFastPath(new FakeFastPath([]), clearHttp);
+    clearClient.Configure("http://homeassistant.local:8123", "device-token-123");
+    _ = clearClient.ClearMusicDnaAsync(new MusicDnaClearRequest(
+        "djconnect-windows-ABC123DEF456",
+        "djconnect-windows-ABC123DEF456",
+        "Studio PC",
+        "windows",
+        "nl-NL",
+        "nl-NL",
+        72,
+        "dna-studio"), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual("api/djconnect/music_dna/clear", clearHttp.LastPath.TrimStart('/'));
+    AssertTrue(clearHttp.LastBody.Contains("\"client_type\":\"windows\""), "clear payload must include windows client_type");
+    AssertTrue(clearHttp.LastBody.Contains("\"music_dna_key\":\"dna-studio\""), "clear payload must include music_dna_key");
+}
+
+static void WebSocketMusicDnaProfileSuccessSkipsHttp()
+{
+    var profile = new MusicDnaProfileResponse(true, true, new MusicDnaProfile(
+        "Server summary",
+        FavoriteGenres: null,
+        FavoriteArtists: null,
+        RecentTracks: null,
+        RecentFavoriteTracks: null,
+        EnergyProfile: null,
+        MoodProfile: null,
+        Mood: null,
+        TasteDirection: null,
+        BasedOn: null,
+        UpdatedAt: null));
+    var fastPath = new FakeFastPath(["djconnect/music_dna/profile"]).WithResponse("djconnect/music_dna/profile", profile);
+    var http = new FakeHttpHandler("""{"success":false,"error":"http_should_not_run"}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
+
+    var response = client.GetMusicDnaProfileAsync(TestMusicDnaProfileRequest(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "websocket Music DNA profile should return success");
+    AssertEqual("Server summary", response.Profile!.Summary);
+    AssertEqual(0, http.RequestCount);
+    AssertEqual("dna-studio", fastPath.LastPayload!["music_dna_key"]);
+}
+
+static void WebSocketMusicDnaUnsupportedFallsBackToHttp()
+{
+    var fastPath = new FakeFastPath(["djconnect/command"]);
+    var http = new FakeHttpHandler("""{"success":true,"enabled":false,"profile":{}}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
+
+    var response = client.GetMusicDnaProfileAsync(TestMusicDnaProfileRequest(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(response.Success, "HTTP fallback should run when websocket route is unsupported");
+    AssertEqual(1, http.RequestCount);
+    AssertEqual("api/djconnect/music_dna/profile", http.LastPath.TrimStart('/'));
+}
+
+static void DiscoverNavAppearsInAppleOrder()
+{
+    var xaml = File.ReadAllText(Path.Combine("src", "DJConnect.Windows", "MainPage.xaml"));
+    var now = xaml.IndexOf("NowPlayingNavButton", StringComparison.Ordinal);
+    var ask = xaml.IndexOf("AskDJNavButton", StringComparison.Ordinal);
+    var insight = xaml.IndexOf("TrackInsightNavButton", StringComparison.Ordinal);
+    var discover = xaml.IndexOf("DiscoverNavButton", StringComparison.Ordinal);
+    var dna = xaml.IndexOf("MusicDnaNavButton", StringComparison.Ordinal);
+    var settings = xaml.IndexOf("SettingsNavButton", StringComparison.Ordinal);
+
+    AssertTrue(now >= 0 && ask > now && insight > ask && discover > insight && dna > discover && settings > dna, "main nav must order Playback, Ask DJ, Track Insight, Ontdek, Music DNA, Settings");
+    AssertTrue(xaml.Contains("Text=\"Ontdek\"", StringComparison.Ordinal), "Ontdek nav item should be visible");
+}
+
+static void DiscoverConsentUiIsWiredToMusicDnaCommands()
+{
+    var xaml = File.ReadAllText(Path.Combine("src", "DJConnect.Windows", "MainPage.xaml"));
+
+    AssertTrue(xaml.Contains("IsDiscoverConsentVisible", StringComparison.Ordinal), "Discover consent panel should be visible while Music DNA is disabled");
+    AssertTrue(xaml.Contains("EnableDiscoverMusicDnaCommand", StringComparison.Ordinal), "Discover consent accept action should enable Music DNA");
+    AssertTrue(xaml.Contains("RejectDiscoverConsentCommand", StringComparison.Ordinal), "Discover consent reject action should be available");
+    AssertTrue(xaml.Contains("RefreshDiscoverCommand", StringComparison.Ordinal), "Discover page should expose refresh");
+    AssertTrue(xaml.Contains("Ontdek werkt alleen als Music DNA is geactiveerd.", StringComparison.Ordinal), "Discover disabled copy should match the contract");
+}
+
+static void MusicDiscoveryFeedRendersSupportedItemsAndReasons()
+{
+    const string json = """
+    {
+      "success": true,
+      "enabled": true,
+      "items": [
+        { "id": "t1", "kind": "track", "title": "Midnight City", "artist": "M83", "artwork_url": "https://example.com/m.jpg", "confidence": "high", "reason": "You like neon synths." },
+        { "id": "a1", "kind": "album", "title": "Bloom", "artist": "RÜFÜS DU SOL" },
+        { "id": "ar1", "kind": "artist", "title": "ODESZA" },
+        { "id": "p1", "kind": "playlist", "title": "Night drive" },
+        { "id": "x1", "kind": "podcast", "title": "Hidden" }
+      ]
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<MusicDiscoveryResponse>(json, JsonOptions())!;
+    var items = response.DisplayItems;
+
+    AssertEqual(4, items.Count);
+    AssertEqual("Midnight City", items[0].DisplayTitle);
+    AssertEqual("M83", items[0].DisplaySubtitle);
+    AssertTrue(items[0].HasArtwork, "artwork should render when backend provides it");
+    AssertTrue(items[0].HasReason, "reason UI should be available when backend reason exists");
+    AssertTrue(!items[1].HasReason, "reason UI should be hidden when backend reason is missing");
+}
+
+static void MusicDiscoveryDisabledResponseDoesNotRenderFeed()
+{
+    const string json = """
+    {
+      "success": true,
+      "enabled": false,
+      "items": [
+        { "id": "t1", "kind": "track", "title": "Hidden recommendation" }
+      ],
+      "empty_state": "Enable Music DNA first."
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<MusicDiscoveryResponse>(json, JsonOptions())!;
+
+    AssertTrue(!response.CanRenderFeed, "disabled Music Discovery responses must not render as a feed");
+    AssertEqual("Enable Music DNA first.", response.EmptyState);
+}
+
+static void MusicDiscoveryFeedRequestCarriesIdentityQuery()
+{
+    var http = new FakeHttpHandler("""{"success":true,"enabled":true,"items":[]}""");
+    var client = NewClientWithFastPath(new FakeFastPath([]), http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123");
+
+    _ = client.GetMusicDiscoveryAsync(TestMusicDiscoveryRequest(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual("GET", http.LastMethod);
+    AssertTrue(http.LastPath.StartsWith("/api/djconnect/music_discovery?", StringComparison.Ordinal), "feed must use GET query parameters");
+    AssertTrue(http.LastPath.Contains("client_type=windows", StringComparison.Ordinal), "feed query must include windows client type");
+    AssertTrue(http.LastPath.Contains("device_id=djconnect-windows-ABC123DEF456", StringComparison.Ordinal), "feed query must include device id");
+    AssertTrue(http.LastPath.Contains("music_dna_key=dna-studio", StringComparison.Ordinal), "feed query must include Music DNA key");
+    AssertEqual("", http.LastBody);
+}
+
+static void WebSocketMusicDiscoveryFeedSuccessSkipsHttp()
+{
+    var wsResponse = new MusicDiscoveryResponse(true, true, [new MusicDiscoveryItem("ws-feed-1", null, "playlist", null, "Studio warmup", null, null, null, null, null, "spotify:playlist:1", null, "medium", "Because this fits your recent plays.", null)]);
+    var fastPath = new FakeFastPath(["djconnect/music_discovery/feed"]).WithResponse("djconnect/music_discovery/feed", wsResponse);
+    var http = new FakeHttpHandler("""{"success":false,"error":"http_should_not_run"}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
+
+    var result = client.GetMusicDiscoveryAsync(TestMusicDiscoveryRequest(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(result.Success, "websocket discovery feed should succeed");
+    AssertEqual(0, http.RequestCount);
+    AssertEqual("windows", fastPath.LastPayload!["client_type"]);
+    AssertEqual("dna-studio", fastPath.LastPayload!["music_dna_key"]);
+}
+
+static void MusicDiscoveryRefreshUsesEndpointAndWebSocket()
+{
+    var wsResponse = new MusicDiscoveryResponse(true, true, [new MusicDiscoveryItem("ws-1", null, "track", null, "Strobe", null, "deadmau5", null, null, null, "spotify:track:1", null, "high", null, null)]);
+    var fastPath = new FakeFastPath(["djconnect/music_discovery/refresh"]).WithResponse("djconnect/music_discovery/refresh", wsResponse);
+    var wsHttp = new FakeHttpHandler("""{"success":false,"error":"http_should_not_run"}""");
+    var wsClient = NewClientWithFastPath(fastPath, wsHttp);
+    wsClient.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
+
+    var wsResult = wsClient.RefreshMusicDiscoveryAsync(TestMusicDiscoveryRequest(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(wsResult.Success, "websocket discovery refresh should succeed");
+    AssertEqual(0, wsHttp.RequestCount);
+    AssertEqual("windows", fastPath.LastPayload!["client_type"]);
+
+    var http = new FakeHttpHandler("""{"success":true,"enabled":true,"items":[]}""");
+    var client = NewClientWithFastPath(new FakeFastPath([]), http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123");
+
+    _ = client.RefreshMusicDiscoveryAsync(TestMusicDiscoveryRequest(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual("POST", http.LastMethod);
+    AssertEqual("api/djconnect/music_discovery/refresh", http.LastPath.TrimStart('/'));
+    AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "refresh payload must include client_type");
+}
+
+static void MusicDiscoveryPlaySendsSourceAndIdentity()
+{
+    var http = new FakeHttpHandler("""{"success":true,"message":"started"}""");
+    var client = NewClientWithFastPath(new FakeFastPath([]), http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123");
+    var request = new MusicDiscoveryPlayRequest(
+        "djconnect-windows-ABC123DEF456",
+        "djconnect-windows-ABC123DEF456",
+        "Studio PC",
+        "windows",
+        "rec-1",
+        "item-1",
+        "track",
+        "spotify:track:abc",
+        "spotify:track:abc",
+        "music_discovery",
+        "en",
+        "en",
+        72,
+        "dna-studio");
+
+    _ = client.PlayMusicDiscoveryAsync(request, CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual("api/djconnect/music_discovery/play", http.LastPath.TrimStart('/'));
+    AssertTrue(http.LastBody.Contains("\"source\":\"music_discovery\""), "play payload must identify music_discovery source");
+    AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "play payload must include windows client type");
+    AssertTrue(http.LastBody.Contains("\"recommendation_id\":\"rec-1\""), "play payload must include recommendation id");
+}
+
 static void WebSocketTimeoutFallsBackToHttpExactlyOnce()
 {
     var fastPath = new FakeFastPath(["djconnect/command"]) { Error = "timeout" };
@@ -2210,6 +2544,26 @@ static TrackInsightRequest TestTrackInsightRequest() => new(
     IncludeVisualProfile: true,
     ClientId: "djconnect-windows-ABC123DEF456",
     MusicDnaKey: "dna-studio");
+
+static MusicDnaProfileRequest TestMusicDnaProfileRequest() => new(
+    "djconnect-windows-ABC123DEF456",
+    "djconnect-windows-ABC123DEF456",
+    "Studio PC",
+    "windows",
+    "en",
+    "en",
+    72,
+    "dna-studio");
+
+static MusicDiscoveryRequest TestMusicDiscoveryRequest() => new(
+    "djconnect-windows-ABC123DEF456",
+    "djconnect-windows-ABC123DEF456",
+    "Studio PC",
+    "windows",
+    "en",
+    "en",
+    72,
+    "dna-studio");
 
 static DJConnectApiClient NewClientWithFastPath(FakeFastPath fastPath, FakeHttpHandler http)
 {

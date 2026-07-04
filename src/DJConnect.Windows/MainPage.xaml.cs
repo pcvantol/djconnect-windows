@@ -154,6 +154,30 @@ the current source-of-truth notices.
 
     private void ShowAskDJ(object sender, EventArgs e) => ShowSection(AskDJPanel, AskDJNavButton);
 
+    private void ShowTrackInsight(object sender, EventArgs e)
+    {
+        ShowSection(TrackInsightPanel, TrackInsightNavButton);
+        if (_viewModel.OpenTrackInsightCommand.CanExecute(null))
+        {
+            _viewModel.OpenTrackInsightCommand.Execute(null);
+        }
+    }
+
+    private async void ShowDiscover(object sender, EventArgs e)
+    {
+        ShowSection(DiscoverPanel, DiscoverNavButton);
+        await _viewModel.OpenDiscoverAsync();
+    }
+
+    private void ShowMusicDna(object sender, EventArgs e)
+    {
+        ShowSection(MusicDnaPanel, MusicDnaNavButton);
+        if (_viewModel.RefreshMusicDnaCommand.CanExecute(null))
+        {
+            _viewModel.RefreshMusicDnaCommand.Execute(null);
+        }
+    }
+
     private void ShowQueue(object sender, EventArgs e) => ShowSection(QueuePanel, QueueNavButton);
 
     private void ShowPlaylists(object sender, EventArgs e) => ShowSection(PlaylistsPanel, PlaylistsNavButton);
@@ -208,6 +232,22 @@ the current source-of-truth notices.
         if (sender is Button { BindingContext: PlaylistItem item })
         {
             await _viewModel.StartPlaylistAsync(item);
+        }
+    }
+
+    private async void DiscoverItemPlayClicked(object sender, EventArgs e)
+    {
+        if (sender is Button { BindingContext: MusicDiscoveryItem item })
+        {
+            await _viewModel.PlayDiscoveryItemAsync(item);
+        }
+    }
+
+    private async void DiscoverItemInfoClicked(object sender, EventArgs e)
+    {
+        if (sender is Button { BindingContext: MusicDiscoveryItem item } && !string.IsNullOrWhiteSpace(item.Reason))
+        {
+            await DisplayAlert("Music DNA", item.Reason, "OK");
         }
     }
 
@@ -961,6 +1001,9 @@ the current source-of-truth notices.
 
         _viewModel.IsRuntimeSectionActive = activePanel == NowPlayingPanel
             || activePanel == AskDJPanel
+            || activePanel == TrackInsightPanel
+            || activePanel == DiscoverPanel
+            || activePanel == MusicDnaPanel
             || activePanel == QueuePanel
             || activePanel == PlaylistsPanel;
 
@@ -968,6 +1011,9 @@ the current source-of-truth notices.
         {
             NowPlayingPanel,
             AskDJPanel,
+            TrackInsightPanel,
+            DiscoverPanel,
+            MusicDnaPanel,
             QueuePanel,
             PlaylistsPanel,
             GamesPanel,
@@ -985,6 +1031,9 @@ the current source-of-truth notices.
         {
             NowPlayingNavButton,
             AskDJNavButton,
+            TrackInsightNavButton,
+            DiscoverNavButton,
+            MusicDnaNavButton,
             QueueNavButton,
             PlaylistsNavButton,
             GamesNavButton,
