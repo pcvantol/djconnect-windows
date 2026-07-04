@@ -197,6 +197,22 @@ public sealed class DJConnectApiClient
         return await ReadJsonAsync<AskDJHistoryResponse>(response, cancellationToken);
     }
 
+    public async Task<string> ExportAskDJHistoryAsync(ClientIdentity identity, CancellationToken cancellationToken)
+    {
+        var payload = new Dictionary<string, object?>
+        {
+            ["identity"] = new Dictionary<string, object?>
+            {
+                ["device_id"] = identity.DeviceId,
+                ["client_type"] = identity.ClientType,
+                ["device_name"] = identity.DeviceName
+            },
+            ["app_version"] = DJConnectContract.AppVersion
+        };
+        var response = await _httpClient.PostAsJsonAsync("api/djconnect/ask_dj/history/export", payload, JsonOptions, cancellationToken);
+        return await ReadStringAsync(response, cancellationToken);
+    }
+
     public async Task<CommandResponse> RunPlaybackActionAsync(ClientIdentity identity, PlaybackAction action, CancellationToken cancellationToken)
     {
         return await RunPlaybackActionAsync(identity, action, null, cancellationToken);
@@ -620,6 +636,30 @@ public sealed class DJConnectApiClient
 
         var result = await response.Content.ReadFromJsonAsync<T>(JsonOptions, cancellationToken);
         return result ?? throw new InvalidOperationException("Home Assistant returned an empty DJConnect response.");
+    }
+
+    private static async Task<string> ReadStringAsync(HttpResponseMessage response, CancellationToken cancellationToken)
+    {
+        if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+        {
+            throw new InvalidOperationException("Pairing is stale or this Home Assistant token is no longer accepted.");
+        }
+
+        if (response.StatusCode == System.Net.HttpStatusCode.UpgradeRequired)
+        {
+            var mismatch = await response.Content.ReadFromJsonAsync<VersionMismatchError>(JsonOptions, cancellationToken);
+            throw new DJConnectVersionMismatchException(mismatch?.Error, mismatch?.Message, mismatch?.HaVersion, mismatch?.HaMajorMinor);
+        }
+
+        var text = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Home Assistant returned HTTP {(int)response.StatusCode}.");
+        }
+
+        return string.IsNullOrWhiteSpace(text)
+            ? throw new InvalidOperationException("Home Assistant returned an empty DJConnect response.")
+            : text;
     }
 
     private sealed record VersionMismatchError(

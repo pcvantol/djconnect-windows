@@ -41,6 +41,7 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ clear response flags clear local cache", AskDJClearResponseFlagsClearLocalCache),
     ("Ask DJ history clear HTTP sends identity", AskDJHistoryClearHttpSendsIdentity),
     ("Ask DJ history clear WebSocket sends identity", AskDJHistoryClearWebSocketSendsIdentity),
+    ("Ask DJ history export uses HTTP server envelope", AskDJHistoryExportUsesHttpServerEnvelope),
     ("Ask DJ higher clear revision clears before merge", AskDJHigherClearRevisionClearsBeforeMerge),
     ("Ask DJ empty messages after clear do not restore old messages", AskDJEmptyMessagesAfterClearDoNotRestoreOldMessages),
     ("Playback action deserializes confirmation command", PlaybackActionDeserializesConfirmationCommand),
@@ -1104,6 +1105,45 @@ static void AskDJHistoryClearWebSocketSendsIdentity()
     AssertEqual("djconnect-windows-ABC123DEF456", fastPath.LastPayload["client_id"]);
     AssertEqual("windows", fastPath.LastPayload["client_type"]);
     AssertEqual("device-token-123", fastPath.LastPayload["device_token"]);
+}
+
+static void AskDJHistoryExportUsesHttpServerEnvelope()
+{
+    const string exportEnvelope = """
+    {
+      "success": true,
+      "format": "djconnect.ask_dj.history.export",
+      "schema_version": 1,
+      "exported_at": "2026-07-04T10:20:30Z",
+      "exported_by_client_type": "windows",
+      "app_version": "3.2.8",
+      "user_id": "user-1",
+      "history_revision": 12,
+      "clear_revision": 2,
+      "history_limit": 1000,
+      "history_trimmed_before": null,
+      "history_trimmed_count": 0,
+      "messages": [],
+      "server_time": "2026-07-04T10:20:31Z"
+    }
+    """;
+    var fastPath = new FakeFastPath(["djconnect/ask_dj/history/export"]);
+    var http = new FakeHttpHandler(exportEnvelope);
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
+
+    var raw = client.ExportAskDJHistoryAsync(TestIdentity(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertEqual(NormalizeJson(exportEnvelope), NormalizeJson(raw));
+    AssertEqual("POST", http.LastMethod);
+    AssertEqual("api/djconnect/ask_dj/history/export", http.LastPath.TrimStart('/'));
+    AssertEqual(0, fastPath.Routes.Count);
+    AssertTrue(http.LastBody.Contains("\"identity\":", StringComparison.Ordinal), "export payload must include nested identity");
+    AssertTrue(http.LastBody.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\"", StringComparison.Ordinal), "export identity must include device_id");
+    AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\"", StringComparison.Ordinal), "export identity must include Windows client_type");
+    AssertTrue(http.LastBody.Contains("\"device_name\":\"Studio PC\"", StringComparison.Ordinal), "export identity must include device name");
+    AssertTrue(http.LastBody.Contains("\"app_version\":\"3.2.8\"", StringComparison.Ordinal), "export payload must include app_version");
+    AssertTrue(!http.LastBody.Contains("device-token-123", StringComparison.Ordinal), "export HTTP body must not duplicate bearer token");
 }
 
 static void AskDJHigherClearRevisionClearsBeforeMerge()
@@ -2519,6 +2559,12 @@ static void WindowsClientCodeAvoidsRemovedDjconnectHaPlaybackEntities()
 }
 
 static JsonSerializerOptions JsonOptions() => new(JsonSerializerDefaults.Web);
+
+static string NormalizeJson(string json)
+{
+    using var document = JsonDocument.Parse(json);
+    return JsonSerializer.Serialize(document.RootElement, JsonOptions());
+}
 
 static ClientIdentity TestIdentity() => ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
 

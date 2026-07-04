@@ -794,7 +794,7 @@
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
                             <VerticalStackLayout Spacing="12">
                                 <Label Text="{Binding T[Xaml_Ask_DJ]}" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
                                     <Label Text="{Binding T[Xaml_Lokale_audio_replay]}" TextColor="{StaticResource TextSecondary}" />
                                     <Switch Grid.Column="1" IsToggled="{Binding LocalAudioReplayEnabled}" HorizontalOptions="Start" />
                                     <Label Grid.Row="1" Text="{Binding T[Xaml_Mood_3]}" TextColor="{StaticResource TextSecondary}" />
@@ -808,6 +808,8 @@
                                     </Picker>
                                     <Label Grid.Row="2" Text="{Binding T[Xaml_Geschiedenis]}" TextColor="{StaticResource TextSecondary}" />
                                     <Button Grid.Row="2" Grid.Column="1" Text="{Binding T[Xaml_Ask_DJ_geschiedenis_wissen]}" Command="{Binding ClearHistoryCommand}" />
+                                    <Label Grid.Row="3" Text="{Binding T[Xaml_Export]}" TextColor="{StaticResource TextSecondary}" />
+                                    <Button Grid.Row="3" Grid.Column="1" Text="{Binding T[Xaml_Export_Ask_DJ_History]}" Clicked="ExportAskDJHistoryClicked" />
                                 </Grid>
                                 <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
                                     <Label Text="{Binding T[Xaml_Stemactivatie]}" TextColor="{StaticResource TextSecondary}" />
@@ -1216,11 +1218,12 @@
 
                             <VerticalStackLayout Grid.Column="1" Spacing="12">
                                 <Label Text="{Binding T[Xaml_GEGEVENS_WISSEN]}" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="10" RowSpacing="10">
+                                <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="10">
                                     <Button Text="{Binding T[Xaml_Ask_DJ_geschiedenis_wissen_3]}" Clicked="ClearAskDJHistoryFromPrivacyClicked" />
                                     <Button Grid.Column="1" Text="{Binding T[Xaml_Logs_wissen_5]}" Clicked="ClearLogsFromPrivacyClicked" />
                                     <Button Grid.Row="1" Text="{Binding T[Xaml_App_opnieuw_koppelen_3]}" Clicked="ResetPairingFromSettingsClicked" />
                                     <Button Grid.Row="1" Grid.Column="1" Text="{Binding T[Xaml_Feedback_delen_4]}" Command="{Binding ShowFeedbackCommand}" />
+                                    <Button Grid.Row="2" Text="{Binding T[Xaml_Export_Ask_DJ_History]}" Clicked="ExportAskDJHistoryClicked" />
                                 </Grid>
                                 <Label Text="{Binding T[Xaml_Opnieuw_koppelen_wist_het_lokale_DJConnect_d]}" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
                             </VerticalStackLayout>

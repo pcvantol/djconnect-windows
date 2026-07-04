@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using DJConnect.Windows.Contracts;
@@ -1973,6 +1974,58 @@ public sealed class MainViewModel : ObservableObject
         AddDiagnostic("INF Ask DJ history clear requested.");
     }
 
+    public async Task<string?> ExportAskDJHistoryAsync()
+    {
+        if (!CanUseAskDJ || IsDemoMode)
+        {
+            AskDJNotice = P("Vm_Ask_DJ_is_unavailable_4");
+            return null;
+        }
+
+        ConfigureClient();
+        try
+        {
+            var exportJson = await _apiClient.ExportAskDJHistoryAsync(_identity, CancellationToken.None);
+            if (RequiresPairingRecovery(exportJson))
+            {
+                await ApplyStalePairingAsync("not_configured");
+                AskDJNotice = AppStrings.Get("Status_PairAgain");
+                return null;
+            }
+
+            if (!IsSuccessfulExport(exportJson))
+            {
+                AskDJNotice = P("Vm_Ask_DJ_export_failed");
+                AddDiagnostic("WRN Ask DJ history export failed.");
+                return null;
+            }
+
+            AskDJNotice = "";
+            Status = P("Vm_Ask_DJ_history_exported");
+            AddDiagnostic("INF Ask DJ history export downloaded from Home Assistant.");
+            return exportJson;
+        }
+        catch (Exception ex)
+        {
+            if (await ApplyStalePairingAsync(ex))
+            {
+                AskDJNotice = AppStrings.Get("Status_PairAgain");
+                return null;
+            }
+
+            if (ApplyVersionMismatch(ex))
+            {
+                AskDJNotice = P("Vm_Update_required_12");
+                AddDiagnostic("WRN Ask DJ history export blocked by version mismatch.");
+                return null;
+            }
+
+            AskDJNotice = P("Vm_Ask_DJ_export_failed");
+            AddDiagnostic("WRN Ask DJ history export failed: " + ex.GetType().Name);
+            return null;
+        }
+    }
+
     private async Task SyncHistoryAsync(bool showStatus)
     {
         if (!CanUseAskDJ || IsDemoMode)
@@ -3727,6 +3780,52 @@ public sealed class MainViewModel : ObservableObject
     private static bool IsStalePairingError(string? error)
     {
         return PairingStatePolicy.RequiresLocalPairingCleanup(error);
+    }
+
+    private static bool RequiresPairingRecovery(string json)
+    {
+        return TryReadExportString(json, "error", out var error) && IsStalePairingError(error);
+    }
+
+    private static bool IsSuccessfulExport(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+            return root.ValueKind == JsonValueKind.Object
+                && root.TryGetProperty("success", out var success)
+                && success.ValueKind == JsonValueKind.True
+                && root.TryGetProperty("format", out var format)
+                && string.Equals(format.GetString(), "djconnect.ask_dj.history.export", StringComparison.Ordinal);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static bool TryReadExportString(string json, string propertyName, out string? value)
+    {
+        value = null;
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+            if (root.ValueKind != JsonValueKind.Object
+                || !root.TryGetProperty(propertyName, out var property)
+                || property.ValueKind != JsonValueKind.String)
+            {
+                return false;
+            }
+
+            value = property.GetString();
+            return true;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
     }
 
     private static bool IsValidHomeAssistantUrl(string? url)

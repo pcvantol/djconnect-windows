@@ -135,6 +135,12 @@
   <data name="Vm_Ask_DJ_history_cleared" xml:space="preserve">
     <value>Ask DJ history gewist</value>
   </data>
+  <data name="Vm_Ask_DJ_history_exported" xml:space="preserve">
+    <value>Ask DJ geschiedenis geëxporteerd</value>
+  </data>
+  <data name="Vm_Ask_DJ_export_failed" xml:space="preserve">
+    <value>Ask DJ geschiedenis exporteren mislukt</value>
+  </data>
   <data name="Vm_Ask_DJ_is_unavailable" xml:space="preserve">
     <value>Ask DJ niet bereikbaar</value>
   </data>
@@ -716,6 +722,12 @@
   </data>
   <data name="Xaml_Ask_DJ_geschiedenis_wissen_3" xml:space="preserve">
     <value>⌫  Ask DJ geschiedenis wissen</value>
+  </data>
+  <data name="Xaml_Export" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Xaml_Export_Ask_DJ_History" xml:space="preserve">
+    <value>Chat geschiedenis exporteren</value>
   </data>
   <data name="Xaml_Ask_DJ_lokale_cache_voor_snelle_weergave" xml:space="preserve">
     <value>• Ask DJ lokale cache voor snelle weergave</value>
@@ -1795,6 +1807,15 @@ High {2}</value>
   </data>
   <data name="CodeBehind_ClearAskDJHistoryMessage" xml:space="preserve">
     <value>In demo mode wordt de lokale cache gewist. Gekoppeld vraagt DJConnect Home Assistant om de geschiedenis te wissen.</value>
+  </data>
+  <data name="CodeBehind_ExportAskDJHistoryTitle" xml:space="preserve">
+    <value>Ask DJ geschiedenis exporteren</value>
+  </data>
+  <data name="CodeBehind_ExportAskDJHistoryFailed" xml:space="preserve">
+    <value>Ask DJ geschiedenis exporteren mislukt. Controleer je Home Assistant-verbinding en probeer opnieuw.</value>
+  </data>
+  <data name="CodeBehind_ExportAskDJHistorySaved" xml:space="preserve">
+    <value>Ask DJ geschiedenis export opgeslagen.</value>
   </data>
   <data name="CodeBehind_ClearHistoryAction" xml:space="preserve">
     <value>Geschiedenis wissen</value>

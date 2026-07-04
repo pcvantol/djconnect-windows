@@ -2,6 +2,7 @@ using DJConnect.Windows.Models;
 using DJConnect.Windows.Resources;
 using DJConnect.Windows.Services;
 using DJConnect.Windows.ViewModels;
+using System.Text;
 
 namespace DJConnect.Windows;
 
@@ -968,6 +969,52 @@ the current source-of-truth notices.
         {
             _viewModel.ClearHistoryCommand.Execute(null);
         }
+    }
+
+    private async void ExportAskDJHistoryClicked(object sender, EventArgs e)
+    {
+        var exportJson = await _viewModel.ExportAskDJHistoryAsync();
+        if (string.IsNullOrWhiteSpace(exportJson))
+        {
+            var message = _viewModel.IsPaired
+                ? T("CodeBehind_ExportAskDJHistoryFailed")
+                : T("Status_PairAgain");
+            await DisplayAlertAsync(T("CodeBehind_ExportAskDJHistoryTitle"), message, T("CodeBehind_OkAction"));
+            return;
+        }
+
+        if (await SaveAskDJHistoryExportAsync(exportJson))
+        {
+            await DisplayAlertAsync(T("CodeBehind_ExportAskDJHistoryTitle"), T("CodeBehind_ExportAskDJHistorySaved"), T("CodeBehind_OkAction"));
+        }
+    }
+
+    private async Task<bool> SaveAskDJHistoryExportAsync(string exportJson)
+    {
+        var fileName = $"djconnect-ask-dj-history-windows-{DateTime.Now:yyyyMMdd-HHmmss}.json";
+#if WINDOWS
+        var picker = new Windows.Storage.Pickers.FileSavePicker
+        {
+            SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary,
+            SuggestedFileName = fileName
+        };
+        picker.FileTypeChoices.Add("JSON", [".json"]);
+        var window = Application.Current?.Windows.FirstOrDefault()?.Handler?.PlatformView as Microsoft.UI.Xaml.Window;
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(window);
+        WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+        var file = await picker.PickSaveFileAsync();
+        if (file is null)
+        {
+            return false;
+        }
+
+        await Windows.Storage.FileIO.WriteTextAsync(file, exportJson, Windows.Storage.Streams.UnicodeEncoding.Utf8);
+        return true;
+#else
+        var path = Path.Combine(FileSystem.Current.AppDataDirectory, fileName);
+        await File.WriteAllTextAsync(path, exportJson, Encoding.UTF8);
+        return true;
+#endif
     }
 
     private void ToggleLogSearchClicked(object sender, EventArgs e)
