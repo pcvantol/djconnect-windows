@@ -4,6 +4,10 @@
   packaging artifacts are ignored.
 - Do not commit generated app packages, logs or local settings.
 - Run `./run_tests.sh` before release work.
+- Review user-facing text in all five supported languages before release:
+  English, Dutch, German, French and Spanish. New or changed strings must be
+  present in each `src/DJConnect.Windows/Resources/Strings*.resx` file and
+  pass localization validation.
 - Run formatter/YAML/whitespace checks before tagging:
   `dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj --verify-no-changes --no-restore`,
   workflow YAML parsing and `git diff --check`.
