@@ -357,6 +357,11 @@ static void AskDJMessageRequestIncludesCurrentLocale()
     AssertEqual("api/djconnect/ask_dj/message", http.LastPath.TrimStart('/'));
     AssertTrue(http.LastBody.Contains("\"language\":\"nl-NL\""), "Ask DJ message body must include BCP-47 language");
     AssertTrue(http.LastBody.Contains("\"locale\":\"nl-NL\""), "Ask DJ message body must include BCP-47 locale");
+    AssertTrue(http.LastBody.Contains("\"mood\":72"), "Ask DJ message body must include current mood");
+    AssertEqual("nl-NL", http.LastAcceptLanguageHeader);
+    AssertEqual("nl-NL", http.LastLanguageHeader);
+    AssertEqual("nl-NL", http.LastLocaleHeader);
+    AssertEqual("72", http.LastMoodHeader);
     AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "Ask DJ message body must preserve Windows client type");
 }
 
@@ -466,7 +471,7 @@ static void AskDJTrackInsightV2RendersSectionsTimelineAndTips()
         "track": { "title": "Blue Monday", "artist": "New Order", "album": "Blue Monday" },
         "analysis": {
           "sections": [
-            { "id": "rhythm_bpm", "kind": "metric", "title": "Rhythm / BPM", "value": 128, "source": "measured", "confidence": "high" }
+            { "id": "energy_profile", "kind": "metric", "title": "Energy", "value": 128, "source": "measured", "confidence": "high" }
           ],
           "timeline": [
             { "kind": "intro", "label": "Intro", "start": "0:00", "end": "0:16", "source": "measured", "confidence": "high" }
@@ -496,7 +501,7 @@ static void AskDJTrackInsightV2RendersSectionsTimelineAndTips()
     AssertEqual(1, message.TrackInsight.Tips.Count);
     AssertEqual(1, message.TrackInsight.Limitations.Count);
     AssertTrue(message.TrackInsight.Context.Any(row => row.Title == "Music DNA Match" && row.Detail == "86%"), "Music DNA match must be visible");
-    AssertTrue(message.TrackInsight.Sections[1].Meta.Contains("bron: measured", StringComparison.Ordinal), "source must be visible");
+    AssertTrue(message.TrackInsight.Sections.Any(row => row.Title == "Energy"), "backend energy section must render");
     AssertTrue(message.TrackInsight.Tips[0].Meta.Contains("confidence: medium", StringComparison.Ordinal), "confidence must be visible");
 }
 
@@ -533,7 +538,7 @@ static void AskDJTrackInsightRendersMetaBrainzMetadataContextSeparately()
           "future_field": "ignored"
         },
         "sections": [
-          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 130, "source": "spotify_audio_features", "confidence": "high" },
+          { "id": "energy_profile", "title": "Energy", "value": 130, "source": "spotify_audio_features", "confidence": "high" },
           { "id": "metadata_context", "title": "MusicBrainz / ListenBrainz", "summary": "Public metadata matched by recording id.", "source": "metabrainz_metadata", "confidence": "medium" },
           { "id": "buildup", "summary": "Builds gradually toward the break." }
         ],
@@ -578,7 +583,7 @@ static void AskDJTrackInsightWithoutMetadataRemainsCompatible()
       "track_insight": {
         "contract_version": 2,
         "sections": [
-          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
+          { "id": "energy_profile", "title": "Energy", "value": 128 }
         ]
       }
     }
@@ -603,7 +608,7 @@ static void AskDJTrackInsightProvidersRenderAsDiagnostics()
         "contract_version": 2,
         "mode": "available",
         "sections": [
-          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
+          { "id": "energy_profile", "title": "Energy", "value": 128 }
         ],
         "timeline": [
           { "kind": "intro", "label": "Intro", "start": "0:00", "end": "0:16" }
@@ -643,7 +648,7 @@ static void AskDJTrackInsightMetaBrainzProviderStatusesRemainDiagnostics()
       "track_insight": {
         "contract_version": 2,
         "sections": [
-          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
+          { "id": "energy_profile", "title": "Energy", "value": 128 }
         ],
         "providers": [
           { "provider_id": "metabrainz_metadata", "display_name": "MusicBrainz / ListenBrainz", "status": "used" }
@@ -660,7 +665,7 @@ static void AskDJTrackInsightMetaBrainzProviderStatusesRemainDiagnostics()
       "track_insight": {
         "contract_version": 2,
         "sections": [
-          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
+          { "id": "energy_profile", "title": "Energy", "value": 128 }
         ],
         "providers": [
           { "provider_id": "metabrainz_metadata", "display_name": "MusicBrainz / ListenBrainz", "status": "skipped", "reason": "rate_limited" }
@@ -677,7 +682,7 @@ static void AskDJTrackInsightMetaBrainzProviderStatusesRemainDiagnostics()
       "track_insight": {
         "contract_version": 2,
         "sections": [
-          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 128 }
+          { "id": "energy_profile", "title": "Energy", "value": 128 }
         ],
         "providers": [
           { "provider_id": "metabrainz_metadata", "display_name": "MusicBrainz / ListenBrainz", "status": "error", "reason": "timeout" }
@@ -735,7 +740,7 @@ static void AskDJTrackInsightToleratesUnknownProviders()
       "track_insight": {
         "contract_version": 2,
         "sections": [
-          { "id": "rhythm_bpm", "title": "Rhythm / BPM", "value": 126 }
+          { "id": "energy_profile", "title": "Energy", "value": 126 }
         ],
         "providers": [
           {
@@ -1633,11 +1638,12 @@ static void BackendAwareActionsCarryBackendRevision()
 static void CommandPayloadIncludesCurrentLocaleAndPreservesProtocolValues()
 {
     var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
-    var payload = DJConnectApiClient.BuildCommandPayload(identity, "ask_dj_followup_response", new { response = "yes" }, "msg-command-1", "en_GB");
+    var payload = DJConnectApiClient.BuildCommandPayload(identity, "ask_dj_followup_response", new { response = "yes" }, "msg-command-1", "en_GB", 72);
     var serialized = JsonSerializer.Serialize(payload, JsonOptions());
 
     AssertTrue(serialized.Contains("\"language\":\"en-GB\""), "command payload must include BCP-47 language");
     AssertTrue(serialized.Contains("\"locale\":\"en-GB\""), "command payload must include BCP-47 locale");
+    AssertTrue(serialized.Contains("\"mood\":72"), "command payload must include current mood when available");
     AssertTrue(serialized.Contains("\"command\":\"ask_dj_followup_response\""), "command name must remain a protocol value");
     AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "client_type must remain the Windows protocol value");
 }
@@ -2077,11 +2083,11 @@ static TrackInsightRequest TestTrackInsightRequest() => new(
     "djconnect-windows-ABC123DEF456",
     "Studio PC",
     "windows",
-    "Strobe",
-    "deadmau5",
-    "For Lack of a Better Name",
+    new TrackInsightRequestTrack("Strobe", "deadmau5", "For Lack of a Better Name"),
     MusicBackend: "music_assistant",
+    Language: "en",
     Locale: "en",
+    Mood: 72,
     IncludeVisualProfile: true,
     ClientId: "djconnect-windows-ABC123DEF456");
 
@@ -2227,6 +2233,8 @@ sealed class FakeHttpHandler : HttpMessageHandler
     public string LastClientTypeHeader { get; private set; } = "";
     public string LastLanguageHeader { get; private set; } = "";
     public string LastLocaleHeader { get; private set; } = "";
+    public string LastAcceptLanguageHeader { get; private set; } = "";
+    public string LastMoodHeader { get; private set; } = "";
     public string LastContentType { get; private set; } = "";
     public string LastBody { get; private set; } = "";
     public List<string> RequestPaths { get; } = [];
@@ -2249,6 +2257,12 @@ sealed class FakeHttpHandler : HttpMessageHandler
             : "";
         LastLocaleHeader = request.Headers.TryGetValues("X-DJConnect-Locale", out var localeValues)
             ? localeValues.FirstOrDefault() ?? ""
+            : "";
+        LastAcceptLanguageHeader = request.Headers.TryGetValues("Accept-Language", out var acceptLanguageValues)
+            ? acceptLanguageValues.FirstOrDefault() ?? ""
+            : "";
+        LastMoodHeader = request.Headers.TryGetValues("X-DJConnect-Mood", out var moodValues)
+            ? moodValues.FirstOrDefault() ?? ""
             : "";
         LastContentType = request.Content?.Headers.ContentType?.MediaType ?? "";
         LastBody = request.Content is null

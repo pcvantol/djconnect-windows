@@ -1449,7 +1449,7 @@ public sealed class MainViewModel : ObservableObject
         StatusResponse statusResponse;
         try
         {
-            statusResponse = await _apiClient.GetStatusAsync(_identity, _language, CancellationToken.None);
+            statusResponse = await _apiClient.GetStatusAsync(_identity, _language, AskDJMoodValue(), CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -1540,7 +1540,7 @@ public sealed class MainViewModel : ObservableObject
         StatusResponse response;
         try
         {
-            response = await _apiClient.GetStatusAsync(_identity, _language, CancellationToken.None);
+            response = await _apiClient.GetStatusAsync(_identity, _language, AskDJMoodValue(), CancellationToken.None);
         }
         catch (Exception ex)
         {
@@ -1900,7 +1900,7 @@ public sealed class MainViewModel : ObservableObject
         CommandResponse response;
         try
         {
-            response = await _apiClient.RunCommandAsync(_identity, command, _language, CancellationToken.None);
+            response = await _apiClient.RunCommandAsync(_identity, command, null, _language, AskDJMoodValue(), CancellationToken.None);
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
@@ -1980,7 +1980,7 @@ public sealed class MainViewModel : ObservableObject
         CommandResponse response;
         try
         {
-            response = await _apiClient.RunCommandAsync(_identity, command, args, _language, CancellationToken.None);
+            response = await _apiClient.RunCommandAsync(_identity, command, args, _language, AskDJMoodValue(), CancellationToken.None);
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
@@ -2064,11 +2064,15 @@ public sealed class MainViewModel : ObservableObject
             _identity.DeviceId,
             _identity.DeviceName,
             _identity.ClientType,
-            string.IsNullOrWhiteSpace(_trackTitle) ? null : _trackTitle,
-            string.IsNullOrWhiteSpace(_trackArtist) ? null : _trackArtist,
-            string.IsNullOrWhiteSpace(_trackAlbum) ? null : _trackAlbum,
+            new TrackInsightRequestTrack(
+                string.IsNullOrWhiteSpace(_trackTitle) ? null : _trackTitle,
+                string.IsNullOrWhiteSpace(_trackArtist) ? null : _trackArtist,
+                string.IsNullOrWhiteSpace(_trackAlbum) ? null : _trackAlbum,
+                string.IsNullOrWhiteSpace(_artworkUrl) ? null : _artworkUrl),
             MusicBackend: _musicBackendSummary.Backend,
-            Locale: _language,
+            Language: AppStrings.NormalizeApiLocale(_language),
+            Locale: AppStrings.NormalizeApiLocale(_language),
+            Mood: AskDJMoodValue(),
             IncludeVisualProfile: true,
             ClientId: _identity.DeviceId);
 
@@ -2084,7 +2088,7 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
-            TrackInsightPanel = TrackInsightPresentation.From(response.TrackInsight);
+            TrackInsightPanel = TrackInsightPresentation.From(response.ResolvedTrackInsight);
             TrackInsightNotice = HasTrackInsightPanel ? "" : P("Vm_No_Track_Insight_available");
             AddDiagnostic("INF Track Insight loaded from Home Assistant.");
         }
@@ -2136,7 +2140,7 @@ public sealed class MainViewModel : ObservableObject
         CommandResponse response;
         try
         {
-            response = await _apiClient.RunCommandAsync(_identity, "save_current_track", _language, CancellationToken.None);
+            response = await _apiClient.RunCommandAsync(_identity, "save_current_track", null, _language, AskDJMoodValue(), CancellationToken.None);
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
@@ -2244,7 +2248,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             ConfigureClient();
-            var response = await _apiClient.RunCommandAsync(_identity, "queue", new { limit = 100 }, _language, CancellationToken.None);
+            var response = await _apiClient.RunCommandAsync(_identity, "queue", new { limit = 100 }, _language, AskDJMoodValue(), CancellationToken.None);
             if (!response.Success)
             {
                 QueueNotice = P("Vm_Home_Assistant_is_unreachable_4");
@@ -2342,7 +2346,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             ConfigureClient();
-            var response = await _apiClient.GetStatusAsync(_identity, _language, CancellationToken.None);
+            var response = await _apiClient.GetStatusAsync(_identity, _language, AskDJMoodValue(), CancellationToken.None);
             if (!response.Success)
             {
                 ReplacePlaylistItems([]);
@@ -3344,8 +3348,8 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             response = string.Equals(action.Command, "ask_dj_message", StringComparison.OrdinalIgnoreCase)
-                ? await _apiClient.RunAskDJMessageActionAsync(_identity, action, _language, CancellationToken.None)
-                : await _apiClient.RunPlaybackActionAsync(_identity, action, _language, CancellationToken.None);
+                ? await _apiClient.RunAskDJMessageActionAsync(_identity, action, _language, AskDJMoodValue(), CancellationToken.None)
+                : await _apiClient.RunPlaybackActionAsync(_identity, action, _language, AskDJMoodValue(), CancellationToken.None);
         }
         catch (Exception ex)
         {

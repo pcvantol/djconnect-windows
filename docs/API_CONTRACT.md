@@ -205,8 +205,9 @@ normalized `track_insight` object: `track`, `analysis`, `music_dna`,
 `visual_profile` and `cache`. Music DNA Match is read from
 `track_insight.music_dna.match_percent`. `visual_profile` is treated only as
 rendering hints; the client does not expect server-generated images or video.
-The client must not parse prose in `text` or `dj_text` to infer BPM,
-timestamps, song-section labels or DJ tips.
+The client must not parse prose in `text` or `dj_text` to infer tempo,
+musical-key, timestamps, song-section labels or DJ tips, and it does not render
+tempo or musical-key fields as Track Insight cards.
 
 ## Queue And Playlists
 

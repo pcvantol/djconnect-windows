@@ -37,13 +37,13 @@ public sealed class DJConnectWebSocketPayloadFactory
             request.ClientType,
             deviceToken);
 
-        payload["title"] = request.Title;
-        payload["artist"] = request.Artist;
-        payload["album"] = request.Album;
+        payload["track"] = request.Track;
         payload["entity_id"] = request.EntityId;
         payload["player_id"] = request.PlayerId;
         payload["music_backend"] = request.MusicBackend;
+        payload["language"] = request.Language;
         payload["locale"] = request.Locale;
+        payload["mood"] = request.Mood;
         payload["force_refresh"] = request.ForceRefresh;
         payload["include_visual_profile"] = request.IncludeVisualProfile;
         return payload;

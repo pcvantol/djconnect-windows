@@ -294,13 +294,13 @@ public sealed record TrackInsightRequest(
     [property: JsonPropertyName("device_id")] string DeviceId,
     [property: JsonPropertyName("device_name")] string DeviceName,
     [property: JsonPropertyName("client_type")] string ClientType,
-    [property: JsonPropertyName("title")] string? Title,
-    [property: JsonPropertyName("artist")] string? Artist,
-    [property: JsonPropertyName("album")] string? Album,
+    [property: JsonPropertyName("track")] TrackInsightRequestTrack? Track,
     [property: JsonPropertyName("entity_id")] string? EntityId = null,
     [property: JsonPropertyName("player_id")] string? PlayerId = null,
     [property: JsonPropertyName("music_backend")] string? MusicBackend = null,
+    [property: JsonPropertyName("language")] string? Language = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
+    [property: JsonPropertyName("mood")] int? Mood = null,
     [property: JsonPropertyName("force_refresh")] bool ForceRefresh = false,
     [property: JsonPropertyName("include_visual_profile")] bool IncludeVisualProfile = true,
     [property: JsonPropertyName("client_id")] string? ClientId = null);
@@ -308,8 +308,23 @@ public sealed record TrackInsightRequest(
 public sealed record TrackInsightResponse(
     [property: JsonPropertyName("success")] bool Success,
     [property: JsonPropertyName("track_insight")] TrackInsightResult? TrackInsight,
+    [property: JsonPropertyName("track")] TrackInsightTrack? Track = null,
+    [property: JsonPropertyName("analysis")] TrackInsightAnalysis? Analysis = null,
     [property: JsonPropertyName("error")] string? Error = null,
-    [property: JsonPropertyName("message")] string? Message = null);
+    [property: JsonPropertyName("message")] string? Message = null)
+{
+    public TrackInsightResult? ResolvedTrackInsight => TrackInsight ?? (Track is not null || Analysis is not null
+        ? new TrackInsightResult(Track, null, null, null, null, Analysis, null, null, null, null, null, null, null, null, null)
+        : null);
+}
+
+public sealed record TrackInsightRequestTrack(
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("artist")] string? Artist,
+    [property: JsonPropertyName("album")] string? Album,
+    [property: JsonPropertyName("artwork_url")] string? ArtworkUrl = null,
+    [property: JsonPropertyName("uri")] string? Uri = null,
+    [property: JsonPropertyName("genres")] IReadOnlyList<string>? Genres = null);
 
 public sealed record AskDJIntent(
     [property: JsonPropertyName("intent")] string? Intent,
@@ -337,14 +352,180 @@ public sealed record TrackInsightResult(
 public sealed record TrackInsightTrack(
     [property: JsonPropertyName("title")] string? Title,
     [property: JsonPropertyName("artist")] string? Artist,
-    [property: JsonPropertyName("album")] string? Album);
+    [property: JsonPropertyName("album")] string? Album,
+    [property: JsonPropertyName("artwork_url")] string? ArtworkUrl = null,
+    [property: JsonPropertyName("uri")] string? Uri = null,
+    [property: JsonPropertyName("genres")] IReadOnlyList<string>? Genres = null);
 
 public sealed record TrackInsightAnalysis(
     [property: JsonPropertyName("sections")] IReadOnlyList<TrackInsightSection>? Sections,
     [property: JsonPropertyName("timeline")] IReadOnlyList<TrackInsightTimelineEntry>? Timeline,
     [property: JsonPropertyName("dj_tips")] IReadOnlyList<TrackInsightTip>? DjTips,
     [property: JsonPropertyName("limitations")] IReadOnlyList<TrackInsightLimitation>? Limitations,
-    [property: JsonPropertyName("providers")] IReadOnlyList<TrackInsightProviderStatus>? Providers);
+    [property: JsonPropertyName("providers")] IReadOnlyList<TrackInsightProviderStatus>? Providers,
+    [property: JsonPropertyName("summary")] string? Summary = null,
+    [property: JsonPropertyName("full_text")] string? FullText = null,
+    [property: JsonPropertyName("genre")] string? Genre = null,
+    [property: JsonPropertyName("subgenre")] string? Subgenre = null,
+    [property: JsonPropertyName("mood")] string? Mood = null,
+    [property: JsonPropertyName("vibe")] string? Vibe = null,
+    [property: JsonPropertyName("texture")] string? Texture = null,
+    [property: JsonPropertyName("emotional_tone")] string? EmotionalTone = null,
+    [property: JsonPropertyName("energy")] JsonElement? Energy = null,
+    [property: JsonPropertyName("danceability")] JsonElement? Danceability = null,
+    [property: JsonPropertyName("intensity")] JsonElement? Intensity = null,
+    [property: JsonPropertyName("confidence")] string? Confidence = null,
+    [property: JsonPropertyName("production_notes")] IReadOnlyList<string>? ProductionNotes = null,
+    [property: JsonPropertyName("instrumentation")] IReadOnlyList<string>? Instrumentation = null,
+    [property: JsonPropertyName("arrangement_notes")] IReadOnlyList<string>? ArrangementNotes = null,
+    [property: JsonPropertyName("listening_cues")] IReadOnlyList<string>? ListeningCues = null,
+    [property: JsonPropertyName("similar_tracks")] IReadOnlyList<TrackInsightSimilarTrack>? SimilarTracks = null);
+
+public sealed record TrackInsightSimilarTrack(
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("artist")] string? Artist,
+    [property: JsonPropertyName("album")] string? Album = null);
+
+public sealed record MusicDnaProfileRequest(
+    [property: JsonPropertyName("client_id")] string ClientId,
+    [property: JsonPropertyName("device_id")] string DeviceId,
+    [property: JsonPropertyName("device_name")] string DeviceName,
+    [property: JsonPropertyName("client_type")] string ClientType,
+    [property: JsonPropertyName("language")] string? Language = null,
+    [property: JsonPropertyName("locale")] string? Locale = null,
+    [property: JsonPropertyName("mood")] int? Mood = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
+
+public sealed record MusicDnaSettingsRequest(
+    [property: JsonPropertyName("client_id")] string ClientId,
+    [property: JsonPropertyName("device_id")] string DeviceId,
+    [property: JsonPropertyName("device_name")] string DeviceName,
+    [property: JsonPropertyName("client_type")] string ClientType,
+    [property: JsonPropertyName("enabled")] bool Enabled,
+    [property: JsonPropertyName("language")] string? Language = null,
+    [property: JsonPropertyName("locale")] string? Locale = null,
+    [property: JsonPropertyName("mood")] int? Mood = null);
+
+public sealed record MusicDnaClearRequest(
+    [property: JsonPropertyName("client_id")] string ClientId,
+    [property: JsonPropertyName("device_id")] string DeviceId,
+    [property: JsonPropertyName("device_name")] string DeviceName,
+    [property: JsonPropertyName("client_type")] string ClientType,
+    [property: JsonPropertyName("language")] string? Language = null,
+    [property: JsonPropertyName("locale")] string? Locale = null,
+    [property: JsonPropertyName("mood")] int? Mood = null);
+
+public sealed record MusicDnaProfileResponse(
+    [property: JsonPropertyName("success")] bool Success,
+    [property: JsonPropertyName("enabled")] bool? Enabled,
+    [property: JsonPropertyName("profile")] MusicDnaProfile? Profile,
+    [property: JsonPropertyName("error")] string? Error = null,
+    [property: JsonPropertyName("message")] string? Message = null);
+
+public sealed record MusicDnaSettingsResponse(
+    [property: JsonPropertyName("success")] bool Success,
+    [property: JsonPropertyName("enabled")] bool? Enabled,
+    [property: JsonPropertyName("error")] string? Error = null,
+    [property: JsonPropertyName("message")] string? Message = null);
+
+public sealed record MusicDnaClearResponse(
+    [property: JsonPropertyName("success")] bool Success,
+    [property: JsonPropertyName("enabled")] bool? Enabled,
+    [property: JsonPropertyName("error")] string? Error = null,
+    [property: JsonPropertyName("message")] string? Message = null);
+
+public sealed record MusicDnaProfile(
+    [property: JsonPropertyName("summary")] string? Summary,
+    [property: JsonPropertyName("favorite_genres")] IReadOnlyList<MusicDnaProfileItem>? FavoriteGenres,
+    [property: JsonPropertyName("favorite_artists")] IReadOnlyList<MusicDnaProfileItem>? FavoriteArtists,
+    [property: JsonPropertyName("recent_tracks")] IReadOnlyList<MusicDnaProfileItem>? RecentTracks,
+    [property: JsonPropertyName("energy_profile")] MusicDnaProfileItem? EnergyProfile,
+    [property: JsonPropertyName("mood_profile")] MusicDnaProfileItem? MoodProfile,
+    [property: JsonPropertyName("taste_direction")] MusicDnaProfileItem? TasteDirection,
+    [property: JsonPropertyName("based_on")] string? BasedOn,
+    [property: JsonPropertyName("updated_at")] DateTimeOffset? UpdatedAt);
+
+[JsonConverter(typeof(MusicDnaProfileItemJsonConverter))]
+public sealed record MusicDnaProfileItem(
+    string? Name,
+    string? Title,
+    string? Artist,
+    int? Count,
+    double? Score,
+    IReadOnlyList<string>? Genres)
+{
+    public string DisplayTitle => FirstNonEmpty(Name, Title, Artist);
+    public string DisplaySubtitle => FirstNonEmpty(Artist, Count.HasValue ? Count.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : null);
+    public bool HasContent => !string.IsNullOrWhiteSpace(DisplayTitle) || (Genres?.Count ?? 0) > 0;
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    }
+}
+
+public sealed class MusicDnaProfileItemJsonConverter : JsonConverter<MusicDnaProfileItem>
+{
+    public override MusicDnaProfileItem Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        if (reader.TokenType == JsonTokenType.String)
+        {
+            return new MusicDnaProfileItem(reader.GetString(), null, null, null, null, null);
+        }
+
+        using var document = JsonDocument.ParseValue(ref reader);
+        var root = document.RootElement;
+        return new MusicDnaProfileItem(
+            ReadString(root, "name"),
+            ReadString(root, "title"),
+            ReadString(root, "artist"),
+            ReadInt(root, "count"),
+            ReadDouble(root, "score"),
+            ReadStringArray(root, "genres"));
+    }
+
+    public override void Write(Utf8JsonWriter writer, MusicDnaProfileItem value, JsonSerializerOptions options)
+    {
+        JsonSerializer.Serialize(writer, new
+        {
+            value.Name,
+            value.Title,
+            value.Artist,
+            value.Count,
+            value.Score,
+            value.Genres
+        }, options);
+    }
+
+    private static string? ReadString(JsonElement element, string name)
+    {
+        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.String ? value.GetString() : null;
+    }
+
+    private static int? ReadInt(JsonElement element, string name)
+    {
+        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetInt32(out var result) ? result : null;
+    }
+
+    private static double? ReadDouble(JsonElement element, string name)
+    {
+        return element.TryGetProperty(name, out var value) && value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var result) ? result : null;
+    }
+
+    private static IReadOnlyList<string>? ReadStringArray(JsonElement element, string name)
+    {
+        if (!element.TryGetProperty(name, out var value) || value.ValueKind != JsonValueKind.Array)
+        {
+            return null;
+        }
+
+        return value.EnumerateArray()
+            .Where(item => item.ValueKind == JsonValueKind.String)
+            .Select(item => item.GetString() ?? "")
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .ToArray();
+    }
+}
 
 public sealed record TrackInsightMusicDna(
     [property: JsonPropertyName("match_percent")] int? MatchPercent,
@@ -509,12 +690,32 @@ public sealed record TrackInsightPresentation(
             }
         }
 
+        if (detail is not null)
+        {
+            AddIfPresent(sections, "Summary", "Analysis", FirstNonEmpty(detail.Summary, detail.FullText), SourceConfidenceLabel(null, detail.Confidence));
+            AddIfPresent(sections, "Genre", FirstNonEmpty(detail.Subgenre, "Genre"), FirstNonEmpty(detail.Genre, JoinNonEmpty(analysis.Track?.Genres?.ToArray() ?? [])), "");
+            AddIfPresent(sections, "Mood", "Vibe", JoinNonEmpty(
+                LabelWithPrefix("Mood", detail.Mood),
+                LabelWithPrefix("Vibe", detail.Vibe),
+                LabelWithPrefix("Texture", detail.Texture),
+                LabelWithPrefix("Tone", detail.EmotionalTone)), "");
+            AddIfPresent(sections, "Energy", "Feel", JoinNonEmpty(
+                LabelWithPrefix("Energy", DisplayJson(detail.Energy)),
+                LabelWithPrefix("Danceability", DisplayJson(detail.Danceability)),
+                LabelWithPrefix("Intensity", DisplayJson(detail.Intensity))), "");
+            AddListRow(sections, "Production notes", "Production", detail.ProductionNotes);
+            AddListRow(sections, "Instrumentation", "Instrumentation", detail.Instrumentation);
+            AddListRow(sections, "Arrangement notes", "Arrangement", detail.ArrangementNotes);
+            AddListRow(sections, "Listening cues", "Cues", detail.ListeningCues);
+            AddIfPresent(sections, "Similar tracks", "References", SimilarTracksLabel(detail.SimilarTracks), "");
+        }
+
         if (analysis.Cache is not null)
         {
             context.Add(new TrackInsightRow("Cache", analysis.Cache.Hit == true ? "hit" : "fresh", analysis.Cache.GeneratedAt?.ToString("u") ?? "", ""));
         }
 
-        sections.AddRange((analysisSections ?? []).Where(section => !IsMetadataContextSection(section)).Select(SectionRow));
+        sections.AddRange((analysisSections ?? []).Where(section => !IsMetadataContextSection(section) && !IsForbiddenMusicalMeasurement(section)).Select(SectionRow));
         context.AddRange((analysisSections ?? []).Where(IsMetadataContextSection).Select(MetadataContextSectionRow));
         timeline.AddRange((analysisTimeline ?? []).Select(TimelineRow));
         tips.AddRange((analysisTips ?? []).Select(TipRow));
@@ -539,7 +740,10 @@ public sealed record TrackInsightPresentation(
         var detail = FirstNonEmpty(section.Summary, section.Text, DisplayJson(section.Value));
         if (string.IsNullOrWhiteSpace(detail) && (section.Items?.Count ?? 0) > 0)
         {
-            detail = string.Join(" · ", section.Items!.Select(item => $"{FirstNonEmpty(item.Label, item.Title, item.Id, item.Kind)} {DisplayJson(item.Value)} {item.Unit}".Trim()).Where(value => !string.IsNullOrWhiteSpace(value)));
+            detail = string.Join(" · ", section.Items!
+                .Where(item => !IsForbiddenMusicalMeasurement(item))
+                .Select(item => $"{FirstNonEmpty(item.Label, item.Title, item.Id, item.Kind)} {DisplayJson(item.Value)} {item.Unit}".Trim())
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
         }
 
         return new TrackInsightRow(
@@ -547,6 +751,58 @@ public sealed record TrackInsightPresentation(
             FirstNonEmpty(Humanize(section.Kind), section.Id),
             detail,
             SourceConfidenceLabel(section.Source, section.Confidence));
+    }
+
+    private static bool IsForbiddenMusicalMeasurement(TrackInsightSection section)
+    {
+        return IsForbiddenMusicalMeasurement(section.Id)
+            || IsForbiddenMusicalMeasurement(section.Title)
+            || IsForbiddenMusicalMeasurement(section.Label)
+            || IsForbiddenMusicalMeasurement(section.Kind);
+    }
+
+    private static bool IsForbiddenMusicalMeasurement(TrackInsightMetric metric)
+    {
+        return IsForbiddenMusicalMeasurement(metric.Id)
+            || IsForbiddenMusicalMeasurement(metric.Title)
+            || IsForbiddenMusicalMeasurement(metric.Label)
+            || IsForbiddenMusicalMeasurement(metric.Kind);
+    }
+
+    private static bool IsForbiddenMusicalMeasurement(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var normalized = value.Replace("-", "_", StringComparison.Ordinal).Replace(" ", "_", StringComparison.Ordinal).ToLowerInvariant();
+        return normalized.Contains("bpm", StringComparison.Ordinal)
+            || normalized.Contains("tempo", StringComparison.Ordinal)
+            || normalized is "key" or "musical_key" or "key_signature"
+            || normalized.Contains("_key", StringComparison.Ordinal)
+            || normalized.Contains("key_", StringComparison.Ordinal);
+    }
+
+    private static void AddIfPresent(List<TrackInsightRow> rows, string title, string category, string detail, string meta)
+    {
+        if (!string.IsNullOrWhiteSpace(detail))
+        {
+            rows.Add(new TrackInsightRow(title, category, detail, meta));
+        }
+    }
+
+    private static void AddListRow(List<TrackInsightRow> rows, string title, string category, IReadOnlyList<string>? values)
+    {
+        var detail = JoinNonEmpty(values?.ToArray() ?? []);
+        AddIfPresent(rows, title, category, detail, "");
+    }
+
+    private static string SimilarTracksLabel(IReadOnlyList<TrackInsightSimilarTrack>? tracks)
+    {
+        return string.Join(" · ", (tracks ?? [])
+            .Select(track => JoinNonEmpty(track.Title, track.Artist))
+            .Where(value => !string.IsNullOrWhiteSpace(value)));
     }
 
     private static bool IsMetadataContextSection(TrackInsightSection section)
@@ -728,7 +984,8 @@ public sealed record AskDJVoiceRequest(
     string ClientMessageId,
     string AudioResponse = "auto",
     string? Language = null,
-    string? Locale = null);
+    string? Locale = null,
+    int? Mood = null);
 
 public sealed record AskDJImage(
     [property: JsonPropertyName("url")] string? Url,
