@@ -89,7 +89,10 @@ The client sends Home Assistant auth and explicit track fields when available:
 - optional `entity_id`;
 - optional `player_id`;
 - optional `music_backend`;
+- `language`;
 - `locale`;
+- `mood`;
+- `music_dna_key`;
 - `force_refresh`;
 - `include_visual_profile`.
 
@@ -107,6 +110,10 @@ The normalized response is `track_insight`:
 Music DNA Match is read from `track_insight.music_dna.match_percent`.
 `visual_profile` is rendering hints only. The client must not expect
 server-generated images or video.
+
+`mood` and `music_dna_key` are request context. They help Home Assistant select
+or refresh the right server-owned analysis and Music DNA match. Windows must not
+derive profile conclusions or Track Insight analysis locally from those fields.
 
 ## Ask DJ Contract
 
@@ -145,14 +152,14 @@ The dedicated Windows screen should contain:
 Fields such as genre, mood, energy, danceability, intensity, vibe and texture
 are rendered only when the backend provides them through `track_insight.analysis`
 or compatible section items. The client never invents analysis values and does
-not render tempo or musical-key cards.
+not render tempo, BPM or musical-key cards.
 
 ## Parser Policy
 
 Windows parses structured JSON from Home Assistant. If the backend returns only
 plain answer text, the app may show that text as an Ask DJ answer or empty Track
 Insight state, but it must not parse prose to infer genre, timestamps,
-structure labels, tips or Music DNA.
+structure labels, tips, tempo, BPM, musical key or Music DNA.
 
 This keeps Windows aligned with the HA integration `3.2.x` contract and avoids
 client-side disagreement with the backend.

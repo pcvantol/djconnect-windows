@@ -141,7 +141,7 @@ POST /api/djconnect/ask_dj/history/clear
 Text and voice requests include `client_type`, `device_id`, `device_name`,
 `client_id`, `client_message_id`, `audio_response`, app/protocol version
 metadata, BCP-47 `language`/`locale` values such as `nl-NL` or `en-GB`, and
-optional numeric `mood`. Raw WAV voice uploads also send
+optional numeric `mood` and `music_dna_key` when available. Raw WAV voice uploads also send
 `X-DJConnect-Language` and `X-DJConnect-Locale` headers because the audio body
 cannot be represented as JSON. The server derives the canonical mood zone:
 `chill` for `0`-`24`, `groove` for `25`-`59`, `energy` for `60`-`84` and
@@ -154,6 +154,17 @@ If `messages[]` is present, it is canonical. The client uses
 `exchange_id`/`exchange_order` only to preserve the server-provided user then
 assistant order. It does not reconstruct intents, follow-up context, playback
 actions, memory or history locally.
+
+Generated-text decoration is backend-authoritative. The client shows the
+generated text spark only when `assistant_message.is_generated_text` is `true`
+or, when no `assistant_message` is present, response-level `is_generated_text`
+is `true`. Missing metadata, fallback text, system messages, errors, Play Now
+fallback labels and Track Insight local/fallback analysis must not show the
+spark. When shown, the spark is inline before the generated answer text, never
+before the role label.
+
+Assistant bubbles are colored from mood context using the backend/client mood
+zone thresholds above. User bubbles stay the fixed user color.
 
 ## Actions
 
@@ -194,9 +205,10 @@ IDs in visible text or infer actions from answer text.
 Track Insight can be opened directly from Now Playing with
 `POST /api/djconnect/track_insight`. The client sends Home Assistant auth and
 the explicit track fields it has (`title`, `artist`, `album`, optional
-`entity_id`, `player_id`, `music_backend`, `locale`, `force_refresh` and
-`include_visual_profile`). If metadata is missing, Home Assistant resolves Now
-Playing. `no_track_playing` is rendered as an empty state.
+`entity_id`, `player_id`, `music_backend`, `language`, `locale`, `mood`,
+`music_dna_key`, `force_refresh` and `include_visual_profile`). If metadata is
+missing, Home Assistant resolves Now Playing. `no_track_playing` is rendered as
+an empty state.
 
 Ask DJ Track Insight responses are detected when `intent.intent`, `action`,
 `type` or `open_screen` is `track_insight`. They are informational/read-only
@@ -208,6 +220,38 @@ rendering hints; the client does not expect server-generated images or video.
 The client must not parse prose in `text` or `dj_text` to infer tempo,
 musical-key, timestamps, song-section labels or DJ tips, and it does not render
 tempo or musical-key fields as Track Insight cards.
+
+## Music DNA
+
+Music DNA is opt-in and server-authoritative. The Windows client does not infer
+profile conclusions locally and renders only backend fields.
+
+Endpoints:
+
+```http
+POST /api/djconnect/music_dna/profile
+POST /api/djconnect/music_dna/settings
+POST /api/djconnect/music_dna/clear
+```
+
+Profile requests include `client_id`, `client_type: "windows"`, `device_id`,
+`device_name`, `language`, `locale`, optional `music_dna_key` and optional
+numeric `mood`. Settings and clear requests keep the same identity/context;
+clear removes profile data but preserves the opt-in setting.
+
+The profile renderer may use only backend-provided `summary`,
+`favorite_genres`, `favorite_artists`, `recent_tracks`, `energy_profile`,
+`mood_profile` or `mood`, `taste_direction`, `based_on` and `updated_at`.
+Backend array order is preserved. Compact top values are shown without local
+re-sorting.
+
+Mood rendering prefers `average` plus `average_zone`, then falls back to
+`value` plus `zone`. It must not show a dash or "too little data" copy when
+`sample_count` is positive or a value exists. Energy rendering prefers
+`energy_percent` with `zone` as label and may show backend `danceability` and
+`intensity` as secondary text. "Based on" uses `based_on` or backend recent
+signals, never a local guess. Track signal text is formatted as
+`title — artist` or `title — artist · album`.
 
 ## Queue And Playlists
 

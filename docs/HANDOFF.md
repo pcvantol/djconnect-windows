@@ -2,7 +2,7 @@
 
 ## Current Status
 
-DJConnect desktop `3.2.6` has been scaffolded as a .NET MAUI app targeting
+DJConnect desktop `3.2.7` has been scaffolded as a .NET MAUI app targeting
 Windows and macOS. It includes:
 
 - local Home Assistant app-pairing through `/api/djconnect/pair`;
@@ -12,8 +12,12 @@ Windows and macOS. It includes:
   command actions;
 - Ask DJ timeline, Track Insight, action and recent-played rendering;
 - Ask DJ mood values, optional audio-response mode, `links[]`/`sources[]`,
-  stale backend action and unsupported backend capability handling aligned with
-  the Home Assistant `3.2.x` contract;
+  generated-text metadata sparks, stale backend action and unsupported backend
+  capability handling aligned with the Home Assistant `3.2.x` contract;
+- Music DNA profile/settings/clear client models with server-authoritative
+  mood/energy decoding and `music_dna_key` context forwarding;
+- Track Insight mood and Music DNA context forwarding, plus explicit test
+  coverage that BPM and musical-key fields are not rendered;
 - Now Playing, Queue and Playlists rendering with generic playback/start
   commands;
 - Settings, Privacy, Logs/Diagnostics, Feedback, Crash report, Wakeword prompt
@@ -39,10 +43,11 @@ Windows and macOS. It includes:
   fields.
 - Real Home Assistant field testing is still needed for the synced backend
   contract paths: local app pairing, remote fallback, Music Assistant
-  unsupported-capability fallbacks, stale backend action rejection and Ask DJ
-  links/sources rendering.
+  unsupported-capability fallbacks, stale backend action rejection, Ask DJ
+  links/sources/generated-text metadata rendering, Track Insight mood refresh
+  and Music DNA profile/settings/clear behavior.
 - GitHub Actions CI and public unsigned Windows publication passed for
-  `v3.1.9`. The `3.2.6` Home Assistant client contract and queue rendering release still needs CI/release validation after push.
+  `v3.1.9`. The `3.2.7` Home Assistant client contract and Ask DJ/Track Insight/Music DNA parity release still needs CI/release validation after push.
   Mac Catalyst release artifacts continue to skip on hosted runners
   without the required Xcode 26.4.x toolchain.
 - Public unsigned release automation exists; signed Windows installers,

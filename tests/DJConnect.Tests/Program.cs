@@ -22,6 +22,7 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ message request includes current locale", AskDJMessageRequestIncludesCurrentLocale),
     ("Ask DJ response deserializes exchange messages", AskDJResponseDeserializesExchangeMessages),
     ("Ask DJ response deserializes media sources links and dj text", AskDJResponseDeserializesMediaSourcesLinksAndDjText),
+    ("Ask DJ spark follows generated text metadata only", AskDJSparkFollowsGeneratedTextMetadataOnly),
     ("Ask DJ track insight v2 renders sections timeline and tips", AskDJTrackInsightV2RendersSectionsTimelineAndTips),
     ("Ask DJ track insight renders MetaBrainz metadata context separately", AskDJTrackInsightRendersMetaBrainzMetadataContextSeparately),
     ("Ask DJ track insight without metadata remains compatible", AskDJTrackInsightWithoutMetadataRemainsCompatible),
@@ -32,6 +33,7 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ track insight unavailable renders skipped provider diagnostics", AskDJTrackInsightUnavailableRendersSkippedProviderDiagnostics),
     ("Ask DJ track insight v2 without timeline renders sections", AskDJTrackInsightV2WithoutTimelineRendersSections),
     ("Ask DJ track insight unavailable renders limitations", AskDJTrackInsightUnavailableRendersLimitations),
+    ("Ask DJ track insight suppresses BPM and key fields", AskDJTrackInsightSuppressesBpmAndKeyFields),
     ("Ask DJ track insight renders unknown values generically", AskDJTrackInsightRendersUnknownValuesGenerically),
     ("Ask DJ track insight without playback actions has no stale buttons", AskDJTrackInsightWithoutPlaybackActionsHasNoStaleButtons),
     ("Ask DJ message presentation supports system audio and confirmations", AskDJMessagePresentationSupportsSystemAudioAndConfirmations),
@@ -84,6 +86,8 @@ var tests = new (string Name, Action Run)[]
     ("WebSocket Ask DJ payload includes current locale", WebSocketAskDJPayloadIncludesCurrentLocale),
     ("WebSocket Track Insight success renders Music DNA", WebSocketTrackInsightSuccessRendersMusicDna),
     ("Track Insight payload includes identity and title artist", TrackInsightPayloadIncludesIdentityAndTitleArtist),
+    ("Track Insight payload includes mood and Music DNA key", TrackInsightPayloadIncludesMoodAndMusicDnaKey),
+    ("Music DNA profile decodes mood and energy backend shapes", MusicDnaProfileDecodesMoodAndEnergyBackendShapes),
     ("WebSocket timeout falls back to HTTP exactly once", WebSocketTimeoutFallsBackToHttpExactlyOnce),
     ("WebSocket auth error falls back to HTTP", WebSocketAuthErrorFallsBackToHttp),
     ("Remote connection stays HTTP", RemoteConnectionStaysHttp),
@@ -453,6 +457,38 @@ static void AskDJResponseDeserializesMediaSourcesLinksAndDjText()
     var message = new AskDJMessage("links-1", "assistant", "Concerten", null, DateTimeOffset.Now, "assistant", null, null, null, null, response.Sources, Links: response.Links);
     AssertTrue(message.HasSources, "links should render on the same source surface");
     AssertEqual(3, message.DisplaySources.Count);
+}
+
+static void AskDJSparkFollowsGeneratedTextMetadataOnly()
+{
+    const string json = """
+    {
+      "success": true,
+      "assistant_message": {
+        "id": "assistant-generated",
+        "role": "assistant",
+        "text": "Dit is echt gegenereerde tekst.",
+        "is_generated_text": true
+      }
+    }
+    """;
+    var response = JsonSerializer.Deserialize<AskDJMessageResponse>(json, JsonOptions());
+    var generated = response!.AssistantMessage!;
+    var fallback = new AskDJMessage("fallback", "assistant", "Play Now fallbacktekst", null, DateTimeOffset.Now, "assistant", null, null, null, null, null);
+    var system = new AskDJMessage("system", "system", "History trimmed", null, DateTimeOffset.Now, "system", null, null, null, null, null)
+    {
+        IsGeneratedText = true
+    };
+
+    AssertTrue(generated.ShowGeneratedTextSpark, "assistant_message.is_generated_text=true must render the spark");
+    AssertEqual("✦ ", generated.GeneratedTextSpark);
+    AssertTrue(!fallback.ShowGeneratedTextSpark, "missing metadata must not render the spark");
+    AssertTrue(!system.ShowGeneratedTextSpark, "system messages must not render the spark even if metadata is malformed");
+    AssertEqual("#1B3556", (new AskDJMessage("chill", "assistant", "backend text", null, DateTimeOffset.Now, "assistant", null, null, null, null, null, Mood: 12)).BubbleBackground);
+    AssertEqual("#24345F", (new AskDJMessage("groove", "assistant", "backend text", null, DateTimeOffset.Now, "assistant", null, null, null, null, null, Mood: 42)).BubbleBackground);
+    AssertEqual("#442A76", (new AskDJMessage("energy", "assistant", "backend text", null, DateTimeOffset.Now, "assistant", null, null, null, null, null, Mood: 72)).BubbleBackground);
+    AssertEqual("#5A244E", (new AskDJMessage("party", "assistant", "backend text", null, DateTimeOffset.Now, "assistant", null, null, null, null, null, Mood: 92)).BubbleBackground);
+    AssertEqual("#5539D7", (new AskDJMessage("user", "user", "hello", null, DateTimeOffset.Now, "user", null, null, null, null, null)).BubbleBackground);
 }
 
 static void AskDJTrackInsightV2RendersSectionsTimelineAndTips()
@@ -848,6 +884,47 @@ static void AskDJTrackInsightUnavailableRendersLimitations()
     AssertTrue(message!.TrackInsight!.IsUnavailable, "unavailable mode should render a fallback card");
     AssertEqual(0, message.TrackInsight.Sections.Count);
     AssertEqual(1, message.TrackInsight.Limitations.Count);
+}
+
+static void AskDJTrackInsightSuppressesBpmAndKeyFields()
+{
+    const string json = """
+    {
+      "id": "analysis-no-bpm-key",
+      "role": "assistant",
+      "intent": { "intent": "track_insight" },
+      "track_insight": {
+        "contract_version": 2,
+        "analysis": {
+          "sections": [
+            {
+              "id": "musical_measurements",
+              "title": "Analysis",
+              "items": [
+                { "id": "bpm", "label": "BPM", "value": 128 },
+                { "id": "musical_key", "label": "Key", "value": "A minor" },
+                { "id": "energy_profile", "label": "Energy", "value": 76 }
+              ]
+            },
+            { "id": "vibe", "title": "Vibe", "summary": "Driving and bright." }
+          ]
+        },
+        "sections": [
+          { "id": "tempo_bpm", "title": "BPM", "value": 128 },
+          { "id": "key_signature", "title": "Key", "value": "A minor" }
+        ]
+      }
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+    var rendered = string.Join(" ", message!.TrackInsight!.Sections.Select(row => $"{row.Title} {row.Subtitle} {row.Detail}"));
+
+    AssertTrue(!rendered.Contains("BPM", StringComparison.OrdinalIgnoreCase), "Track Insight must suppress BPM fields");
+    AssertTrue(!rendered.Contains("A minor", StringComparison.OrdinalIgnoreCase), "Track Insight must suppress musical-key values");
+    AssertTrue(!rendered.Contains("Key", StringComparison.OrdinalIgnoreCase), "Track Insight must suppress musical-key labels");
+    AssertTrue(rendered.Contains("Energy", StringComparison.OrdinalIgnoreCase), "non-forbidden backend metrics should still render");
+    AssertTrue(rendered.Contains("Vibe", StringComparison.OrdinalIgnoreCase), "non-forbidden backend sections should still render");
 }
 
 static void AskDJTrackInsightRendersUnknownValuesGenerically()
@@ -1868,6 +1945,48 @@ static void TrackInsightPayloadIncludesIdentityAndTitleArtist()
     AssertTrue(!http.LastBody.Contains("artist_name", StringComparison.OrdinalIgnoreCase), "Track Insight request should not send artist_name alias when artist is known");
 }
 
+static void TrackInsightPayloadIncludesMoodAndMusicDnaKey()
+{
+    var fastPath = new FakeFastPath(["djconnect/track_insight"]) { Error = "force-http" };
+    var http = new FakeHttpHandler("""{"success":false,"error":"no_track_playing"}""");
+    var client = NewClientWithFastPath(fastPath, http);
+    client.Configure("http://homeassistant.local:8123", "device-token-123", enableLocalWebSocketFastPath: true, haWebSocketAuthToken: "ha-ws-token");
+
+    _ = client.GetTrackInsightAsync(TestTrackInsightRequest(), CancellationToken.None).GetAwaiter().GetResult();
+
+    AssertTrue(http.LastBody.Contains("\"mood\":72"), "Track Insight HTTP payload must include mood context");
+    AssertTrue(http.LastBody.Contains("\"music_dna_key\":\"dna-studio\""), "Track Insight HTTP payload must include music_dna_key");
+    AssertEqual(72, (int?)fastPath.LastPayload!["mood"]);
+    AssertEqual("dna-studio", fastPath.LastPayload!["music_dna_key"]);
+}
+
+static void MusicDnaProfileDecodesMoodAndEnergyBackendShapes()
+{
+    const string json = """
+    {
+      "success": true,
+      "enabled": true,
+      "profile": {
+        "summary": "Backend summary",
+        "mood": { "average": 57, "average_zone": "Groove", "sample_count": 3 },
+        "energy_profile": { "energy_percent": 68, "zone": "Energy", "sample_count": 4, "danceability": 71, "intensity": 64 },
+        "recent_tracks": [
+          { "title": "Strobe", "artist": "deadmau5", "album": "For Lack of a Better Name" }
+        ],
+        "based_on": "recent listening"
+      }
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<MusicDnaProfileResponse>(json, JsonOptions());
+    var profile = response!.Profile!;
+
+    AssertEqual("Groove gemiddeld · 57% · 3 signalen", profile.ResolvedMoodProfile!.MoodSummary);
+    AssertEqual("Energy · 68% · danceability 71% · intensity 64%", profile.EnergyProfile!.EnergySummary);
+    AssertEqual("Strobe — deadmau5 · For Lack of a Better Name", profile.RecentTracks![0].DisplaySubtitle);
+    AssertEqual("recent listening", profile.BasedOn);
+}
+
 static void WebSocketTimeoutFallsBackToHttpExactlyOnce()
 {
     var fastPath = new FakeFastPath(["djconnect/command"]) { Error = "timeout" };
@@ -2089,7 +2208,8 @@ static TrackInsightRequest TestTrackInsightRequest() => new(
     Locale: "en",
     Mood: 72,
     IncludeVisualProfile: true,
-    ClientId: "djconnect-windows-ABC123DEF456");
+    ClientId: "djconnect-windows-ABC123DEF456",
+    MusicDnaKey: "dna-studio");
 
 static DJConnectApiClient NewClientWithFastPath(FakeFastPath fastPath, FakeHttpHandler http)
 {

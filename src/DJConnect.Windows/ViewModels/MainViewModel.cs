@@ -698,6 +698,8 @@ public sealed class MainViewModel : ObservableObject
         _ => 42
     };
 
+    private string MusicDnaKey() => $"{_identity.DeviceId}:{AskDJMessage.MoodZoneFromValue(AskDJMoodValue())}";
+
     public bool WakewordFeatureAvailable => false;
 
     public bool WakewordEnabled
@@ -1654,7 +1656,8 @@ public sealed class MainViewModel : ObservableObject
             AppVersion: AppVersion,
             ProtocolVersion: DJConnectContract.ProtocolLine,
             Language: AppStrings.NormalizeApiLocale(_language),
-            Locale: AppStrings.NormalizeApiLocale(_language));
+            Locale: AppStrings.NormalizeApiLocale(_language),
+            MusicDnaKey: MusicDnaKey());
 
         AskDJMessageResponse response;
         try
@@ -1716,6 +1719,9 @@ public sealed class MainViewModel : ObservableObject
         var responseMessages = response.Messages is { Count: > 0 }
             ? response.Messages.Select(message => EnsureClientMessageId(message, clientMessageId)).ToList()
             : BuildLegacyAskDJResponseMessages(response, clientMessageId);
+        responseMessages = responseMessages
+            .Select(message => message.IsAssistant && message.Mood is null ? message with { Mood = AskDJMoodValue() } : message)
+            .ToList();
 
         foreach (var message in responseMessages)
         {
@@ -1743,7 +1749,11 @@ public sealed class MainViewModel : ObservableObject
                 Type: response.Type,
                 OpenScreen: response.OpenScreen,
                 TrackInsightData: response.TrackInsightData,
-                Links: response.Links);
+                Links: response.Links,
+                Mood: AskDJMoodValue())
+            {
+                IsGeneratedText = response.AssistantMessage is null && response.IsGeneratedText == true
+            };
             MergeMessage(fallbackMessage);
             responseMessages = [fallbackMessage];
         }
@@ -2073,6 +2083,7 @@ public sealed class MainViewModel : ObservableObject
             Language: AppStrings.NormalizeApiLocale(_language),
             Locale: AppStrings.NormalizeApiLocale(_language),
             Mood: AskDJMoodValue(),
+            MusicDnaKey: MusicDnaKey(),
             IncludeVisualProfile: true,
             ClientId: _identity.DeviceId);
 
@@ -3606,6 +3617,10 @@ public sealed class MainViewModel : ObservableObject
         if (response.AssistantMessage is not null)
         {
             messages.Add(EnsureClientMessageId(response.AssistantMessage, clientMessageId));
+        }
+        else if (response.IsGeneratedText == true)
+        {
+            messages.AddRange(messages.Select(message => message.IsAssistant ? message with { IsGeneratedText = true } : message));
         }
 
         return messages;

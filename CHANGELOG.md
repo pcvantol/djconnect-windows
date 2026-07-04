@@ -4,6 +4,17 @@
 
 - Nothing yet.
 
+## 3.2.7 - 2026-07-04
+
+- Synced Ask DJ generated-text spark rendering with backend metadata so
+  fallback, system, error and Track Insight fallback text stay undecorated.
+- Forwarded Music DNA context through Ask DJ and Track Insight, including
+  `music_dna_key`, mood, language and locale across HTTP and WebSocket paths.
+- Expanded Music DNA decoding for backend-owned mood and energy profile shapes,
+  recent-track signal formatting and server-provided based-on/profile fields.
+- Updated Track Insight tests and docs to keep BPM and musical-key fields out
+  of the Windows UI while preserving supported backend analysis sections.
+
 ## 3.2.6 - 2026-07-04
 
 - Synced the Windows app version metadata sent to Home Assistant with the

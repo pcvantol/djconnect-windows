@@ -19,6 +19,7 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["audio_response"] = request.AudioResponse;
         payload["language"] = request.Language;
         payload["locale"] = request.Locale;
+        payload["music_dna_key"] = request.MusicDnaKey;
 
         if (request.Metadata?.TryGetValue("music_dna_key", out var musicDnaKey) == true && musicDnaKey is not null)
         {
@@ -44,6 +45,7 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["language"] = request.Language;
         payload["locale"] = request.Locale;
         payload["mood"] = request.Mood;
+        payload["music_dna_key"] = request.MusicDnaKey;
         payload["force_refresh"] = request.ForceRefresh;
         payload["include_visual_profile"] = request.IncludeVisualProfile;
         return payload;

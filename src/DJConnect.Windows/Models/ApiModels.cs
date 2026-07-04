@@ -152,7 +152,8 @@ public sealed record AskDJRequest(
     [property: JsonPropertyName("app_version")] string? AppVersion = null,
     [property: JsonPropertyName("protocol_version")] string? ProtocolVersion = null,
     [property: JsonPropertyName("language")] string? Language = null,
-    [property: JsonPropertyName("locale")] string? Locale = null);
+    [property: JsonPropertyName("locale")] string? Locale = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
 
 public sealed record AskDJHistoryResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -208,7 +209,8 @@ public sealed record AskDJMessage(
     [property: JsonPropertyName("type")] string? Type = null,
     [property: JsonPropertyName("open_screen")] string? OpenScreen = null,
     [property: JsonPropertyName("track_insight")] TrackInsightResult? TrackInsightData = null,
-    [property: JsonPropertyName("links")] IReadOnlyList<AskDJSource>? Links = null)
+    [property: JsonPropertyName("links")] IReadOnlyList<AskDJSource>? Links = null,
+    [property: JsonPropertyName("mood")] int? Mood = null)
 {
     public string DisplayText => Text ?? Message ?? "";
     public bool IsUser => string.Equals(Role, "user", StringComparison.OrdinalIgnoreCase);
@@ -228,7 +230,18 @@ public sealed record AskDJMessage(
     public TrackInsightPresentation? TrackInsight => TrackInsightPresentation.From(TrackInsightData, this);
     public bool HasTrackInsight => TrackInsight?.HasContent == true;
     public string BubbleAlignment => IsUser ? "End" : "Start";
-    public string BubbleBackground => IsSystem ? "#24304D" : IsUser ? "#5539D7" : "#222852";
+    [JsonPropertyName("is_generated_text")]
+    public bool IsGeneratedText { get; init; }
+    public bool ShowGeneratedTextSpark => IsAssistant && !IsSystem && IsGeneratedText && !IsTrackInsight && !string.IsNullOrWhiteSpace(DisplayText);
+    public string GeneratedTextSpark => ShowGeneratedTextSpark ? "✦ " : "";
+    public string BubbleBackground => IsSystem ? "#24304D" : IsUser ? "#5539D7" : MoodZoneBackground;
+    private string MoodZoneBackground => MoodZoneFromValue(Mood) switch
+    {
+        "chill" => "#1B3556",
+        "energy" => "#442A76",
+        "party" => "#5A244E",
+        _ => "#24345F"
+    };
     public string RoleLabel => IsSystem ? (Origin ?? "system") : IsUser ? "Jij" : "Ask DJ";
     public string DeliveryLabel => IsFailed ? "Niet verzonden" : IsPending ? "Verzenden..." : "";
     public string StableKey => StableMessageKey(this);
@@ -253,6 +266,18 @@ public sealed record AskDJMessage(
         return string.Equals(role, "user", StringComparison.OrdinalIgnoreCase) ? "user"
             : string.Equals(role, "system", StringComparison.OrdinalIgnoreCase) ? "system"
             : "assistant";
+    }
+
+    public static string MoodZoneFromValue(int? mood)
+    {
+        return mood switch
+        {
+            >= 0 and <= 24 => "chill",
+            >= 25 and <= 59 => "groove",
+            >= 60 and <= 84 => "energy",
+            >= 85 and <= 100 => "party",
+            _ => "groove"
+        };
     }
 }
 
@@ -288,7 +313,8 @@ public sealed record AskDJMessageResponse(
     [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
     [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null,
-    [property: JsonPropertyName("links")] IReadOnlyList<AskDJSource>? Links = null);
+    [property: JsonPropertyName("links")] IReadOnlyList<AskDJSource>? Links = null,
+    [property: JsonPropertyName("is_generated_text")] bool? IsGeneratedText = null);
 
 public sealed record TrackInsightRequest(
     [property: JsonPropertyName("device_id")] string DeviceId,
@@ -303,7 +329,8 @@ public sealed record TrackInsightRequest(
     [property: JsonPropertyName("mood")] int? Mood = null,
     [property: JsonPropertyName("force_refresh")] bool ForceRefresh = false,
     [property: JsonPropertyName("include_visual_profile")] bool IncludeVisualProfile = true,
-    [property: JsonPropertyName("client_id")] string? ClientId = null);
+    [property: JsonPropertyName("client_id")] string? ClientId = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
 
 public sealed record TrackInsightResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -441,26 +468,82 @@ public sealed record MusicDnaProfile(
     [property: JsonPropertyName("recent_tracks")] IReadOnlyList<MusicDnaProfileItem>? RecentTracks,
     [property: JsonPropertyName("energy_profile")] MusicDnaProfileItem? EnergyProfile,
     [property: JsonPropertyName("mood_profile")] MusicDnaProfileItem? MoodProfile,
+    [property: JsonPropertyName("mood")] MusicDnaProfileItem? Mood,
     [property: JsonPropertyName("taste_direction")] MusicDnaProfileItem? TasteDirection,
     [property: JsonPropertyName("based_on")] string? BasedOn,
-    [property: JsonPropertyName("updated_at")] DateTimeOffset? UpdatedAt);
+    [property: JsonPropertyName("updated_at")] DateTimeOffset? UpdatedAt)
+{
+    public MusicDnaProfileItem? ResolvedMoodProfile => MoodProfile ?? Mood;
+}
 
 [JsonConverter(typeof(MusicDnaProfileItemJsonConverter))]
 public sealed record MusicDnaProfileItem(
     string? Name,
     string? Title,
+    string? Album,
     string? Artist,
     int? Count,
     double? Score,
-    IReadOnlyList<string>? Genres)
+    IReadOnlyList<string>? Genres,
+    int? SampleCount,
+    double? Average,
+    double? Value,
+    string? AverageZone,
+    string? Zone,
+    double? EnergyPercent,
+    double? Danceability,
+    double? Intensity)
 {
     public string DisplayTitle => FirstNonEmpty(Name, Title, Artist);
-    public string DisplaySubtitle => FirstNonEmpty(Artist, Count.HasValue ? Count.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : null);
+    public string DisplaySubtitle => FirstNonEmpty(FormatTrackSignal(), Artist, Count.HasValue ? Count.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) : null);
     public bool HasContent => !string.IsNullOrWhiteSpace(DisplayTitle) || (Genres?.Count ?? 0) > 0;
+    public int EffectiveSampleCount => SampleCount ?? Count ?? 0;
+    public double? MoodPercent => Average ?? Value ?? Score;
+    public string MoodZoneLabel => FirstNonEmpty(AverageZone, Zone, Name);
+    public double? EffectiveEnergyPercent => EnergyPercent ?? Value ?? Score;
+
+    public string MoodSummary
+    {
+        get
+        {
+            var percent = MoodPercent.HasValue ? $"{Math.Round(MoodPercent.Value):0}%" : "";
+            var samples = EffectiveSampleCount > 0 ? $"{EffectiveSampleCount} signalen" : "";
+            var zone = FirstNonEmpty(MoodZoneLabel, "Mood");
+            return JoinNonEmpty($"{zone} gemiddeld", percent, samples);
+        }
+    }
+
+    public string EnergySummary
+    {
+        get
+        {
+            var percent = EffectiveEnergyPercent.HasValue ? $"{Math.Round(EffectiveEnergyPercent.Value):0}%" : "";
+            var secondary = JoinNonEmpty(
+                Danceability.HasValue ? $"danceability {Math.Round(Danceability.Value):0}%" : null,
+                Intensity.HasValue ? $"intensity {Math.Round(Intensity.Value):0}%" : null);
+            return JoinNonEmpty(FirstNonEmpty(Zone, Name, "Energy"), percent, secondary);
+        }
+    }
+
+    private string FormatTrackSignal()
+    {
+        if (string.IsNullOrWhiteSpace(Title))
+        {
+            return "";
+        }
+
+        var titleArtist = string.IsNullOrWhiteSpace(Artist) ? Title : $"{Title} — {Artist}";
+        return string.IsNullOrWhiteSpace(Album) ? titleArtist : $"{titleArtist} · {Album}";
+    }
 
     private static string FirstNonEmpty(params string?[] values)
     {
         return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    }
+
+    private static string JoinNonEmpty(params string?[] values)
+    {
+        return string.Join(" · ", values.Where(value => !string.IsNullOrWhiteSpace(value)));
     }
 }
 
@@ -470,7 +553,7 @@ public sealed class MusicDnaProfileItemJsonConverter : JsonConverter<MusicDnaPro
     {
         if (reader.TokenType == JsonTokenType.String)
         {
-            return new MusicDnaProfileItem(reader.GetString(), null, null, null, null, null);
+            return new MusicDnaProfileItem(reader.GetString(), null, null, null, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         using var document = JsonDocument.ParseValue(ref reader);
@@ -478,10 +561,19 @@ public sealed class MusicDnaProfileItemJsonConverter : JsonConverter<MusicDnaPro
         return new MusicDnaProfileItem(
             ReadString(root, "name"),
             ReadString(root, "title"),
+            ReadString(root, "album"),
             ReadString(root, "artist"),
             ReadInt(root, "count"),
             ReadDouble(root, "score"),
-            ReadStringArray(root, "genres"));
+            ReadStringArray(root, "genres"),
+            ReadInt(root, "sample_count"),
+            ReadDouble(root, "average"),
+            ReadDouble(root, "value"),
+            ReadString(root, "average_zone"),
+            ReadString(root, "zone"),
+            ReadDouble(root, "energy_percent"),
+            ReadDouble(root, "danceability"),
+            ReadDouble(root, "intensity"));
     }
 
     public override void Write(Utf8JsonWriter writer, MusicDnaProfileItem value, JsonSerializerOptions options)
@@ -490,10 +582,19 @@ public sealed class MusicDnaProfileItemJsonConverter : JsonConverter<MusicDnaPro
         {
             value.Name,
             value.Title,
+            value.Album,
             value.Artist,
             value.Count,
             value.Score,
-            value.Genres
+            value.Genres,
+            value.SampleCount,
+            value.Average,
+            value.Value,
+            value.AverageZone,
+            value.Zone,
+            value.EnergyPercent,
+            value.Danceability,
+            value.Intensity
         }, options);
     }
 
@@ -525,6 +626,7 @@ public sealed class MusicDnaProfileItemJsonConverter : JsonConverter<MusicDnaPro
             .Where(item => !string.IsNullOrWhiteSpace(item))
             .ToArray();
     }
+
 }
 
 public sealed record TrackInsightMusicDna(

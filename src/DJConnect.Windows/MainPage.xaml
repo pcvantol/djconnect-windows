@@ -217,7 +217,14 @@
                                             <Border Padding="14" Margin="0,2" WidthRequest="720" HorizontalOptions="{Binding BubbleAlignment}" BackgroundColor="{Binding BubbleBackground}" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
                                                 <VerticalStackLayout Spacing="8">
                                                     <Label Text="{Binding RoleLabel}" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                                                    <Label Text="{Binding DisplayText}" LineBreakMode="WordWrap" TextColor="{StaticResource TextPrimary}" />
+                                                    <Label LineBreakMode="WordWrap" TextColor="{StaticResource TextPrimary}">
+                                                        <Label.FormattedText>
+                                                            <FormattedString>
+                                                                <Span Text="{Binding GeneratedTextSpark}" TextColor="{StaticResource Accent}" FontAttributes="Bold" />
+                                                                <Span Text="{Binding DisplayText}" />
+                                                            </FormattedString>
+                                                        </Label.FormattedText>
+                                                    </Label>
                                                     <Border IsVisible="{Binding HasTrackInsight}" Padding="12" BackgroundColor="#151936" Stroke="{StaticResource Border}" StrokeShape="RoundRectangle 8">
                                                         <VerticalStackLayout Spacing="10" BindingContext="{Binding TrackInsight}">
                                                             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
