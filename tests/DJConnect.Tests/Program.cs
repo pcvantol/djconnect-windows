@@ -307,7 +307,7 @@ static void StatusPayloadSerializesAppProtocolMetadata()
 
     AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "status must include Windows client type");
     AssertTrue(serialized.Contains("\"firmware\":\"windows-app\""), "status must identify the app surface as firmware metadata for HA compatibility");
-    AssertTrue(serialized.Contains("\"app_version\":\"3.2.4\""), "status must include app version");
+    AssertTrue(serialized.Contains($"\"app_version\":\"{DJConnectContract.AppVersion}\""), "status must include app version");
     AssertTrue(serialized.Contains("\"protocol_version\":\"3.2\""), "status must include protocol line");
 }
 
@@ -336,7 +336,7 @@ static void AskDJRequestSerializesServerSideContract()
     AssertEqual("Welke nummers hoorde ik net?", root.GetProperty("message").GetString());
     AssertEqual("auto", root.GetProperty("audio_response").GetString());
     AssertEqual(72, root.GetProperty("mood").GetInt32());
-    AssertEqual("3.2.4", root.GetProperty("app_version").GetString());
+    AssertEqual(DJConnectContract.AppVersion, root.GetProperty("app_version").GetString());
     AssertEqual("3.2", root.GetProperty("protocol_version").GetString());
 }
 

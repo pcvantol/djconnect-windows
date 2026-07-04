@@ -4,6 +4,17 @@
 
 - Nothing yet.
 
+## 3.2.6 - 2026-07-04
+
+- Synced the Windows app version metadata sent to Home Assistant with the
+  packaged desktop version.
+- Propagated the selected app language and locale through DJConnect command,
+  Ask DJ, voice and WebSocket payloads so backend guidance can stay localized.
+- Updated the client contract for Home Assistant `3.2.15` response shapes.
+- Fixed Queue refresh to request `command: "queue"` with `limit: 100`, read
+  both flat and nested queue payloads, preserve queue context and render real
+  returned rows with title, artist, album and artwork metadata.
+
 ## 3.2.5 - 2026-07-01
 
 - Completed app-wide localization for the Windows client across English,
