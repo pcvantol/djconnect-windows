@@ -209,9 +209,9 @@ unsigned Windows and Mac Catalyst diagnostic artifacts and publishes
 EN/NL/DE/FR/ES What's New files when the required repository secrets are
 configured.
 
-This scaffold has no app-level third-party NuGet dependencies. The MAUI
-workloads are SDK/platform prerequisites and may download Microsoft workload
-packs when first installed.
+This scaffold has no app-level third-party NuGet dependencies beyond
+Microsoft.Maui.Controls `10.0.80`. The MAUI workloads are SDK/platform
+prerequisites and may download Microsoft workload packs when first installed.
 
 ## Security
 

@@ -77,6 +77,52 @@ jobs:
       - name: Check test project formatting
         run: dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj --verify-no-changes --no-restore
 
+  dependency-tooling-hygiene:
+    name: Dependency and tooling hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Verify dependency and tooling docs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s global.json
+          test -s THIRD_PARTY_NOTICES.md
+          test -s docs/THIRD_PARTY_NOTICES.md
+          test -s docs/TECHNICAL_DESIGN_DECISIONS.md
+
+          package_refs="$(rg -No '<PackageReference Include="[^"]+"' src tests | sed -E 's/.*Include="([^"]+)"/\1/' | sort -u)"
+          if [[ -z "$package_refs" ]]; then
+            echo "No PackageReference entries found."
+          else
+            while IFS= read -r package; do
+              [[ -z "$package" ]] && continue
+              if ! rg -q "$package" THIRD_PARTY_NOTICES.md docs/THIRD_PARTY_NOTICES.md docs/TECHNICAL_DESIGN_DECISIONS.md; then
+                echo "PackageReference is not reflected in third-party/dependency docs: $package"
+                exit 1
+              fi
+            done <<< "$package_refs"
+          fi
+
+      - name: Report current .NET tooling
+        run: |
+          dotnet --version
+          dotnet --info
+          dotnet workload list
+
+      - name: Report outdated NuGet packages
+        continue-on-error: true
+        run: |
+          dotnet list src/DJConnect.Windows/DJConnect.Windows.csproj package --outdated --include-transitive
+          dotnet list tests/DJConnect.Tests/DJConnect.Tests.csproj package --outdated --include-transitive
+
   maui-macos-build:
     name: MAUI macOS build
     runs-on: macos-latest

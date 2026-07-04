@@ -7,10 +7,19 @@
 - Run formatter/YAML/whitespace checks before tagging:
   `dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj --verify-no-changes --no-restore`,
   workflow YAML parsing and `git diff --check`.
+- Before every release, review dependency and tooling updates: `global.json`,
+  .NET MAUI workload requirements, NuGet `PackageReference` versions,
+  GitHub Actions versions, `release.sh` and cleanup helpers. Use
+  `dotnet list ... package --outdated --include-transitive` and
+  `dotnet workload list` as the baseline audit commands.
 - Run `rg -n "token|password|secret|refresh" -g '!bin/**' -g '!obj/**'`
   before release and inspect matches for accidental values.
 - Dependency changes must update `THIRD_PARTY_NOTICES.md` and
-  `docs/TECHNICAL_DESIGN_DECISIONS.md`.
+  `docs/THIRD_PARTY_NOTICES.md`, `docs/TECHNICAL_DESIGN_DECISIONS.md` and any
+  affected setup/release docs in the same release commit.
+- CI includes a dependency/tooling hygiene job that verifies package references
+  are reflected in third-party/dependency docs and reports outdated NuGet
+  packages without auto-updating them.
 - Do not push from this repo unless explicitly requested by the maintainer.
 - When the maintainer asks to release/push, push `main` and the release tag,
   validate GitHub Actions, manually start public unsigned publication only when

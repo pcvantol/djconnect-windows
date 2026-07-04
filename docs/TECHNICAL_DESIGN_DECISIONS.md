@@ -109,10 +109,17 @@ Settings JSON must remain non-secret.
 ## Dependencies
 
 Current app-level dependencies are limited to the .NET SDK, .NET MAUI,
-`Microsoft.Maui.Controls` and platform APIs. The Mac Catalyst target uses
+`Microsoft.Maui.Controls` `10.0.80` and platform APIs. The Mac Catalyst target uses
 minimum supported OS platform version `15.0`, matching the .NET 10
 MacCatalyst workload requirement. There are no third-party NuGet packages in
 the scaffold.
+
+Release and CI hygiene treat dependency/tooling review as explicit work. CI
+checks that package references are reflected in third-party/dependency docs and
+reports outdated NuGet packages. Release prep reviews `global.json`, MAUI
+workload requirements, GitHub Actions versions and helper scripts before a tag
+is created; accepted dependency changes update notices and setup docs in the
+same commit.
 
 ## Test Strategy
 

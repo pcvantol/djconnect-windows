@@ -17,6 +17,12 @@ Current release: `3.2.8`.
   changes, update the relevant docs in the same release commit.
 - Confirm `THIRD_PARTY_NOTICES.md` is current for dependencies and platform
   APIs.
+- Check for dependency and tooling updates before tagging: .NET SDK in
+  `global.json`, MAUI workload requirements, NuGet `PackageReference` versions,
+  GitHub Actions versions and release/build helper tools. Any accepted update
+  must also update `THIRD_PARTY_NOTICES.md`,
+  `docs/THIRD_PARTY_NOTICES.md`, `docs/TECHNICAL_DESIGN_DECISIONS.md` and the
+  relevant setup/release docs in the same release commit.
 - Confirm the Spotify trademark/non-affiliation notice remains visible in docs
   and About UI.
 - Run `./run_tests.sh`.
@@ -46,15 +52,21 @@ for a different flow:
 
    ```sh
    ./run_tests.sh
+   dotnet list src/DJConnect.Windows/DJConnect.Windows.csproj package --outdated --include-transitive
+   dotnet list tests/DJConnect.Tests/DJConnect.Tests.csproj package --outdated --include-transitive
+   dotnet workload list
    dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj --verify-no-changes --no-restore
    ruby -e 'require "yaml"; Dir[".github/workflows/*.{yml,yaml}"].each { |f| YAML.load_file(f); puts "ok #{f}" }'
    git diff --check
    ```
 
-3. Commit the release changes and create or move the local annotated
+3. Review GitHub Actions and helper tool versions (`actions/checkout`,
+   `actions/setup-dotnet`, `release.sh`, `clear_old_releases.sh`) and update
+   them when the release intentionally accepts a tooling refresh.
+4. Commit the release changes and create or move the local annotated
    `vX.Y.Z` tag before it is pushed.
-4. Push `main` and the release tag only after explicit maintainer approval.
-5. Validate GitHub CI/security workflows:
+5. Push `main` and the release tag only after explicit maintainer approval.
+6. Validate GitHub CI/security workflows:
 
    ```sh
    gh run list --repo pcvantol/djconnect-windows --limit 10
@@ -65,20 +77,20 @@ for a different flow:
    Newer CI runs for the same branch should cancel older in-progress attempts
    through workflow concurrency.
 
-6. If public unsigned artifacts should be published, manually start
+7. If public unsigned artifacts should be published, manually start
    `.github/workflows/public-unsigned-release.yml` with the release version and
    validate the public release repository afterward. This workflow is not
    triggered by tag pushes and is the only workflow that should receive
    publication secrets.
 
-7. Run cleanup:
+8. Run cleanup:
 
    ```sh
    ./clear_old_releases.sh --keep 1 --keep-workflow-runs 2
    ./clear_old_releases.sh --keep 1 --keep-workflow-runs 2 --execute
    ```
 
-8. Re-check `gh run list` and document any remaining failed/pending workflows.
+9. Re-check `gh run list` and document any remaining failed/pending workflows.
 
 ## Public Unsigned Releases
 

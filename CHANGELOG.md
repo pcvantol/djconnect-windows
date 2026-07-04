@@ -4,6 +4,8 @@
 
 ## 3.2.8 - 2026-07-04
 
+- Updated Microsoft.Maui.Controls from `10.0.20` to `10.0.80` and refreshed
+  dependency/tooling release hygiene docs.
 - Added the Windows Music DNA dashboard with opt-in, disable and clear flows
   backed by Home Assistant `music_dna` profile/settings/clear endpoints.
 - Added Music DNA websocket fast-path support with canonical HTTP fallback and
