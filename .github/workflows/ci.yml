@@ -273,3 +273,64 @@ jobs:
               throw "Artifact does not contain DJConnect.exe: $($zip.Name)."
             }
           }
+
+  cleanup-workflow-runs:
+    name: Cleanup workflow runs
+    runs-on: ubuntu-latest
+    needs:
+      - workflow-hygiene
+      - protocol-tests
+      - dependency-tooling-hygiene
+      - maui-macos-build
+      - maui-windows-build
+      - windows-release-artifact-sanity
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    permissions:
+      actions: write
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPOSITORY: ${{ github.repository }}
+      CURRENT_RUN_ID: ${{ github.run_id }}
+      KEEP_RUNS: "2"
+    steps:
+      - name: Delete old completed workflow runs
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mapfile -t workflow_ids < <(
+            gh api "repos/${REPOSITORY}/actions/workflows" \
+              --method GET \
+              --paginate \
+              --jq '.workflows[].id'
+          )
+
+          for workflow_id in "${workflow_ids[@]}"; do
+            [[ -z "${workflow_id}" ]] && continue
+
+            kept=0
+            mapfile -t run_ids < <(
+              gh api "repos/${REPOSITORY}/actions/workflows/${workflow_id}/runs?status=completed&per_page=100" \
+                --method GET \
+                --paginate \
+                --jq '.workflow_runs[].id'
+            )
+
+            for run_id in "${run_ids[@]}"; do
+              [[ -z "${run_id}" ]] && continue
+
+              if [[ "${run_id}" == "${CURRENT_RUN_ID}" ]]; then
+                continue
+              fi
+
+              if (( kept < KEEP_RUNS )); then
+                kept=$((kept + 1))
+                continue
+              fi
+
+              gh api \
+                --method DELETE \
+                "repos/${REPOSITORY}/actions/runs/${run_id}"
+            done
+          done
