@@ -53,7 +53,7 @@ jobs:
 
           unexpected="$(mktemp)"
           grep -Ev \
-            '(^|/)(README\.md|SECURITY\.md|PRIVACY\.md|CONTRIBUTING\.md|CHAT_BOOTSTRAP\.md|CHANGELOG\.md|docs/|tests/|src/DJConnect\.Windows/MainPage\.xaml|src/DJConnect\.Windows/Platforms/Windows/Package\.appxmanifest|src/DJConnect\.Windows/Services/DiagnosticRedactor\.cs|src/DJConnect\.Windows/Services/CredentialStore\.cs|src/DJConnect\.Windows/Services/DJConnectApiClient\.cs|src/DJConnect\.Windows/ViewModels/MainViewModel\.cs|src/DJConnect\.Windows/Models/ApiModels\.cs|\.github/workflows/public-unsigned-release\.yml|\.github/workflows/ci\.yml)' \
+            '(^|/)(README\.md|SECURITY\.md|PRIVACY\.md|CONTRIBUTING\.md|CHAT_BOOTSTRAP\.md|CHANGELOG\.md|docs/|tests/|src/DJConnect\.Windows/MainPage\.xaml|src/DJConnect\.Windows/Platforms/Windows/Package\.appxmanifest|src/DJConnect\.Windows/Resources/Strings(\.[a-z]{2})?\.resx|src/DJConnect\.Windows/Services/ApiErrorLocalizer\.cs|src/DJConnect\.Windows/Services/DiagnosticRedactor\.cs|src/DJConnect\.Windows/Services/CredentialStore\.cs|src/DJConnect\.Windows/Services/DJConnectApiClient\.cs|src/DJConnect\.Windows/Services/DJConnectWebSocketPayloadFactory\.cs|src/DJConnect\.Windows/Services/FastPathDiagnosticsFormatter\.cs|src/DJConnect\.Windows/Services/PairingStatePolicy\.cs|src/DJConnect\.Windows/ViewModels/MainViewModel\.cs|src/DJConnect\.Windows/Models/ApiModels\.cs|\.github/workflows/public-unsigned-release\.yml|\.github/workflows/ci\.yml)' \
             "$matches" > "$unexpected" || true
 
           if [[ -s "$unexpected" ]]; then
@@ -299,6 +299,12 @@ jobs:
         run: |
           set -euo pipefail
 
+          current_workflow_id="$(
+            gh api "repos/${REPOSITORY}/actions/runs/${CURRENT_RUN_ID}" \
+              --method GET \
+              --jq '.workflow_id'
+          )"
+
           mapfile -t workflow_ids < <(
             gh api "repos/${REPOSITORY}/actions/workflows" \
               --method GET \
@@ -309,23 +315,27 @@ jobs:
           for workflow_id in "${workflow_ids[@]}"; do
             [[ -z "${workflow_id}" ]] && continue
 
-            kept=0
+            keep_limit="${KEEP_RUNS}"
+            if [[ "${workflow_id}" == "${current_workflow_id}" ]]; then
+              keep_limit=$((KEEP_RUNS - 1))
+            fi
+
             mapfile -t run_ids < <(
               gh api "repos/${REPOSITORY}/actions/workflows/${workflow_id}/runs?status=completed&per_page=100" \
                 --method GET \
                 --paginate \
-                --jq '.workflow_runs[].id'
+                --jq '.workflow_runs | sort_by(.created_at) | reverse | .[].id'
             )
 
-            for run_id in "${run_ids[@]}"; do
+            if ((${#run_ids[@]} <= keep_limit)); then
+              continue
+            fi
+
+            for index in "${!run_ids[@]}"; do
+              run_id="${run_ids[$index]}"
               [[ -z "${run_id}" ]] && continue
 
-              if [[ "${run_id}" == "${CURRENT_RUN_ID}" ]]; then
-                continue
-              fi
-
-              if (( kept < KEEP_RUNS )); then
-                kept=$((kept + 1))
+              if ((index < keep_limit)) || [[ "${run_id}" == "${CURRENT_RUN_ID}" ]]; then
                 continue
               fi
 
