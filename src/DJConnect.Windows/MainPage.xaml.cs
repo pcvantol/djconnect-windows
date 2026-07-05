@@ -993,9 +993,9 @@ the current source-of-truth notices.
     {
         var fileName = $"djconnect-ask-dj-history-windows-{DateTime.Now:yyyyMMdd-HHmmss}.json";
 #if WINDOWS
-        var picker = new Windows.Storage.Pickers.FileSavePicker
+        var picker = new global::Windows.Storage.Pickers.FileSavePicker
         {
-            SuggestedStartLocation = Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary,
+            SuggestedStartLocation = global::Windows.Storage.Pickers.PickerLocationId.DocumentsLibrary,
             SuggestedFileName = fileName
         };
         picker.FileTypeChoices.Add("JSON", [".json"]);
@@ -1008,7 +1008,7 @@ the current source-of-truth notices.
             return false;
         }
 
-        await Windows.Storage.FileIO.WriteTextAsync(file, exportJson, Windows.Storage.Streams.UnicodeEncoding.Utf8);
+        await global::Windows.Storage.FileIO.WriteTextAsync(file, exportJson, global::Windows.Storage.Streams.UnicodeEncoding.Utf8);
         return true;
 #else
         var path = Path.Combine(FileSystem.Current.AppDataDirectory, fileName);

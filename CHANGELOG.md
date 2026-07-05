@@ -14,6 +14,8 @@
   DJConnect API paths without the v1 prefix.
 - Refreshed API contract, architecture and handoff docs for the canonical v1
   route contract.
+- Fixed CI release hygiene by ensuring `ripgrep` is available where workflow
+  checks use `rg` and by qualifying Windows storage APIs for Windows builds.
 
 ## 3.2.8 - 2026-07-04
 
