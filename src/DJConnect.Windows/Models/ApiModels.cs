@@ -145,7 +145,6 @@ public sealed record AskDJRequest(
     [property: JsonPropertyName("device_name")] string DeviceName,
     [property: JsonPropertyName("client_type")] string ClientType,
     [property: JsonPropertyName("text")] string Text,
-    [property: JsonPropertyName("message")] string Message,
     [property: JsonPropertyName("metadata")] IReadOnlyDictionary<string, object?>? Metadata = null,
     [property: JsonPropertyName("audio_response")] string AudioResponse = "auto",
     [property: JsonPropertyName("mood")] int? Mood = null,
