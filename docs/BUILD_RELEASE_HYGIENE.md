@@ -31,6 +31,9 @@
   with `--execute` when the plan is correct.
 - CI uses concurrency cancellation, so a newer run for the same branch cancels
   older in-progress attempts.
+- Normal CI automatically deletes older completed workflow runs after the
+  build/test/artifact sanity jobs on pushes to `main` and manual dispatches,
+  keeping the newest 2 completed runs for each workflow.
 - Use `./clear_old_releases.sh` without `--execute` first when pruning old
   GitHub releases, tags or workflow runs.
 - Normal CI/security workflows use read-only repository permissions.
