@@ -2,10 +2,12 @@
 
 ## Current Status
 
-DJConnect desktop `3.2.8` has been scaffolded as a .NET MAUI app targeting
+DJConnect desktop `3.2.9` has been scaffolded as a .NET MAUI app targeting
 Windows and macOS. It includes:
 
-- local Home Assistant app-pairing through `/api/djconnect/pair`;
+- local Home Assistant app-pairing through `/api/djconnect/v1/pair`;
+- canonical `/api/djconnect/v1/...` HTTP routes for Home Assistant pairing,
+  status, Ask DJ, Track Insight, Music DNA and Music Discovery;
 - local-to-remote Home Assistant transport fallback after local pairing;
 - stable `windows` client identity constants;
 - typed API client for pairing, status, Ask DJ history/message/clear and
@@ -42,7 +44,7 @@ Windows and macOS. It includes:
   `MD_APPLE_SDK_ROOT=/Applications/Xcode_26.4.1.app` and
   `DEVELOPER_DIR=/Applications/Xcode_26.4.1.app/Contents/Developer` are set.
 - Home Assistant DJConnect `3.2.x` support is required for
-  `/api/djconnect/pair`, local/remote URL metadata and music backend summary
+  `/api/djconnect/v1/pair`, local/remote URL metadata and music backend summary
   fields.
 - Real Home Assistant field testing is still needed for the synced backend
   contract paths: local app pairing, remote fallback, Music Assistant
@@ -51,7 +53,8 @@ Windows and macOS. It includes:
   Music DNA profile/settings/clear behavior and Ontdek recommendation
   feed/refresh/play behavior while Music DNA is enabled and disabled.
 - GitHub Actions CI and public unsigned Windows publication passed for
-  `v3.1.9`. The `3.2.8` Home Assistant client contract, Music DNA dashboard and Ontdek release still needs CI/release validation after push.
+  `v3.1.9`. The `3.2.9` canonical v1 Home Assistant API route release still
+  needs CI/release validation after push.
   Mac Catalyst release artifacts continue to skip on hosted runners
   without the required Xcode 26.4.x toolchain.
 - Public unsigned release automation exists; signed Windows installers,

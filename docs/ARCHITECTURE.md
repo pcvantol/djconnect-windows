@@ -57,7 +57,7 @@ connection flow rather than in a mobile-style tab bar.
    Assistant URL and pairing code shown by the Home Assistant DJConnect
    integration.
 5. The app posts pairing data to local Home Assistant through
-   `POST /api/djconnect/pair`. Remote URLs are not used for first pairing.
+   `POST /api/djconnect/v1/pair`. Remote URLs are not used for first pairing.
    Windows does not display a client address, generate a pairing code or wait
    for an inbound Home Assistant callback.
 6. On successful pairing, the app stores only the Home Assistant-issued
@@ -66,27 +66,27 @@ connection flow rather than in a mobile-style tab bar.
 7. Runtime transport picks the local HA URL when reachable, falls back to the
    remote HA URL when local is unreachable and remote is supported, and marks
    the app offline when neither is reachable.
-8. Runtime status is posted to `POST /api/djconnect/status`; the Now Playing
+8. Runtime status is posted to `POST /api/djconnect/v1/status`; the Now Playing
    page renders playback, output devices and compatibility state from that
    response.
 9. Now Playing controls send only generic commands such as `toggle_playback`,
    `previous_track`, `next_track`, `seek`, `volume` and `select_output` through
-   `POST /api/djconnect/command`.
+   `POST /api/djconnect/v1/command`.
 10. Queue renders backend-provided queue state from supported status shapes
    (`queue`, `items`, `queue_items` and collection envelopes). Items are
    normalized, deduplicated by stable id/signature and capped at 100 rendered
    rows. Starting a queue item sends only a generic `queue_item_play` command or
    a backend-returned playback action.
 11. Ask DJ uses server-side history and message endpoints. Text chat always
-    goes to `POST /api/djconnect/ask_dj/message`; voice/PTT capture is reserved
-    for `POST /api/djconnect/voice` with `audio/wav` once a platform capture
+    goes to `POST /api/djconnect/v1/ask_dj/message`; voice/PTT capture is reserved
+    for `POST /api/djconnect/v1/voice` with `audio/wav` once a platform capture
     backend exists. The Windows client merges server messages by stable id,
     preserves pending local user bubbles, honors `clear_revision`, prunes from
     trim metadata and renders system messages, optional audio replay,
     response-owned images/sources/items and backend-returned actions without
     client-side intent, Music DNA, follow-up or playback reconstruction.
 12. Playback actions and follow-up buttons are sent through
-   `POST /api/djconnect/command`.
+   `POST /api/djconnect/v1/command`.
 13. Track Insight is a first-class navigation destination and sends the current
     playback identity plus optional mood/Music DNA context to Home Assistant.
     The client renders backend-owned analysis only and does not infer BPM,
@@ -142,11 +142,11 @@ Pairing is local-only:
 
 - Home Assistant starts app pairing and shows a pairing code.
 - Windows must be on the same LAN and posts to local
-  `POST /api/djconnect/pair`.
+  `POST /api/djconnect/v1/pair`.
 - The pairing response may include `ha_local_url`, `ha_remote_url`,
   `remote_supported` and music backend summary fields.
 
-After successful local pairing, all `/api/djconnect/...` calls go through the
+After successful local pairing, all `/api/djconnect/v1/...` calls go through the
 transport manager. It prefers local HA, falls back to remote HA when supported,
 and exposes the connection mode as Local, Remote or Offline for diagnostics.
 Reset pairing clears the DJConnect device token, rotates the install id and
@@ -176,10 +176,10 @@ These artifacts are not signed Windows installers and not notarized Mac apps.
 ## Ask DJ And History
 
 Ask DJ is backend-owned. The app sends user text to
-`POST /api/djconnect/ask_dj/message`, renders returned `user_message`,
+`POST /api/djconnect/v1/ask_dj/message`, renders returned `user_message`,
 `assistant_message`, `messages[]`, `text`/`dj_text`/`message`, `images`,
 `sources`, `playback_actions`, `confirmation_actions` and `items`, and syncs
-history through `GET /api/djconnect/ask_dj/history`.
+history through `GET /api/djconnect/v1/ask_dj/history`.
 
 `history_revision` and `clear_revision` are persisted as local sync cursors.
 If the server clear revision advances, local cached display messages are

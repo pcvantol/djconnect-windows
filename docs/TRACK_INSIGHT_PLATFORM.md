@@ -48,7 +48,7 @@ Users can open Track Insight from multiple places:
 - Ask DJ: user questions such as "Tell me about this track", "Analyze this
   track", "What is special about this song?", "Give me Track Insight" and
   "Geef Track Insight voor dit nummer" go through
-  `POST /api/djconnect/ask_dj/message`. When the backend responds with
+  `POST /api/djconnect/v1/ask_dj/message`. When the backend responds with
   `intent`, `action`, `type` or `open_screen` set to `track_insight`, the app
   routes to the shared Track Insight UI.
 - Auto Track Insight: optional future setting that updates Track Insight when
@@ -78,7 +78,7 @@ The UI must not know whether data came from Home Assistant or Demo Mode.
 Direct Track Insight uses:
 
 ```text
-POST /api/djconnect/track_insight
+POST /api/djconnect/v1/track_insight
 ```
 
 The client sends Home Assistant auth and explicit track fields when available:
@@ -120,7 +120,7 @@ derive profile conclusions or Track Insight analysis locally from those fields.
 Track Insight intent phrases are sent through the normal Ask DJ endpoint:
 
 ```text
-POST /api/djconnect/ask_dj/message
+POST /api/djconnect/v1/ask_dj/message
 ```
 
 When a response has `intent`, `action`, `type` or `open_screen` equal to

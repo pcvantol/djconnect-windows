@@ -78,7 +78,7 @@ Belangrijke huidige status:
   pairing/token state. Settings, logs, privacy, legal en feedback blijven
   bereikbaar.
 - Windows host in protocol 3.2 geen lokale Client API en adverteert geen mDNS.
-  Pairing post zelf naar lokale Home Assistant via `/api/djconnect/pair`;
+  Pairing post zelf naar lokale Home Assistant via `/api/djconnect/v1/pair`;
   remote HA URLs mogen pas na succesvolle lokale pairing gebruikt worden.
 - What's New gebruikt lokale `LastSeenAppVersion`: fresh install/onboarding zet
   de huidige versie als gezien, app-updates tonen release notes eenmalig,
@@ -119,10 +119,10 @@ Belangrijke regels:
 - Pairing/status, Spotify OAuth/backend playback, Ask DJ history, Music DNA,
   OTA/status en Assist/TTS blijven via Home Assistant integration lopen.
 - Ask DJ gebruikt server-side endpoints:
-  - `POST /api/djconnect/ask_dj/message`
-  - `GET /api/djconnect/ask_dj/history`
-  - `POST /api/djconnect/ask_dj/history/clear`
-  - `POST /api/djconnect/command`
+  - `POST /api/djconnect/v1/ask_dj/message`
+  - `GET /api/djconnect/v1/ask_dj/history`
+  - `POST /api/djconnect/v1/ask_dj/history/clear`
+  - `POST /api/djconnect/v1/command`
 - Ask DJ rendering moet compatibel blijven met oude servers zonder
   `messages[]`; gebruik dan legacy `user_message`/`assistant_message` fallback
   en behoud server/created-at order waar geen exchange metadata bestaat.

@@ -18,7 +18,7 @@ automatically.
 
 ## Current Version
 
-- Desktop app: `3.2.8`
+- Desktop app: `3.2.9`
 - Home Assistant protocol line: `3.2.x`
 - Current local `client_type`: `windows`
 
@@ -102,9 +102,9 @@ Key screens and flows mirrored from macOS and extended for desktop:
 
 - Pairing/configuration: local Home Assistant app-pairing with pairing code,
   stable client identity, local/remote HA URL storage and pairing reset.
-- Ask DJ: `POST /api/djconnect/ask_dj/message`, server-side history sync via
-  `GET /api/djconnect/ask_dj/history`, clear via
-  `POST /api/djconnect/ask_dj/history/clear`, with client mood values,
+- Ask DJ: `POST /api/djconnect/v1/ask_dj/message`, server-side history sync via
+  `GET /api/djconnect/v1/ask_dj/history`, clear via
+  `POST /api/djconnect/v1/ask_dj/history/clear`, with client mood values,
   `audio_response` preference, `links[]`/`sources[]` rendering and bounded
   history trim metadata.
 - Local fast path: HTTP remains the safe default. A Home Assistant native
@@ -115,7 +115,7 @@ Key screens and flows mirrored from macOS and extended for desktop:
   websocket support. Remote sessions, pairing, status, history, voice, push,
   image proxy and TTS/audio URLs stay on HTTP.
 - Playback actions: follow-up confirmations and Play Now actions go through
-  `POST /api/djconnect/command`.
+  `POST /api/djconnect/v1/command`.
 - Recent played answers: compact list rendering from returned `items[]`.
 - Track Insight: first-class Windows feature with direct Now Playing entry,
   Ask DJ deep-link/hydration, Music DNA Match rendering and a dedicated

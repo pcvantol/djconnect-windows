@@ -21,7 +21,7 @@ client-hosted local API or mDNS pairing service.
 ## Pairing
 
 ```http
-POST /api/djconnect/pair
+POST /api/djconnect/v1/pair
 ```
 
 Payload includes:
@@ -49,7 +49,7 @@ back.
 ## Status
 
 ```http
-POST /api/djconnect/status
+POST /api/djconnect/v1/status
 ```
 
 Payload includes `device_id`, `device_name`, `client_type`, `firmware:
@@ -115,13 +115,13 @@ clear unavailable-feature message, without phantom Spotify UI.
 Text requests:
 
 ```http
-POST /api/djconnect/ask_dj/message
+POST /api/djconnect/v1/ask_dj/message
 ```
 
 Voice / push-to-talk requests, once the platform capture backend is available:
 
 ```http
-POST /api/djconnect/voice
+POST /api/djconnect/v1/voice
 Content-Type: multipart/form-data
 audio: audio/wav
 ```
@@ -129,13 +129,13 @@ audio: audio/wav
 History sync:
 
 ```http
-GET /api/djconnect/ask_dj/history?since_revision=<number>
+GET /api/djconnect/v1/ask_dj/history?since_revision=<number>
 ```
 
 Clear:
 
 ```http
-POST /api/djconnect/ask_dj/history/clear
+POST /api/djconnect/v1/ask_dj/history/clear
 ```
 
 Text and voice requests include `client_type`, `device_id`, `device_name`,
@@ -172,7 +172,7 @@ Ask DJ playback actions, recommendation actions, output actions and follow-up
 confirmations are sent to:
 
 ```http
-POST /api/djconnect/command
+POST /api/djconnect/v1/command
 ```
 
 Commands that can produce user-facing text or audio include the same BCP-47
@@ -193,7 +193,7 @@ lists. The app must not invent Play Now buttons unless `playback_actions[]` is
 present. Playback actions are backend-owned. Spotify Direct actions may contain
 `spotify:` URIs; Music Assistant actions may contain `item_id`, `provider`,
 `media_type` and `target_player_id`. The client forwards action/value data back
-to Home Assistant intact through `/api/djconnect/command`.
+to Home Assistant intact through `/api/djconnect/v1/command`.
 
 Response `text`, `dj_text` or `message` is rendered as the main answer.
 `images[]`, `sources[]`, `links[]`, `items[]`, `playback_actions[]` and
@@ -203,7 +203,7 @@ show a TTS replay button without `audio_url`, expose raw Spotify URIs/backend
 IDs in visible text or infer actions from answer text.
 
 Track Insight can be opened directly from Now Playing with
-`POST /api/djconnect/track_insight`. The client sends Home Assistant auth and
+`POST /api/djconnect/v1/track_insight`. The client sends Home Assistant auth and
 the explicit track fields it has (`title`, `artist`, `album`, optional
 `entity_id`, `player_id`, `music_backend`, `language`, `locale`, `mood`,
 `music_dna_key`, `force_refresh` and `include_visual_profile`). If metadata is
@@ -229,9 +229,9 @@ profile conclusions locally and renders only backend fields.
 Endpoints:
 
 ```http
-POST /api/djconnect/music_dna/profile
-POST /api/djconnect/music_dna/settings
-POST /api/djconnect/music_dna/clear
+POST /api/djconnect/v1/music_dna/profile
+POST /api/djconnect/v1/music_dna/settings
+POST /api/djconnect/v1/music_dna/clear
 ```
 
 Profile requests include `client_id`, `client_type: "windows"`, `device_id`,
@@ -287,9 +287,9 @@ follow the shared DJConnect cleanup path and show the pair-again state.
 Endpoints:
 
 ```http
-GET /api/djconnect/music_discovery
-POST /api/djconnect/music_discovery/refresh
-POST /api/djconnect/music_discovery/play
+GET /api/djconnect/v1/music_discovery
+POST /api/djconnect/v1/music_discovery/refresh
+POST /api/djconnect/v1/music_discovery/play
 ```
 
 Requests include the Windows DJConnect identity (`client_type: "windows"`,
@@ -363,12 +363,12 @@ stale pairing.
 
 These remain HTTP-only:
 
-- `/api/djconnect/pair`;
-- `/api/djconnect/status`;
-- `/api/djconnect/voice`;
-- `/api/djconnect/ask_dj/history`;
-- `/api/djconnect/ask_dj/history/clear`;
-- `/api/djconnect/ask_dj/idle_suggestion`;
+- `/api/djconnect/v1/pair`;
+- `/api/djconnect/v1/status`;
+- `/api/djconnect/v1/voice`;
+- `/api/djconnect/v1/ask_dj/history`;
+- `/api/djconnect/v1/ask_dj/history/clear`;
+- `/api/djconnect/v1/ask_dj/idle_suggestion`;
 - push registration;
 - image proxy;
 - TTS/audio download URLs;

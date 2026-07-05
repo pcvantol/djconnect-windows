@@ -14,6 +14,7 @@ namespace DJConnect.Windows.Services;
 public sealed class DJConnectApiClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+    private const string ApiRoutePrefix = "api/djconnect/v1";
     private readonly HttpClient _httpClient;
     private readonly IDJConnectWebSocketFastPath _webSocketFastPath;
     private readonly DJConnectWebSocketPayloadFactory _webSocketPayloadFactory;
@@ -84,7 +85,7 @@ public sealed class DJConnectApiClient
         _httpClient.DefaultRequestHeaders.Remove("X-DJConnect-Device-ID");
         _httpClient.DefaultRequestHeaders.Remove("X-DJConnect-Client-Type");
         _httpClient.DefaultRequestHeaders.Add("X-DJConnect-Client-Type", DJConnectContract.ClientType);
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/pair", payload, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("pair"), payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<PairingResponse>(response, cancellationToken);
     }
 
@@ -102,13 +103,13 @@ public sealed class DJConnectApiClient
     {
         ApplyRequestContext(language, mood);
         var payload = BuildStatusPayload(identity, language, mood);
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/status", payload, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("status"), payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<StatusResponse>(response, cancellationToken);
     }
 
     public async Task<AskDJHistoryResponse> GetAskDJHistoryAsync(long sinceRevision, CancellationToken cancellationToken)
     {
-        var response = await _httpClient.GetAsync($"api/djconnect/ask_dj/history?since_revision={sinceRevision}", cancellationToken);
+        var response = await _httpClient.GetAsync($"{ApiRoute("ask_dj/history")}?since_revision={sinceRevision}", cancellationToken);
         return await ReadJsonAsync<AskDJHistoryResponse>(response, cancellationToken);
     }
 
@@ -122,7 +123,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/ask_dj/message", request, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("ask_dj/message"), request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<AskDJMessageResponse>(response, cancellationToken);
     }
 
@@ -136,7 +137,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/track_insight", request, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("track_insight"), request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<TrackInsightResponse>(response, cancellationToken);
     }
 
@@ -163,7 +164,7 @@ public sealed class DJConnectApiClient
         audio.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
         content.Add(audio, "audio", "ask-dj.wav");
 
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, "api/djconnect/voice")
+        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, ApiRoute("voice"))
         {
             Content = content
         };
@@ -193,7 +194,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/ask_dj/history/clear", payload, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("ask_dj/history/clear"), payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<AskDJHistoryResponse>(response, cancellationToken);
     }
 
@@ -209,7 +210,7 @@ public sealed class DJConnectApiClient
             },
             ["app_version"] = DJConnectContract.AppVersion
         };
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/ask_dj/history/export", payload, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("ask_dj/history/export"), payload, JsonOptions, cancellationToken);
         return await ReadStringAsync(response, cancellationToken);
     }
 
@@ -237,7 +238,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/command", payload, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("command"), payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<CommandResponse>(response, cancellationToken);
     }
 
@@ -281,7 +282,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/command", payload, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("command"), payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<CommandResponse>(response, cancellationToken);
     }
 
@@ -315,7 +316,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/command", payload, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("command"), payload, JsonOptions, cancellationToken);
         return await ReadJsonAsync<CommandResponse>(response, cancellationToken);
     }
 
@@ -338,6 +339,11 @@ public sealed class DJConnectApiClient
         {
             return FastPathResult<T>.Miss(ex.GetType().Name);
         }
+    }
+
+    private static string ApiRoute(string route)
+    {
+        return $"{ApiRoutePrefix}/{route.TrimStart('/')}";
     }
 
     public static Dictionary<string, object?> BuildCommandPayload(ClientIdentity identity, string command, object? args = null, string? clientMessageId = null, string? language = null, int? mood = null)
@@ -442,7 +448,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/music_dna/profile", request, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("music_dna/profile"), request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<MusicDnaProfileResponse>(response, cancellationToken);
     }
 
@@ -456,7 +462,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/music_dna/settings", request, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("music_dna/settings"), request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<MusicDnaSettingsResponse>(response, cancellationToken);
     }
 
@@ -470,7 +476,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/music_dna/clear", request, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("music_dna/clear"), request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<MusicDnaClearResponse>(response, cancellationToken);
     }
 
@@ -484,7 +490,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.GetAsync("api/djconnect/music_discovery" + MusicDiscoveryQuery(request), cancellationToken);
+        var response = await _httpClient.GetAsync(ApiRoute("music_discovery") + MusicDiscoveryQuery(request), cancellationToken);
         return await ReadJsonAsync<MusicDiscoveryResponse>(response, cancellationToken);
     }
 
@@ -498,7 +504,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/music_discovery/refresh", request, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("music_discovery/refresh"), request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<MusicDiscoveryResponse>(response, cancellationToken);
     }
 
@@ -512,7 +518,7 @@ public sealed class DJConnectApiClient
             return fastPath.Value;
         }
 
-        var response = await _httpClient.PostAsJsonAsync("api/djconnect/music_discovery/play", request, JsonOptions, cancellationToken);
+        var response = await _httpClient.PostAsJsonAsync(ApiRoute("music_discovery/play"), request, JsonOptions, cancellationToken);
         return await ReadJsonAsync<CommandResponse>(response, cancellationToken);
     }
 

@@ -9,7 +9,7 @@ public sealed record PairingDeepLinkPayload(
     string ClientType,
     string PairPath)
 {
-    public const string PairEndpoint = "/api/djconnect/pair";
+    public const string PairEndpoint = "/api/djconnect/v1/pair";
 
     public static bool TryParse(string? payload, out PairingDeepLinkPayload result, out string failureReason)
     {

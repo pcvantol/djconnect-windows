@@ -72,6 +72,7 @@ var tests = new (string Name, Action Run)[]
     ("Protocol 3.2 marks offline when no HA URL is reachable", Protocol32MarksOfflineWhenNoUrlReachable),
     ("Protocol 3.2 parses backend summary", Protocol32ParsesBackendSummary),
     ("Protocol 3.2 parses safe backend error object", Protocol32ParsesSafeBackendErrorObject),
+    ("DJConnect Home Assistant HTTP routes use canonical v1 prefix", DJConnectHomeAssistantHttpRoutesUseCanonicalV1Prefix),
     ("Backend-aware actions preserve Music Assistant value", BackendAwareActionsPreserveMusicAssistantValue),
     ("Backend-aware actions carry backend revision", BackendAwareActionsCarryBackendRevision),
     ("Command payload includes current locale and preserves protocol values", CommandPayloadIncludesCurrentLocaleAndPreservesProtocolValues),
@@ -206,7 +207,7 @@ static void PairingClientPostsOnlyToHomeAssistantPairEndpoint()
         DJConnectContract.AppVersion), CancellationToken.None).GetAwaiter().GetResult();
 
     AssertTrue(response.Success, "pairing response should deserialize");
-    AssertEqual("api/djconnect/pair", http.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/pair", http.LastPath.TrimStart('/'));
     AssertEqual("POST", http.LastMethod);
     AssertEqual("application/json", http.LastContentType);
     AssertEqual("windows", http.LastClientTypeHeader);
@@ -219,7 +220,7 @@ static void PairingClientPostsOnlyToHomeAssistantPairEndpoint()
 
 static void PairingDeepLinkAcceptsWindowsPayload()
 {
-    const string payload = "djconnect://pair?ha_url=http%3A%2F%2Fhomeassistant.local%3A8123&pair_code=123456&client_type=windows&pair_path=%2Fapi%2Fdjconnect%2Fpair";
+    const string payload = "djconnect://pair?ha_url=http%3A%2F%2Fhomeassistant.local%3A8123&pair_code=123456&client_type=windows&pair_path=%2Fapi%2Fdjconnect%2Fv1%2Fpair";
 
     var accepted = PairingDeepLinkPayload.TryParse(payload, out var result, out var reason);
 
@@ -227,12 +228,12 @@ static void PairingDeepLinkAcceptsWindowsPayload()
     AssertEqual("http://homeassistant.local:8123", result.HomeAssistantUrl);
     AssertEqual("123456", result.PairCode);
     AssertEqual("windows", result.ClientType);
-    AssertEqual("/api/djconnect/pair", result.PairPath);
+    AssertEqual("/api/djconnect/v1/pair", result.PairPath);
 }
 
 static void PairingDeepLinkRejectsWrongClientType()
 {
-    const string payload = """{"ha_url":"http://homeassistant.local:8123","pair_code":"123456","client_type":"ios","pair_path":"/api/djconnect/pair"}""";
+    const string payload = """{"ha_url":"http://homeassistant.local:8123","pair_code":"123456","client_type":"ios","pair_path":"/api/djconnect/v1/pair"}""";
 
     var accepted = PairingDeepLinkPayload.TryParse(payload, out _, out var reason);
 
@@ -263,7 +264,7 @@ static void PairingDeepLinkActivationQueuesPayloads()
     try
     {
         PairingDeepLinkActivation.Queue("   ");
-        PairingDeepLinkActivation.Queue("djconnect://pair?ha_url=http%3A%2F%2Fhomeassistant.local%3A8123&pair_code=123456&client_type=windows&pair_path=%2Fapi%2Fdjconnect%2Fpair");
+        PairingDeepLinkActivation.Queue("djconnect://pair?ha_url=http%3A%2F%2Fhomeassistant.local%3A8123&pair_code=123456&client_type=windows&pair_path=%2Fapi%2Fdjconnect%2Fv1%2Fpair");
 
         AssertEqual(1, eventCount);
         AssertTrue(PairingDeepLinkActivation.TryDequeue(out var payload), "queued deeplink should be available to MainPage after activation");
@@ -312,7 +313,7 @@ static void AuthenticatedRequestsIncludeBearerTokenAndDeviceHeader()
     AssertTrue(response.Success, "status response should deserialize");
     AssertEqual("Bearer paired-device-token", http.LastAuthorization);
     AssertEqual(identity.DeviceId, http.LastDeviceIdHeader);
-    AssertEqual("api/djconnect/status", http.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/status", http.LastPath.TrimStart('/'));
     AssertTrue(http.LastBody.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\""), "status body must include device identity");
     AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "status body must include Windows client type");
 }
@@ -372,7 +373,7 @@ static void AskDJMessageRequestIncludesCurrentLocale()
     var response = client.SendAskDJMessageAsync(request, CancellationToken.None).GetAwaiter().GetResult();
 
     AssertTrue(response.Success, "Ask DJ response should deserialize");
-    AssertEqual("api/djconnect/ask_dj/message", http.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/ask_dj/message", http.LastPath.TrimStart('/'));
     AssertTrue(http.LastBody.Contains("\"language\":\"nl-NL\""), "Ask DJ message body must include BCP-47 language");
     AssertTrue(http.LastBody.Contains("\"locale\":\"nl-NL\""), "Ask DJ message body must include BCP-47 locale");
     AssertTrue(http.LastBody.Contains("\"mood\":72"), "Ask DJ message body must include current mood");
@@ -1010,7 +1011,7 @@ static void AskDJHistoryDeserializesRevisionsTrimMetadataAndRecentItems()
               "title": "Even Flow",
               "subtitle": "Pearl Jam",
               "played_at_label": "12:34",
-              "image_url": "/api/djconnect/image_proxy/token"
+              "image_url": "/api/djconnect/v1/image_proxy/token"
             }
           ]
         }
@@ -1071,7 +1072,7 @@ static void AskDJHistoryClearHttpSendsIdentity()
 
     AssertTrue(response.RequiresLocalClearAfterClearResponse(4), "HTTP clear response should require immediate local cache clear");
     AssertEqual("POST", http.LastMethod);
-    AssertEqual("api/djconnect/ask_dj/history/clear", http.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/ask_dj/history/clear", http.LastPath.TrimStart('/'));
     AssertTrue(http.LastBody.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\""), "clear payload must include device_id");
     AssertTrue(http.LastBody.Contains("\"client_id\":\"djconnect-windows-ABC123DEF456\""), "clear payload must include client_id");
     AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "clear payload must preserve Windows client_type");
@@ -1116,7 +1117,7 @@ static void AskDJHistoryExportUsesHttpServerEnvelope()
       "schema_version": 1,
       "exported_at": "2026-07-04T10:20:30Z",
       "exported_by_client_type": "windows",
-      "app_version": "3.2.8",
+      "app_version": "3.2.9",
       "user_id": "user-1",
       "history_revision": 12,
       "clear_revision": 2,
@@ -1136,13 +1137,13 @@ static void AskDJHistoryExportUsesHttpServerEnvelope()
 
     AssertEqual(NormalizeJson(exportEnvelope), NormalizeJson(raw));
     AssertEqual("POST", http.LastMethod);
-    AssertEqual("api/djconnect/ask_dj/history/export", http.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/ask_dj/history/export", http.LastPath.TrimStart('/'));
     AssertEqual(0, fastPath.Routes.Count);
     AssertTrue(http.LastBody.Contains("\"identity\":", StringComparison.Ordinal), "export payload must include nested identity");
     AssertTrue(http.LastBody.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\"", StringComparison.Ordinal), "export identity must include device_id");
     AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\"", StringComparison.Ordinal), "export identity must include Windows client_type");
     AssertTrue(http.LastBody.Contains("\"device_name\":\"Studio PC\"", StringComparison.Ordinal), "export identity must include device name");
-    AssertTrue(http.LastBody.Contains("\"app_version\":\"3.2.8\"", StringComparison.Ordinal), "export payload must include app_version");
+    AssertTrue(http.LastBody.Contains("\"app_version\":\"3.2.9\"", StringComparison.Ordinal), "export payload must include app_version");
     AssertTrue(!http.LastBody.Contains("device-token-123", StringComparison.Ordinal), "export HTTP body must not duplicate bearer token");
 }
 
@@ -1294,7 +1295,7 @@ static void DiagnosticRedactionRemovesSecrets()
     push_token=push-secret-value
     cookie=sessionid
     api_key=api-secret-value
-    url=http://192.168.1.10:8123/api/djconnect
+    url=http://192.168.1.10:8123/api/djconnect/v1
     """;
 
     var redacted = DiagnosticRedactor.Redact(source);
@@ -1608,10 +1609,10 @@ static void PairingResponsePersistsRemoteUrlAndApiCapabilities()
       "device_token": "secret-device-token",
       "ha_local_url": "http://ha-local:8123",
       "ha_remote_url": "https://example.ui.nabu.casa",
-      "api_base": "/api/djconnect",
-      "voice_path": "/api/djconnect/voice",
-      "status_path": "/api/djconnect/status",
-      "event_path": "/api/djconnect/event",
+      "api_base": "/api/djconnect/v1",
+      "voice_path": "/api/djconnect/v1/voice",
+      "status_path": "/api/djconnect/v1/status",
+      "event_path": "/api/djconnect/v1/event",
       "ask_dj_supported": true,
       "ask_dj_voice_supported": true,
       "ask_dj_audio_response_supported": true,
@@ -1630,10 +1631,10 @@ static void PairingResponsePersistsRemoteUrlAndApiCapabilities()
     AssertEqual("http://ha-local:8123", manager.Current.LocalUrl);
     AssertEqual("https://example.ui.nabu.casa", manager.Current.RemoteUrl);
     AssertTrue(manager.Current.RemoteSupported, "remote URL support must persist after local pairing");
-    AssertEqual("/api/djconnect", response.ApiBase);
-    AssertEqual("/api/djconnect/voice", response.VoicePath);
-    AssertEqual("/api/djconnect/status", response.StatusPath);
-    AssertEqual("/api/djconnect/event", response.EventPath);
+    AssertEqual("/api/djconnect/v1", response.ApiBase);
+    AssertEqual("/api/djconnect/v1/voice", response.VoicePath);
+    AssertEqual("/api/djconnect/v1/status", response.StatusPath);
+    AssertEqual("/api/djconnect/v1/event", response.EventPath);
     AssertTrue(response.AskDJSupported == true, "Ask DJ support must parse");
     AssertTrue(response.AskDJVoiceSupported == true, "Ask DJ voice support must parse");
     AssertTrue(response.AskDJAudioResponseSupported == true, "Ask DJ audio response support must parse");
@@ -1729,6 +1730,29 @@ static void Protocol32ParsesSafeBackendErrorObject()
     AssertEqual("The selected music backend does not provide recent listening history.", summary.ErrorText);
 }
 
+static void DJConnectHomeAssistantHttpRoutesUseCanonicalV1Prefix()
+{
+    var root = ProjectRoot();
+    var paths = new[]
+    {
+        Path.Combine(root, "src"),
+        Path.Combine(root, "tests"),
+        Path.Combine(root, "docs"),
+        Path.Combine(root, "README.md"),
+        Path.Combine(root, "CHANGELOG.md"),
+        Path.Combine(root, "CHAT_BOOTSTRAP.md")
+    };
+    var offenders = paths
+        .SelectMany(RouteScanFiles)
+        .SelectMany(file => File.ReadLines(file)
+            .Select((line, index) => (File: file, LineNumber: index + 1, Line: line))
+            .Where(row => HasLegacyDjConnectHttpRoute(row.Line)))
+        .Select(row => $"{Path.GetRelativePath(root, row.File)}:{row.LineNumber}: {row.Line.Trim()}")
+        .ToList();
+
+    AssertTrue(offenders.Count == 0, "legacy /api/djconnect routes without /v1 remain:\n" + string.Join("\n", offenders));
+}
+
 static void BackendAwareActionsPreserveMusicAssistantValue()
 {
     var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
@@ -1788,7 +1812,7 @@ static void RawVoiceUploadIncludesLanguageHeaders()
     var response = client.SendAskDJVoiceAsync(TestIdentity(), wav, new AskDJVoiceRequest("voice-1", Language: "fr"), CancellationToken.None).GetAwaiter().GetResult();
 
     AssertTrue(response.Success, "voice response should deserialize");
-    AssertEqual("api/djconnect/voice", http.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/voice", http.LastPath.TrimStart('/'));
     AssertEqual("fr-FR", http.LastLanguageHeader);
     AssertEqual("fr-FR", http.LastLocaleHeader);
     AssertTrue(http.LastBody.Contains("name=language"), "multipart voice upload must include language field");
@@ -1988,7 +2012,7 @@ static void TrackInsightPayloadIncludesIdentityAndTitleArtist()
     _ = client.GetTrackInsightAsync(TestTrackInsightRequest(), CancellationToken.None).GetAwaiter().GetResult();
 
     AssertEqual("POST", http.LastMethod);
-    AssertEqual("api/djconnect/track_insight", http.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/track_insight", http.LastPath.TrimStart('/'));
     AssertTrue(http.LastBody.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\""), "Track Insight payload must include device_id");
     AssertTrue(http.LastBody.Contains("\"client_id\":\"djconnect-windows-ABC123DEF456\""), "Track Insight payload must include client_id");
     AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "Track Insight payload must preserve Windows client_type");
@@ -2140,7 +2164,7 @@ static void MusicDnaSettingsAndClearPayloadsIncludeIdentityContext()
         "dna-studio");
     _ = settingsClient.UpdateMusicDnaSettingsAsync(settings, CancellationToken.None).GetAwaiter().GetResult();
 
-    AssertEqual("api/djconnect/music_dna/settings", settingsHttp.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/music_dna/settings", settingsHttp.LastPath.TrimStart('/'));
     AssertTrue(settingsHttp.LastBody.Contains("\"enabled\":true"), "settings payload must include enabled:true");
     AssertTrue(settingsHttp.LastBody.Contains("\"client_type\":\"windows\""), "settings payload must include windows client_type");
     AssertTrue(settingsHttp.LastBody.Contains("\"music_dna_key\":\"dna-studio\""), "settings payload must include music_dna_key");
@@ -2158,7 +2182,7 @@ static void MusicDnaSettingsAndClearPayloadsIncludeIdentityContext()
         72,
         "dna-studio"), CancellationToken.None).GetAwaiter().GetResult();
 
-    AssertEqual("api/djconnect/music_dna/clear", clearHttp.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/music_dna/clear", clearHttp.LastPath.TrimStart('/'));
     AssertTrue(clearHttp.LastBody.Contains("\"client_type\":\"windows\""), "clear payload must include windows client_type");
     AssertTrue(clearHttp.LastBody.Contains("\"music_dna_key\":\"dna-studio\""), "clear payload must include music_dna_key");
 }
@@ -2201,7 +2225,7 @@ static void WebSocketMusicDnaUnsupportedFallsBackToHttp()
 
     AssertTrue(response.Success, "HTTP fallback should run when websocket route is unsupported");
     AssertEqual(1, http.RequestCount);
-    AssertEqual("api/djconnect/music_dna/profile", http.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/music_dna/profile", http.LastPath.TrimStart('/'));
 }
 
 static void DiscoverNavAppearsInAppleOrder()
@@ -2284,7 +2308,7 @@ static void MusicDiscoveryFeedRequestCarriesIdentityQuery()
     _ = client.GetMusicDiscoveryAsync(TestMusicDiscoveryRequest(), CancellationToken.None).GetAwaiter().GetResult();
 
     AssertEqual("GET", http.LastMethod);
-    AssertTrue(http.LastPath.StartsWith("/api/djconnect/music_discovery?", StringComparison.Ordinal), "feed must use GET query parameters");
+    AssertTrue(http.LastPath.StartsWith("/api/djconnect/v1/music_discovery?", StringComparison.Ordinal), "feed must use GET query parameters");
     AssertTrue(http.LastPath.Contains("client_type=windows", StringComparison.Ordinal), "feed query must include windows client type");
     AssertTrue(http.LastPath.Contains("device_id=djconnect-windows-ABC123DEF456", StringComparison.Ordinal), "feed query must include device id");
     AssertTrue(http.LastPath.Contains("music_dna_key=dna-studio", StringComparison.Ordinal), "feed query must include Music DNA key");
@@ -2328,7 +2352,7 @@ static void MusicDiscoveryRefreshUsesEndpointAndWebSocket()
     _ = client.RefreshMusicDiscoveryAsync(TestMusicDiscoveryRequest(), CancellationToken.None).GetAwaiter().GetResult();
 
     AssertEqual("POST", http.LastMethod);
-    AssertEqual("api/djconnect/music_discovery/refresh", http.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/music_discovery/refresh", http.LastPath.TrimStart('/'));
     AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "refresh payload must include client_type");
 }
 
@@ -2355,7 +2379,7 @@ static void MusicDiscoveryPlaySendsSourceAndIdentity()
 
     _ = client.PlayMusicDiscoveryAsync(request, CancellationToken.None).GetAwaiter().GetResult();
 
-    AssertEqual("api/djconnect/music_discovery/play", http.LastPath.TrimStart('/'));
+    AssertEqual("api/djconnect/v1/music_discovery/play", http.LastPath.TrimStart('/'));
     AssertTrue(http.LastBody.Contains("\"source\":\"music_discovery\""), "play payload must identify music_discovery source");
     AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\""), "play payload must include windows client type");
     AssertTrue(http.LastBody.Contains("\"recommendation_id\":\"rec-1\""), "play payload must include recommendation id");
@@ -2614,6 +2638,48 @@ static MusicDiscoveryRequest TestMusicDiscoveryRequest() => new(
 static DJConnectApiClient NewClientWithFastPath(FakeFastPath fastPath, FakeHttpHandler http)
 {
     return new DJConnectApiClient(new HttpClient(http), fastPath);
+}
+
+static IEnumerable<string> RouteScanFiles(string path)
+{
+    if (File.Exists(path))
+    {
+        return [path];
+    }
+
+    return Directory.GetFiles(path, "*", SearchOption.AllDirectories)
+        .Where(file => file.EndsWith(".cs", StringComparison.OrdinalIgnoreCase)
+            || file.EndsWith(".md", StringComparison.OrdinalIgnoreCase)
+            || file.EndsWith(".xaml", StringComparison.OrdinalIgnoreCase)
+            || file.EndsWith(".json", StringComparison.OrdinalIgnoreCase));
+}
+
+static bool HasLegacyDjConnectHttpRoute(string line)
+{
+    var absolutePrefix = "/" + "api/" + "djconnect";
+    var relativePrefix = "api/" + "djconnect";
+    return ContainsLegacyRoute(line, absolutePrefix)
+        || ContainsLegacyRoute(line, relativePrefix);
+}
+
+static bool ContainsLegacyRoute(string line, string prefix)
+{
+    var index = line.IndexOf(prefix, StringComparison.Ordinal);
+    while (index >= 0)
+    {
+        var next = index + prefix.Length;
+        if (line.Length == next || line[next] is '/' or '"' or '\'' or '`' or '?' or '&' or '<')
+        {
+            if (!line.Substring(index).StartsWith(prefix + "/v1", StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        index = line.IndexOf(prefix, index + prefix.Length, StringComparison.Ordinal);
+    }
+
+    return false;
 }
 
 static string ProjectRoot()

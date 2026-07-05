@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+## 3.2.9 - 2026-07-05
+
+- Updated all hardcoded DJConnect Home Assistant HTTP routes to the canonical
+  `/api/djconnect/v1/...` prefix, including pairing, status, Ask DJ,
+  Track Insight, Music DNA and Music Discovery calls.
+- Updated QR/deeplink pairing validation to require
+  `/api/djconnect/v1/pair` while preserving the Windows identity contract and
+  `client_type: "windows"`.
+- Added a regression test that scans client code, tests and docs for legacy
+  DJConnect API paths without the v1 prefix.
+- Refreshed API contract, architecture and handoff docs for the canonical v1
+  route contract.
+
 ## 3.2.8 - 2026-07-04
 
 - Updated Microsoft.Maui.Controls from `10.0.20` to `10.0.80` and refreshed
@@ -55,7 +68,7 @@
 
 - Implemented the Home Assistant pairing screen and pairing flow for the
   Windows client, aligned with the Apple app contract: local HA URL plus
-  six-digit pair code, QR/deeplink validation, exact `/api/djconnect/pair`
+  six-digit pair code, QR/deeplink validation, exact `/api/djconnect/v1/pair`
   endpoint use, `X-DJConnect-Client-Type: windows`, no bearer token on pairing,
   and paired state only after authenticated status verification.
 - Centralized pairing error presentation so raw backend codes are never shown
@@ -90,7 +103,7 @@
 
 - Upgraded the desktop client contract to DJConnect protocol `3.2.x`.
 - Replaced the Windows-hosted local Client API/mDNS pairing flow with local
-  Home Assistant pairing through `POST /api/djconnect/pair`; remote Home
+  Home Assistant pairing through `POST /api/djconnect/v1/pair`; remote Home
   Assistant transport is only used after successful local pairing.
 - Added local-to-remote Home Assistant transport selection, connection mode
   diagnostics and backend summary parsing for Spotify Direct / Music Assistant
