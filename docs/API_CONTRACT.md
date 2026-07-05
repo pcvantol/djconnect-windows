@@ -368,7 +368,6 @@ These remain HTTP-only:
 - `/api/djconnect/v1/voice`;
 - `/api/djconnect/v1/ask_dj/history`;
 - `/api/djconnect/v1/ask_dj/history/clear`;
-- `/api/djconnect/v1/ask_dj/idle_suggestion`;
 - push registration;
 - image proxy;
 - TTS/audio download URLs;

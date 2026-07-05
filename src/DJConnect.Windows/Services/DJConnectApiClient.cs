@@ -265,7 +265,6 @@ public sealed class DJConnectApiClient
                 identity.DeviceName,
                 identity.ClientType,
                 prompt,
-                prompt,
                 Mood: mood,
                 Language: locale,
                 Locale: locale);

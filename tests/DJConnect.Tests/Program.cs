@@ -20,6 +20,7 @@ var tests = new (string Name, Action Run)[]
     ("Status payload serializes app protocol metadata", StatusPayloadSerializesAppProtocolMetadata),
     ("Ask DJ request serializes server-side message contract", AskDJRequestSerializesServerSideContract),
     ("Ask DJ message request includes current locale", AskDJMessageRequestIncludesCurrentLocale),
+    ("Ask DJ app client contract omits raw route and legacy aliases", AskDJAppClientContractOmitsRawRouteAndLegacyAliases),
     ("Ask DJ response deserializes exchange messages", AskDJResponseDeserializesExchangeMessages),
     ("Ask DJ response deserializes media sources links and dj text", AskDJResponseDeserializesMediaSourcesLinksAndDjText),
     ("Ask DJ spark follows generated text metadata only", AskDJSparkFollowsGeneratedTextMetadataOnly),
@@ -339,7 +340,6 @@ static void AskDJRequestSerializesServerSideContract()
         "Studio PC",
         "windows",
         "Welke nummers hoorde ik net?",
-        "Welke nummers hoorde ik net?",
         Mood: 72,
         AppVersion: DJConnectContract.AppVersion,
         ProtocolVersion: DJConnectContract.ProtocolLine);
@@ -352,11 +352,36 @@ static void AskDJRequestSerializesServerSideContract()
     AssertEqual("djconnect-windows-ABC123DEF456", root.GetProperty("device_id").GetString());
     AssertEqual("windows", root.GetProperty("client_type").GetString());
     AssertEqual("Welke nummers hoorde ik net?", root.GetProperty("text").GetString());
-    AssertEqual("Welke nummers hoorde ik net?", root.GetProperty("message").GetString());
+    AssertTrue(!root.TryGetProperty("message", out _), "Ask DJ app-client request must use text, not the removed raw/developer message alias");
     AssertEqual("auto", root.GetProperty("audio_response").GetString());
     AssertEqual(72, root.GetProperty("mood").GetInt32());
     AssertEqual(DJConnectContract.AppVersion, root.GetProperty("app_version").GetString());
     AssertEqual("3.2", root.GetProperty("protocol_version").GetString());
+}
+
+static void AskDJAppClientContractOmitsRawRouteAndLegacyAliases()
+{
+    var root = ProjectRoot();
+    var scanRoots = new[]
+    {
+        Path.Combine(root, "src"),
+        Path.Combine(root, "tests"),
+        Path.Combine(root, "docs"),
+        Path.Combine(root, "README.md"),
+        Path.Combine(root, "CHANGELOG.md")
+    };
+    var offenders = scanRoots
+        .SelectMany(RouteScanFiles)
+        .SelectMany(file => File.ReadLines(file)
+            .Select((line, index) => (File: file, LineNumber: index + 1, Line: line))
+            .Where(row => ContainsRawAskDJRoute(row.Line)
+                || ContainsExactProtocolValue(row.Line, "djconnect." + "ask_dj")
+                || row.Line.Contains("spotify_" + "search_query", StringComparison.Ordinal)
+                || row.Line.Contains("last_" + "spotify_search", StringComparison.Ordinal)))
+        .Select(row => $"{Path.GetRelativePath(root, row.File)}:{row.LineNumber}: {row.Line.Trim()}")
+        .ToList();
+
+    AssertTrue(offenders.Count == 0, "removed Ask DJ raw route/service or legacy Spotify search aliases remain:\n" + string.Join("\n", offenders));
 }
 
 static void AskDJMessageRequestIncludesCurrentLocale()
@@ -2599,7 +2624,6 @@ static AskDJRequest TestAskRequest(string text) => new(
     "Studio PC",
     "windows",
     text,
-    text,
     Mood: 72);
 
 static TrackInsightRequest TestTrackInsightRequest() => new(
@@ -2677,6 +2701,31 @@ static bool ContainsLegacyRoute(string line, string prefix)
         }
 
         index = line.IndexOf(prefix, index + prefix.Length, StringComparison.Ordinal);
+    }
+
+    return false;
+}
+
+static bool ContainsRawAskDJRoute(string line)
+{
+    var absoluteRawRoute = "/" + "api/djconnect/v1/" + "ask_dj";
+    var relativeRawRoute = "api/djconnect/v1/" + "ask_dj";
+    return ContainsExactProtocolValue(line, absoluteRawRoute)
+        || ContainsExactProtocolValue(line, relativeRawRoute);
+}
+
+static bool ContainsExactProtocolValue(string line, string value)
+{
+    var index = line.IndexOf(value, StringComparison.Ordinal);
+    while (index >= 0)
+    {
+        var next = index + value.Length;
+        if (line.Length == next || line[next] is '"' or '\'' or '`' or '<' or ')' or ']' or ',' or ';')
+        {
+            return true;
+        }
+
+        index = line.IndexOf(value, next, StringComparison.Ordinal);
     }
 
     return false;

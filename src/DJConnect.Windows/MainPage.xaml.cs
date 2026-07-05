@@ -248,7 +248,7 @@ the current source-of-truth notices.
     {
         if (sender is Button { BindingContext: MusicDiscoveryItem item } && !string.IsNullOrWhiteSpace(item.Reason))
         {
-            await DisplayAlert("Music DNA", item.Reason, "OK");
+            await DisplayAlertAsync("Music DNA", item.Reason, "OK");
         }
     }
 

@@ -1823,7 +1823,6 @@ public sealed class MainViewModel : ObservableObject
             _identity.DeviceName,
             _identity.ClientType,
             text,
-            text,
             Mood: AskDJMoodValue(),
             AppVersion: AppVersion,
             ProtocolVersion: DJConnectContract.ProtocolLine,
