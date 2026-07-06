@@ -26,8 +26,8 @@ Lees eerst:
 Belangrijke huidige status:
 - Repo: `pcvantol/djconnect-windows`.
 - Remote: `git@github.com:pcvantol/djconnect-windows.git`.
-- Huidige lokale release/tag: `v3.2.1` voorbereid in werkboom; laatste
-  gepubliceerde 3.2-release was `v3.2.0`.
+- Huidige lokale release/tag: `v3.2.9` voorbereid in werkboom; laatste
+  gepubliceerde 3.2-release was `v3.2.8`.
 - App stack: .NET MAUI single-project desktop app.
 - Targets:
   - `net10.0-windows10.0.19041.0`
@@ -105,7 +105,7 @@ Belangrijke huidige status:
 
 Belangrijke regels:
 - Dit is een .NET MAUI desktop app voor Windows en macOS.
-- Huidige desktop app release: `3.2.1` in werkboom.
+- Huidige desktop app release: `3.2.9` in werkboom.
 - Home Assistant blijft eigenaar van pairing, Spotify OAuth/backend playback,
   Ask DJ history, Music DNA, Assist/TTS en command execution.
 - De app bewaart geen Spotify credentials, OAuth tokens, Music DNA of Ask DJ
@@ -149,6 +149,12 @@ Belangrijke regels:
   sandbox, draai dezelfde check buiten de sandbox; de laatste releasecheck was
   daarna groen.
 - Push niet tenzij de gebruiker expliciet vraagt om pushen.
+- Release/publicatie helpers moeten de huidige HEAD tegen de remote release
+  base valideren voordat ze publiceren en release commits expliciet als
+  `HEAD:main` pushen in plaats van te vertrouwen op een lokale `main`.
+- GitHub/static release notes moeten uit alleen de overeenkomende
+  `CHANGELOG.md` versie-sectie komen wanneer geen locale release-note bestand
+  bestaat, niet uit de volledige changelog.
 - Als de gebruiker expliciet vraagt om release/push: push `main` en de release
   tag, valideer GitHub Actions met `gh run list`. Start public unsigned
   publication alleen expliciet/handmatig wanneer gevraagd. Voer daarna

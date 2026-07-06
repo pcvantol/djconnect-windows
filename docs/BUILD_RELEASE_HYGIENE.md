@@ -29,6 +29,10 @@
   validate GitHub Actions, manually start public unsigned publication only when
   requested, then run `./clear_old_releases.sh` first as a dry-run and then
   with `--execute` when the plan is correct.
+- Release helpers that commit generated release context or static release
+  notes must verify `HEAD` is based on the remote release branch, push the
+  release commit explicitly as `HEAD:main` and avoid publishing the full
+  changelog as release notes when only one version is being released.
 - CI uses concurrency cancellation, so a newer run for the same branch cancels
   older in-progress attempts.
 - Normal CI automatically deletes older completed workflow runs after the

@@ -74,6 +74,9 @@ var tests = new (string Name, Action Run)[]
     ("Protocol 3.2 parses backend summary", Protocol32ParsesBackendSummary),
     ("Protocol 3.2 parses safe backend error object", Protocol32ParsesSafeBackendErrorObject),
     ("DJConnect Home Assistant HTTP routes use canonical v1 prefix", DJConnectHomeAssistantHttpRoutesUseCanonicalV1Prefix),
+    ("Release workflow pushes notes from current HEAD", ReleaseWorkflowPushesNotesFromCurrentHead),
+    ("Release workflow extracts only current changelog section", ReleaseWorkflowExtractsOnlyCurrentChangelogSection),
+    ("Release context docs mention current app version", ReleaseContextDocsMentionCurrentAppVersion),
     ("Backend-aware actions preserve Music Assistant value", BackendAwareActionsPreserveMusicAssistantValue),
     ("Backend-aware actions carry backend revision", BackendAwareActionsCarryBackendRevision),
     ("Command payload includes current locale and preserves protocol values", CommandPayloadIncludesCurrentLocaleAndPreservesProtocolValues),
@@ -1776,6 +1779,50 @@ static void DJConnectHomeAssistantHttpRoutesUseCanonicalV1Prefix()
         .ToList();
 
     AssertTrue(offenders.Count == 0, "legacy /api/djconnect routes without /v1 remain:\n" + string.Join("\n", offenders));
+}
+
+static void ReleaseWorkflowPushesNotesFromCurrentHead()
+{
+    var workflow = File.ReadAllText(Path.Combine(ProjectRoot(), ".github", "workflows", "public-unsigned-release.yml"));
+
+    AssertTrue(workflow.Contains("git fetch origin main --depth 1", StringComparison.Ordinal), "release notes publishing must refresh the remote release base");
+    AssertTrue(workflow.Contains("git merge-base --is-ancestor origin/main HEAD", StringComparison.Ordinal), "release notes publishing must verify HEAD is based on origin/main");
+    AssertTrue(workflow.Contains("git push origin HEAD:main", StringComparison.Ordinal), "release notes publishing must push the release commit explicitly");
+    AssertTrue(!workflow.Contains("git push origin main", StringComparison.Ordinal), "release notes publishing must not rely on a potentially stale local main branch");
+}
+
+static void ReleaseWorkflowExtractsOnlyCurrentChangelogSection()
+{
+    var workflow = File.ReadAllText(Path.Combine(ProjectRoot(), ".github", "workflows", "public-unsigned-release.yml"));
+
+    AssertTrue(workflow.Contains("extract_changelog_notes()", StringComparison.Ordinal), "release workflow should keep changelog extraction centralized");
+    AssertTrue(workflow.Contains("$0 ~ \"^## \" version \"($| - )\" { capture=1; next }", StringComparison.Ordinal), "release notes must start at the matching version heading");
+    AssertTrue(workflow.Contains("capture && /^## / { capture=0 }", StringComparison.Ordinal), "release notes must stop before the next changelog version");
+    AssertTrue(!workflow.Contains("cat CHANGELOG.md", StringComparison.Ordinal), "release notes must not publish the whole changelog");
+}
+
+static void ReleaseContextDocsMentionCurrentAppVersion()
+{
+    var root = ProjectRoot();
+    var currentVersion = DJConnectContract.AppVersion;
+    var files = new[]
+    {
+        Path.Combine(root, "README.md"),
+        Path.Combine(root, "CHAT_BOOTSTRAP.md"),
+        Path.Combine(root, "docs", "HANDOFF.md"),
+        Path.Combine(root, "docs", "RELEASE.md"),
+        Path.Combine(root, "docs", "TECHNICAL_DESIGN_DECISIONS.md"),
+        Path.Combine(root, "docs", "TODO.md"),
+        Path.Combine(root, "docs", "ISSUES.md")
+    };
+
+    var offenders = files
+        .Select(file => (File: file, Text: File.ReadAllText(file)))
+        .Where(item => !item.Text.Contains(currentVersion, StringComparison.Ordinal))
+        .Select(item => Path.GetRelativePath(root, item.File))
+        .ToList();
+
+    AssertTrue(offenders.Count == 0, "release context docs must mention current app version " + currentVersion + ":\n" + string.Join("\n", offenders));
 }
 
 static void BackendAwareActionsPreserveMusicAssistantValue()

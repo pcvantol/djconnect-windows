@@ -65,8 +65,12 @@ for a different flow:
    them when the release intentionally accepts a tooling refresh.
 4. Commit the release changes and create or move the local annotated
    `vX.Y.Z` tag before it is pushed.
-5. Push `main` and the release tag only after explicit maintainer approval.
-6. Validate GitHub CI/security workflows:
+5. Before any release publication helper pushes a release commit, verify the
+   current `HEAD` is based on the intended remote release branch, then push the
+   release commit explicitly to that branch, for example `git push origin
+   HEAD:main`. Do not rely on a potentially stale local `main` ref.
+6. Push `main` and the release tag only after explicit maintainer approval.
+7. Validate GitHub CI/security workflows:
 
    ```sh
    gh run list --repo pcvantol/djconnect-windows --limit 10
@@ -77,20 +81,20 @@ for a different flow:
    Newer CI runs for the same branch should cancel older in-progress attempts
    through workflow concurrency.
 
-7. If public unsigned artifacts should be published, manually start
+8. If public unsigned artifacts should be published, manually start
    `.github/workflows/public-unsigned-release.yml` with the release version and
    validate the public release repository afterward. This workflow is not
    triggered by tag pushes and is the only workflow that should receive
    publication secrets.
 
-8. Run cleanup:
+9. Run cleanup:
 
    ```sh
    ./clear_old_releases.sh --keep 1 --keep-workflow-runs 2
    ./clear_old_releases.sh --keep 1 --keep-workflow-runs 2 --execute
    ```
 
-9. Re-check `gh run list` and document any remaining failed/pending workflows.
+10. Re-check `gh run list` and document any remaining failed/pending workflows.
 
 ## Public Unsigned Releases
 
@@ -179,7 +183,7 @@ https://djconnect.dev/release-notes/maccatalyst/vX.Y.Z.json
 Source order for the static notes:
 
 1. `docs/release-notes/{en|nl|de|fr|es}/vX.Y.Z.md`.
-2. `CHANGELOG.md` for English.
+2. The matching `CHANGELOG.md` version section for English.
 3. Localized release notes must be added for every supported locale in the
    same release change. Do not publish English fallback text for localized
    in-app What's New content.
