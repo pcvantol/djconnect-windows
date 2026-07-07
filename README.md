@@ -22,6 +22,22 @@ automatically.
 - Home Assistant protocol line: `3.2.x`
 - Current local `client_type`: `windows`
 
+## Cross-Repo Source Of Truth
+
+Cross-repo DJConnect contracts, repo ownership and shared release hygiene live
+in `/Users/pcvantol/Documents/GitHub/djconnect/SYNC_PROMPTS.md` in the Home
+Assistant integration repo. Do not copy that file into this repository.
+
+Canonical sibling repos:
+
+- Home Assistant integration: `pcvantol/djconnect`
+- Central API backend: `pcvantol/djconnect-api`
+- Apple app: `pcvantol/djconnect-app`
+- Windows desktop app: `pcvantol/djconnect-windows`
+- ESP firmware: `pcvantol/djconnect-esp32`
+- Website/docs: `pcvantol/djconnect-website`
+- Raspberry Pi client: `pcvantol/djconnect-pi`
+
 ## Stack
 
 The app is scaffolded as a .NET MAUI desktop app targeting:
@@ -155,11 +171,11 @@ client_type: windows
 device_id: djconnect-windows-XXXXXXXXXXXX
 ```
 
-Open point: the current backend docs list `esp32`, `ios`, `macos`, `watchos` and
-`raspberry_pi`, but not `windows`. The desktop client keeps this value central
-so it can be updated easily if the Home Assistant integration adopts a different
-canonical spelling. Minimal backend/doc updates should add `windows` as an app
-client type and validate the `djconnect-windows-XXXXXXXXXXXX` prefix.
+`windows` is canonical for the shared `3.2.x` app-client contract. Windows is
+an inbound-only app client: it exposes no Home Assistant-callable
+`/api/device/*`, does not advertise mDNS, pairs locally through
+`POST /api/djconnect/v1/pair`, and may use `ha_remote_url` only after
+successful local pairing.
 
 ## Development
 

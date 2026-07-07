@@ -26,6 +26,17 @@ Lees eerst:
 Belangrijke huidige status:
 - Repo: `pcvantol/djconnect-windows`.
 - Remote: `git@github.com:pcvantol/djconnect-windows.git`.
+- Centrale cross-repo bron van waarheid:
+  `/Users/pcvantol/Documents/GitHub/djconnect/SYNC_PROMPTS.md`. Kopieer dat
+  bestand niet naar deze repo en voeg geen oude losse syncprompt-bestanden toe.
+- Canonieke repo-scheiding:
+  - Home Assistant integration: `pcvantol/djconnect`
+  - Central API backend: `pcvantol/djconnect-api`
+  - Apple app: `pcvantol/djconnect-app`
+  - Windows desktop app: `pcvantol/djconnect-windows`
+  - ESP firmware: `pcvantol/djconnect-esp32`
+  - Website/docs: `pcvantol/djconnect-website`
+  - Raspberry Pi client: `pcvantol/djconnect-pi`
 - Huidige lokale release/tag: `v3.2.9` voorbereid in werkboom; laatste
   gepubliceerde 3.2-release was `v3.2.8`.
 - App stack: .NET MAUI single-project desktop app.
@@ -112,9 +123,8 @@ Belangrijke regels:
   server history als bron van waarheid.
 - Het enige app-owned credential is de DJConnect bearer token in Windows
   Credential Manager of macOS Keychain.
-- `client_type: "windows"` is centraal configureerbaar maar nog een backend
-  contract open punt; documenteer benodigde backend/doc updates apart tenzij de
-  gebruiker expliciet vraagt om cross-repo wijzigingen.
+- `client_type: "windows"` is canoniek voor de gedeelde `3.2.x`
+  app-clientlijn en blijft centraal in `DJConnectContract`.
 - Device ID conventie is momenteel `djconnect-windows-XXXXXXXXXXXX`.
 - Pairing/status, Spotify OAuth/backend playback, Ask DJ history, Music DNA,
   OTA/status en Assist/TTS blijven via Home Assistant integration lopen.

@@ -45,9 +45,10 @@ Decision: keep `client_type` and device-id prefix in `DJConnectContract`.
 
 Rationale:
 
-- Windows support is not yet documented in the backend contract.
-- Changing the canonical spelling or prefix should not require sweeping the UI
-  and service code.
+- `windows` is canonical for the shared `3.2.x` app-client contract.
+- The Windows device-id prefix is part of the client identity contract.
+- Keeping both values central prevents protocol drift across UI and service
+  code.
 
 ## Publish Platform-Specific Public Releases
 

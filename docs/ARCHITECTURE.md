@@ -191,15 +191,13 @@ or action behavior by inspecting answer text. Playback/follow-up buttons exist
 only when `playback_actions[]` or `confirmation_actions[]` is present. Raw
 Spotify URIs and backend IDs are kept out of visible answer text.
 
-## Client Type Open Point
+## Client Type
 
-The current Home Assistant docs list `esp32`, `ios`, `macos`, `watchos` and
-`raspberry_pi`. This repo uses `windows` centrally in
-`DJConnectContract.ClientType` so the value can change in one place if the
-backend contract adopts another spelling.
+`windows` is canonical for the shared `3.2.x` app-client contract. This repo
+keeps it centralized in `DJConnectContract.ClientType` together with the
+`djconnect-windows-XXXXXXXXXXXX` device-id prefix.
 
-Minimal backend/doc follow-up:
-
-- add `windows` as an app client type;
-- accept `djconnect-windows-XXXXXXXXXXXX` device IDs;
-- hide ESP-only OTA/hardware entities for Windows clients.
+Windows is an inbound-only app client: it exposes no Home Assistant-callable
+`/api/device/*`, does not advertise mDNS, pairs locally through
+`POST /api/djconnect/v1/pair`, may use `ha_remote_url` only after successful
+local pairing and does not participate in ESP-only OTA/hardware entities.
