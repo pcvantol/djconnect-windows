@@ -16,6 +16,9 @@
   route contract.
 - Fixed CI release hygiene by ensuring `ripgrep` is available where workflow
   checks use `rg` and by qualifying Windows storage APIs for Windows builds.
+- Synced documentation with the central DJConnect cross-repo prompt so
+  `windows` is treated as the canonical 3.2 app client and central repo
+  ownership/release-hygiene references stay aligned.
 
 ## 3.2.8 - 2026-07-04
 
