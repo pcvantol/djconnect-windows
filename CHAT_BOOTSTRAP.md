@@ -29,6 +29,9 @@ Belangrijke huidige status:
 - Centrale cross-repo bron van waarheid:
   `/Users/pcvantol/Documents/GitHub/djconnect/SYNC_PROMPTS.md`. Kopieer dat
   bestand niet naar deze repo en voeg geen oude losse syncprompt-bestanden toe.
+- Nieuwe review/QA-stap: check deze repo bij release- of Ask DJ/audio-werk
+  tegen de `DJ Announcement Output Sync` sectie in die canonical
+  `SYNC_PROMPTS.md`.
 - Canonieke repo-scheiding:
   - Home Assistant integration: `pcvantol/djconnect`
   - Central API backend: `pcvantol/djconnect-api`
