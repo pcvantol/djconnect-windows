@@ -39,7 +39,111 @@ public sealed record PairingResponse(
     [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
     [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
-    [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null);
+    [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null,
+    [property: JsonPropertyName("dj_announcement")] DJAnnouncementCapabilities? DJAnnouncement = null,
+    [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null);
+
+[JsonConverter(typeof(DJAnnouncementOutputJsonConverter))]
+public enum DJAnnouncementOutput
+{
+    ClientDevice,
+    Both,
+    HaSpeaker,
+    TextOnly
+}
+
+public static class DJAnnouncementOutputProtocol
+{
+    public const string ClientDevice = "client_device";
+    public const string Both = "both";
+    public const string HaSpeaker = "ha_speaker";
+    public const string TextOnly = "text_only";
+
+    public static DJAnnouncementOutput Parse(string? value) => value switch
+    {
+        Both => DJAnnouncementOutput.Both,
+        HaSpeaker => DJAnnouncementOutput.HaSpeaker,
+        TextOnly => DJAnnouncementOutput.TextOnly,
+        _ => DJAnnouncementOutput.ClientDevice
+    };
+
+    public static string Format(DJAnnouncementOutput output) => output switch
+    {
+        DJAnnouncementOutput.Both => Both,
+        DJAnnouncementOutput.HaSpeaker => HaSpeaker,
+        DJAnnouncementOutput.TextOnly => TextOnly,
+        _ => ClientDevice
+    };
+}
+
+public sealed class DJAnnouncementOutputJsonConverter : JsonConverter<DJAnnouncementOutput>
+{
+    public override DJAnnouncementOutput Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return reader.TokenType == JsonTokenType.String
+            ? DJAnnouncementOutputProtocol.Parse(reader.GetString())
+            : DJAnnouncementOutput.ClientDevice;
+    }
+
+    public override void Write(Utf8JsonWriter writer, DJAnnouncementOutput value, JsonSerializerOptions options)
+    {
+        writer.WriteStringValue(DJAnnouncementOutputProtocol.Format(value));
+    }
+}
+
+public sealed record DJAnnouncementTarget(
+    [property: JsonPropertyName("kind")] string? Kind,
+    [property: JsonPropertyName("entity_id")] string? EntityId,
+    [property: JsonPropertyName("name")] string? Name);
+
+public sealed record DJAnnouncement(
+    [property: JsonPropertyName("output")] DJAnnouncementOutput? Output,
+    [property: JsonPropertyName("delivery")] DJAnnouncementOutput? Delivery,
+    [property: JsonPropertyName("audio_response_effective")] string? AudioResponseEffective,
+    [property: JsonPropertyName("audio_url")] string? AudioUrl,
+    [property: JsonPropertyName("audio_type")] string? AudioType,
+    [property: JsonPropertyName("target")] DJAnnouncementTarget? Target,
+    [property: JsonPropertyName("warnings")] IReadOnlyList<string>? Warnings)
+{
+    public DJAnnouncementOutput EffectiveDelivery => Delivery ?? Output ?? DJAnnouncementOutput.ClientDevice;
+    public bool AllowsClientAudio => EffectiveDelivery is DJAnnouncementOutput.ClientDevice or DJAnnouncementOutput.Both;
+    public string WarningText => string.Join(" · ", Warnings ?? []);
+}
+
+public sealed record DJAnnouncementCapabilities(
+    [property: JsonPropertyName("speaker_configured")] bool? SpeakerConfigured,
+    [property: JsonPropertyName("speaker_entity_id")] string? SpeakerEntityId,
+    [property: JsonPropertyName("speaker_name")] string? SpeakerName,
+    [property: JsonPropertyName("target")] DJAnnouncementTarget? Target,
+    [property: JsonPropertyName("supported_outputs")] IReadOnlyList<DJAnnouncementOutput>? SupportedOutputs,
+    [property: JsonPropertyName("locked_outputs")] IReadOnlyList<DJAnnouncementOutput>? LockedOutputs,
+    [property: JsonPropertyName("default_output")] DJAnnouncementOutput? DefaultOutput,
+    [property: JsonPropertyName("output")] DJAnnouncementOutput? Output)
+{
+    public bool HasSpeaker => SpeakerConfigured == true || !string.IsNullOrWhiteSpace(SpeakerEntityId) || Target is not null;
+    public string SpeakerDisplayName => FirstNonEmpty(SpeakerName, Target?.Name, HasSpeaker ? "Home Assistant speaker" : "");
+    public IReadOnlyList<DJAnnouncementOutput> EffectiveSupportedOutputs => (SupportedOutputs?.Count ?? 0) > 0
+        ? SupportedOutputs!
+        : HasSpeaker
+            ? [DJAnnouncementOutput.ClientDevice, DJAnnouncementOutput.Both, DJAnnouncementOutput.HaSpeaker, DJAnnouncementOutput.TextOnly]
+            : [DJAnnouncementOutput.ClientDevice, DJAnnouncementOutput.TextOnly];
+
+    public bool Supports(DJAnnouncementOutput output) =>
+        EffectiveSupportedOutputs.Contains(output)
+        && !(LockedOutputs?.Contains(output) == true)
+        && (HasSpeaker || output is not (DJAnnouncementOutput.Both or DJAnnouncementOutput.HaSpeaker));
+
+    public DJAnnouncementOutput EffectiveDefaultOutput()
+    {
+        var output = Output ?? DefaultOutput ?? (HasSpeaker ? DJAnnouncementOutput.Both : DJAnnouncementOutput.ClientDevice);
+        return Supports(output) ? output : DJAnnouncementOutput.ClientDevice;
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    }
+}
 
 public sealed record MusicBackendCapabilities(
     [property: JsonPropertyName("supports_search")] bool? SupportsSearch,
@@ -152,7 +256,8 @@ public sealed record AskDJRequest(
     [property: JsonPropertyName("protocol_version")] string? ProtocolVersion = null,
     [property: JsonPropertyName("language")] string? Language = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
-    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("dj_announcement_output")] DJAnnouncementOutput DJAnnouncementOutput = DJAnnouncementOutput.ClientDevice);
 
 public sealed record AskDJHistoryResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -195,6 +300,7 @@ public sealed record AskDJMessage(
     [property: JsonPropertyName("images")] IReadOnlyList<AskDJImage>? Images,
     [property: JsonPropertyName("sources")] IReadOnlyList<AskDJSource>? Sources,
     [property: JsonPropertyName("audio_url")] string? AudioUrl = null,
+    [property: JsonPropertyName("announcement")] DJAnnouncement? Announcement = null,
     [property: JsonPropertyName("origin")] string? Origin = null,
     [property: JsonPropertyName("client_message_id")] string? ClientMessageId = null,
     [property: JsonPropertyName("exchange_id")] string? ExchangeId = null,
@@ -216,7 +322,14 @@ public sealed record AskDJMessage(
     public bool IsAssistant => !IsUser && !IsSystem;
     public bool IsSystem => string.Equals(MessageKind, "system", StringComparison.OrdinalIgnoreCase)
         || string.Equals(Role, "system", StringComparison.OrdinalIgnoreCase);
-    public bool HasAudio => !string.IsNullOrWhiteSpace(AudioUrl);
+    public string? ClientAudioUrl => Announcement is not null
+        ? Announcement.AllowsClientAudio ? Announcement.AudioUrl : null
+        : AudioUrl;
+    public bool HasAudio => !string.IsNullOrWhiteSpace(ClientAudioUrl);
+    public string AnnouncementStatusText => Announcement is null
+        ? ""
+        : string.Join(" · ", new[] { Announcement.Target?.Name, Announcement.WarningText }.Where(value => !string.IsNullOrWhiteSpace(value)));
+    public bool HasAnnouncementStatus => !string.IsNullOrWhiteSpace(AnnouncementStatusText);
     public bool HasPlaybackActions => (PlaybackActions?.Count ?? 0) > 0 || (ConfirmationActions?.Count ?? 0) > 0;
     public bool HasItems => (Items?.Count ?? 0) > 0;
     public bool HasImages => (Images?.Count ?? 0) > 0;
@@ -300,8 +413,9 @@ public sealed record AskDJMessageResponse(
     [property: JsonPropertyName("text")] string? Text,
     [property: JsonPropertyName("dj_text")] string? DjText,
     [property: JsonPropertyName("message")] string? Message,
-    [property: JsonPropertyName("audio_url")] string? AudioUrl,
-    [property: JsonPropertyName("error")] string? Error,
+    [property: JsonPropertyName("audio_url")] string? AudioUrl = null,
+    [property: JsonPropertyName("announcement")] DJAnnouncement? Announcement = null,
+    [property: JsonPropertyName("error")] string? Error = null,
     [property: JsonPropertyName("ha_local_url")] string? HomeAssistantLocalUrl = null,
     [property: JsonPropertyName("ha_remote_url")] string? HomeAssistantRemoteUrl = null,
     [property: JsonPropertyName("remote_supported")] bool? RemoteSupported = null,
@@ -312,6 +426,8 @@ public sealed record AskDJMessageResponse(
     [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
     [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null,
+    [property: JsonPropertyName("dj_announcement")] DJAnnouncementCapabilities? DJAnnouncement = null,
+    [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null,
     [property: JsonPropertyName("links")] IReadOnlyList<AskDJSource>? Links = null,
     [property: JsonPropertyName("is_generated_text")] bool? IsGeneratedText = null);
 
@@ -1570,7 +1686,9 @@ public sealed record CommandResponse(
     [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
     [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
-    [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null);
+    [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null,
+    [property: JsonPropertyName("dj_announcement")] DJAnnouncementCapabilities? DJAnnouncement = null,
+    [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null);
 
 public sealed record StatusResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -1608,7 +1726,9 @@ public sealed record StatusResponse(
     [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
     [property: JsonPropertyName("music_backend_capabilities")] MusicBackendCapabilities? MusicBackendCapabilities = null,
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
-    [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null);
+    [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null,
+    [property: JsonPropertyName("dj_announcement")] DJAnnouncementCapabilities? DJAnnouncement = null,
+    [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null);
 
 public sealed record PlaybackState(
     [property: JsonPropertyName("title")] string? Title,

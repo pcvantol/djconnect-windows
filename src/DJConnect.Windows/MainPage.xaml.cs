@@ -269,9 +269,9 @@ the current source-of-truth notices.
 
     private async void ReplayAudioClicked(object sender, EventArgs e)
     {
-        if (sender is Button { BindingContext: AskDJMessage { AudioUrl.Length: > 0 } message })
+        if (sender is Button { BindingContext: AskDJMessage { ClientAudioUrl.Length: > 0 } message })
         {
-            await Launcher.Default.OpenAsync(message.AudioUrl);
+            await Launcher.Default.OpenAsync(message.ClientAudioUrl);
         }
     }
 

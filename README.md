@@ -121,8 +121,12 @@ Key screens and flows mirrored from macOS and extended for desktop:
 - Ask DJ: `POST /api/djconnect/v1/ask_dj/message`, server-side history sync via
   `GET /api/djconnect/v1/ask_dj/history`, clear via
   `POST /api/djconnect/v1/ask_dj/history/clear`, with client mood values,
-  `audio_response` preference, `links[]`/`sources[]` rendering and bounded
-  history trim metadata.
+  `audio_response` preference, DJ announcement output modes, `links[]`/
+  `sources[]` rendering and bounded history trim metadata. Windows can render
+  DJ announcements as device audio, Home Assistant speaker audio, both or
+  text-only; the HA speaker must be configured in the Home Assistant DJConnect
+  options and Spotify Direct playback is not paused, resumed, ducked or
+  otherwise manipulated by the Windows client for announcements.
 - Local fast path: HTTP remains the safe default. A Home Assistant native
   `/api/websocket` fast path for latency-sensitive DJConnect commands, Ask DJ
   messages and Track Insight is available only behind explicit live-test opt-in,

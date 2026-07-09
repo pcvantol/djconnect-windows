@@ -24,6 +24,7 @@ public sealed class AppSettings
     public bool WakewordEnabled { get; set; }
     public bool WakewordPromptDismissed { get; set; }
     public string WakePhrase { get; set; } = "Hey DJ";
+    public string DJAnnouncementOutput { get; set; } = "client_device";
     [JsonPropertyName("DJConnectPermissionExplanation.microphone.seen")]
     public bool PermissionExplanationMicrophoneSeen { get; set; }
 

@@ -15,6 +15,13 @@ namespace DJConnect.Windows.ViewModels;
 
 public sealed class MainViewModel : ObservableObject
 {
+    private static readonly DJAnnouncementOutput[] AllDJAnnouncementOutputs =
+    [
+        DJAnnouncementOutput.ClientDevice,
+        DJAnnouncementOutput.Both,
+        DJAnnouncementOutput.HaSpeaker,
+        DJAnnouncementOutput.TextOnly
+    ];
     private readonly SettingsStore _settingsStore = new();
     private readonly CredentialStore _credentialStore = new();
     private readonly DJConnectApiClient _apiClient = new(new HttpClient());
@@ -26,6 +33,7 @@ public sealed class MainViewModel : ObservableObject
     private string _homeAssistantRemoteUrl = "";
     private HomeAssistantConnectionMode _connectionMode = HomeAssistantConnectionMode.Offline;
     private MusicBackendSummary _musicBackendSummary = MusicBackendSummary.Empty;
+    private DJAnnouncementCapabilities _djAnnouncementCapabilities = new(false, null, null, null, null, null, null, null);
     private string _token = "";
     private string _pairingCode = "";
     private string _askDJText = "";
@@ -52,6 +60,7 @@ public sealed class MainViewModel : ObservableObject
     private string _logSearchText = "";
     private string _logNotice = "";
     private string _askDJMood = "Groove";
+    private DJAnnouncementOutput _djAnnouncementOutput = DJAnnouncementOutput.ClientDevice;
     private string _wakePhrase = "Hey DJ";
     private string _wakewordNotice = "";
     private PermissionExplanationKind _activePermissionKind = PermissionExplanationKind.None;
@@ -771,6 +780,39 @@ public sealed class MainViewModel : ObservableObject
         set => SetProperty(ref _localAudioReplayEnabled, value);
     }
 
+    public IReadOnlyList<string> DJAnnouncementOutputOptions => AllDJAnnouncementOutputs
+        .Where(output => _djAnnouncementCapabilities.Supports(output))
+        .Select(DJAnnouncementOutputLabel)
+        .ToList();
+
+    public string DJAnnouncementOutput
+    {
+        get => DJAnnouncementOutputLabel(_djAnnouncementOutput);
+        set
+        {
+            var output = DJAnnouncementOutputFromLabel(value);
+            if (!_djAnnouncementCapabilities.Supports(output))
+            {
+                output = _djAnnouncementCapabilities.EffectiveDefaultOutput();
+            }
+
+            if (SetProperty(ref _djAnnouncementOutput, output))
+            {
+                _settings.DJAnnouncementOutput = DJAnnouncementOutputProtocol.Format(output);
+                _ = SaveSettingsIfMutableAsync();
+                OnPropertyChanged(nameof(DJAnnouncementOutputHelperText));
+            }
+        }
+    }
+
+    public string DJAnnouncementSpeakerText => _djAnnouncementCapabilities.HasSpeaker
+        ? _djAnnouncementCapabilities.SpeakerDisplayName
+        : "Geen Home Assistant speaker geconfigureerd";
+
+    public string DJAnnouncementOutputHelperText => _djAnnouncementCapabilities.HasSpeaker
+        ? $"DJ-aankondigingen gebruiken: {DJAnnouncementOutput}."
+        : "Configureer een Home Assistant speaker in DJConnect opties in Home Assistant.";
+
     public string AskDJMood
     {
         get => _askDJMood;
@@ -1442,6 +1484,8 @@ public sealed class MainViewModel : ObservableObject
         _transportManager.UpdateUrls(HomeAssistantUrl, HomeAssistantRemoteUrl, _settings.RemoteSupported);
         Language = string.IsNullOrWhiteSpace(_settings.Language) ? "en" : _settings.Language;
         LogLevel = string.IsNullOrWhiteSpace(_settings.LogLevel) ? "info" : _settings.LogLevel;
+        _djAnnouncementOutput = DJAnnouncementOutputProtocol.Parse(_settings.DJAnnouncementOutput);
+        OnPropertyChanged(nameof(DJAnnouncementOutput));
         _wakewordEnabled = WakewordFeatureAvailable && _settings.WakewordEnabled;
         WakePhrase = string.IsNullOrWhiteSpace(_settings.WakePhrase) ? "Hey DJ" : _settings.WakePhrase;
         _settings.IsDemoMode = false;
@@ -1505,6 +1549,7 @@ public sealed class MainViewModel : ObservableObject
         _settings.DeviceName = _identity.DeviceName;
         _settings.Language = Language;
         _settings.LogLevel = LogLevel;
+        _settings.DJAnnouncementOutput = DJAnnouncementOutputProtocol.Format(_djAnnouncementOutput);
         _settings.IsDemoMode = false;
         _settings.DJConnectWelcomeSeen = !IsOnboardingVisible;
         _settings.HasCompletedOnboarding = !IsOnboardingVisible;
@@ -1615,6 +1660,7 @@ public sealed class MainViewModel : ObservableObject
         Token = response.DeviceToken;
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ApplyDJAnnouncementCapabilities(AnnouncementCapabilitiesFrom(response));
         ConfigureClient();
         IsPairingPending = false;
         IsPairingWaitingForCompletion = true;
@@ -1648,6 +1694,7 @@ public sealed class MainViewModel : ObservableObject
         _backendAvailable = statusResponse.BackendAvailable ?? true;
         ApplyVersionCompatibility(statusResponse);
         ApplyBackendSummary(BackendSummaryFrom(statusResponse));
+        ApplyDJAnnouncementCapabilities(AnnouncementCapabilitiesFrom(statusResponse));
         ApplyPlaybackState(statusResponse.Playback);
         ReplaceOutputs(statusResponse.ResolvedOutputs());
         ReplaceQueueItems(statusResponse.ResolvedQueue());
@@ -1675,6 +1722,7 @@ public sealed class MainViewModel : ObservableObject
         _settings.DeviceName = _identity.DeviceName;
         _settings.Language = Language;
         _settings.LogLevel = LogLevel;
+        _settings.DJAnnouncementOutput = DJAnnouncementOutputProtocol.Format(_djAnnouncementOutput);
         _settings.IsDemoMode = false;
         _settings.DJConnectWelcomeSeen = true;
         _settings.HasCompletedOnboarding = true;
@@ -1772,6 +1820,7 @@ public sealed class MainViewModel : ObservableObject
         _backendAvailable = response.BackendAvailable ?? true;
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ApplyDJAnnouncementCapabilities(AnnouncementCapabilitiesFrom(response));
         ApplyVersionCompatibility(response);
         ApplyPlaybackState(response.Playback);
         ReplaceOutputs(response.ResolvedOutputs());
@@ -1828,7 +1877,8 @@ public sealed class MainViewModel : ObservableObject
             ProtocolVersion: DJConnectContract.ProtocolLine,
             Language: AppStrings.NormalizeApiLocale(_language),
             Locale: AppStrings.NormalizeApiLocale(_language),
-            MusicDnaKey: MusicDnaKey());
+            MusicDnaKey: MusicDnaKey(),
+            DJAnnouncementOutput: _djAnnouncementOutput);
 
         AskDJMessageResponse response;
         try
@@ -1875,6 +1925,7 @@ public sealed class MainViewModel : ObservableObject
 
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ApplyDJAnnouncementCapabilities(response.DJAnnouncementCapabilities ?? response.DJAnnouncement ?? _djAnnouncementCapabilities);
         MarkMessageSent(clientMessageId);
 
         if (response.HistoryRevision.HasValue)
@@ -1914,6 +1965,7 @@ public sealed class MainViewModel : ObservableObject
                 response.Images,
                 response.Sources,
                 response.AudioUrl,
+                response.Announcement,
                 ClientMessageId: clientMessageId,
                 Intent: response.Intent,
                 Action: response.Action,
@@ -2133,7 +2185,7 @@ public sealed class MainViewModel : ObservableObject
         CommandResponse response;
         try
         {
-            response = await _apiClient.RunCommandAsync(_identity, command, null, _language, AskDJMoodValue(), CancellationToken.None);
+            response = await _apiClient.RunCommandAsync(_identity, command, null, _language, AskDJMoodValue(), _djAnnouncementOutput, CancellationToken.None);
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
@@ -2144,6 +2196,7 @@ public sealed class MainViewModel : ObservableObject
         ApplyVersionCompatibility(response);
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ApplyDJAnnouncementCapabilities(AnnouncementCapabilitiesFrom(response));
         if (!_runtimeCompatible)
         {
             Status = P("Vm_Update_required_14");
@@ -2213,7 +2266,7 @@ public sealed class MainViewModel : ObservableObject
         CommandResponse response;
         try
         {
-            response = await _apiClient.RunCommandAsync(_identity, command, args, _language, AskDJMoodValue(), CancellationToken.None);
+            response = await _apiClient.RunCommandAsync(_identity, command, args, _language, AskDJMoodValue(), _djAnnouncementOutput, CancellationToken.None);
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
@@ -2225,6 +2278,7 @@ public sealed class MainViewModel : ObservableObject
         ApplyVersionCompatibility(response);
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ApplyDJAnnouncementCapabilities(AnnouncementCapabilitiesFrom(response));
         if (!_runtimeCompatible)
         {
             Notice = P("Vm_Update_required_16");
@@ -2700,7 +2754,7 @@ public sealed class MainViewModel : ObservableObject
         CommandResponse response;
         try
         {
-            response = await _apiClient.RunCommandAsync(_identity, "save_current_track", null, _language, AskDJMoodValue(), CancellationToken.None);
+            response = await _apiClient.RunCommandAsync(_identity, "save_current_track", null, _language, AskDJMoodValue(), _djAnnouncementOutput, CancellationToken.None);
         }
         catch (Exception ex) when (ApplyVersionMismatch(ex))
         {
@@ -2808,7 +2862,7 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             ConfigureClient();
-            var response = await _apiClient.RunCommandAsync(_identity, "queue", new { limit = 100 }, _language, AskDJMoodValue(), CancellationToken.None);
+            var response = await _apiClient.RunCommandAsync(_identity, "queue", new { limit = 100 }, _language, AskDJMoodValue(), _djAnnouncementOutput, CancellationToken.None);
             if (!response.Success)
             {
                 QueueNotice = P("Vm_Home_Assistant_is_unreachable_4");
@@ -3699,6 +3753,49 @@ public sealed class MainViewModel : ObservableObject
         response.MusicTargetPlayer,
         response.MusicBackendError);
 
+    private static DJAnnouncementCapabilities AnnouncementCapabilitiesFrom(PairingResponse response) =>
+        response.DJAnnouncementCapabilities ?? response.DJAnnouncement ?? new DJAnnouncementCapabilities(false, null, null, null, null, null, null, null);
+
+    private static DJAnnouncementCapabilities AnnouncementCapabilitiesFrom(StatusResponse response) =>
+        response.DJAnnouncementCapabilities ?? response.DJAnnouncement ?? new DJAnnouncementCapabilities(false, null, null, null, null, null, null, null);
+
+    private static DJAnnouncementCapabilities AnnouncementCapabilitiesFrom(CommandResponse response) =>
+        response.DJAnnouncementCapabilities ?? response.DJAnnouncement ?? new DJAnnouncementCapabilities(false, null, null, null, null, null, null, null);
+
+    private void ApplyDJAnnouncementCapabilities(DJAnnouncementCapabilities capabilities)
+    {
+        _djAnnouncementCapabilities = capabilities;
+        if (!_djAnnouncementCapabilities.Supports(_djAnnouncementOutput))
+        {
+            _djAnnouncementOutput = _djAnnouncementCapabilities.EffectiveDefaultOutput();
+            _settings.DJAnnouncementOutput = DJAnnouncementOutputProtocol.Format(_djAnnouncementOutput);
+            OnPropertyChanged(nameof(DJAnnouncementOutput));
+        }
+
+        OnPropertyChanged(nameof(DJAnnouncementOutputOptions));
+        OnPropertyChanged(nameof(DJAnnouncementSpeakerText));
+        OnPropertyChanged(nameof(DJAnnouncementOutputHelperText));
+    }
+
+    private static string DJAnnouncementOutputLabel(DJAnnouncementOutput output) => output switch
+    {
+        DJAnnouncementOutput.Both => "Dit apparaat + Home Assistant speaker",
+        DJAnnouncementOutput.HaSpeaker => "Alleen Home Assistant speaker",
+        DJAnnouncementOutput.TextOnly => "Alleen tekst",
+        _ => "Alleen dit apparaat"
+    };
+
+    private static DJAnnouncementOutput DJAnnouncementOutputFromLabel(string? label)
+    {
+        return label switch
+        {
+            "Dit apparaat + Home Assistant speaker" => DJAnnouncementOutput.Both,
+            "Alleen Home Assistant speaker" => DJAnnouncementOutput.HaSpeaker,
+            "Alleen tekst" => DJAnnouncementOutput.TextOnly,
+            _ => DJAnnouncementOutput.ClientDevice
+        };
+    }
+
     private void ApplyVersionCompatibilityResult(VersionCompatibilityResult result)
     {
         HomeAssistantVersionText = string.IsNullOrWhiteSpace(result.HomeAssistantMajorMinor)
@@ -3956,8 +4053,8 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             response = string.Equals(action.Command, "ask_dj_message", StringComparison.OrdinalIgnoreCase)
-                ? await _apiClient.RunAskDJMessageActionAsync(_identity, action, _language, AskDJMoodValue(), CancellationToken.None)
-                : await _apiClient.RunPlaybackActionAsync(_identity, action, _language, AskDJMoodValue(), CancellationToken.None);
+                ? await _apiClient.RunAskDJMessageActionAsync(_identity, action, _language, AskDJMoodValue(), _djAnnouncementOutput, CancellationToken.None)
+                : await _apiClient.RunPlaybackActionAsync(_identity, action, _language, AskDJMoodValue(), _djAnnouncementOutput, CancellationToken.None);
         }
         catch (Exception ex)
         {

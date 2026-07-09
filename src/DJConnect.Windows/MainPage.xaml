@@ -794,7 +794,7 @@
                         <Grid ColumnDefinitions="*,*" ColumnSpacing="22">
                             <VerticalStackLayout Spacing="12">
                                 <Label Text="{Binding T[Xaml_Ask_DJ]}" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10">
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
                                     <Label Text="{Binding T[Xaml_Lokale_audio_replay]}" TextColor="{StaticResource TextSecondary}" />
                                     <Switch Grid.Column="1" IsToggled="{Binding LocalAudioReplayEnabled}" HorizontalOptions="Start" />
                                     <Label Grid.Row="1" Text="{Binding T[Xaml_Mood_3]}" TextColor="{StaticResource TextSecondary}" />
@@ -806,10 +806,20 @@
                                             <x:String>Party</x:String>
                                         </Picker.Items>
                                     </Picker>
-                                    <Label Grid.Row="2" Text="{Binding T[Xaml_Geschiedenis]}" TextColor="{StaticResource TextSecondary}" />
-                                    <Button Grid.Row="2" Grid.Column="1" Text="{Binding T[Xaml_Ask_DJ_geschiedenis_wissen]}" Command="{Binding ClearHistoryCommand}" />
-                                    <Label Grid.Row="3" Text="{Binding T[Xaml_Export]}" TextColor="{StaticResource TextSecondary}" />
-                                    <Button Grid.Row="3" Grid.Column="1" Text="{Binding T[Xaml_Export_Ask_DJ_History]}" Clicked="ExportAskDJHistoryClicked" />
+                                    <Label Grid.Row="2" Text="DJ-aankondigingen" TextColor="{StaticResource TextSecondary}" />
+                                    <Picker Grid.Row="2"
+                                            Grid.Column="1"
+                                            ItemsSource="{Binding DJAnnouncementOutputOptions}"
+                                            SelectedItem="{Binding DJAnnouncementOutput, Mode=TwoWay}"
+                                            TextColor="{StaticResource TextPrimary}"
+                                            BackgroundColor="#2B3262" />
+                                    <Label Grid.Row="3" Text="Speaker" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding DJAnnouncementSpeakerText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="4" Grid.Column="1" Text="{Binding DJAnnouncementOutputHelperText}" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
+                                    <Label Grid.Row="5" Text="{Binding T[Xaml_Geschiedenis]}" TextColor="{StaticResource TextSecondary}" />
+                                    <Button Grid.Row="5" Grid.Column="1" Text="{Binding T[Xaml_Ask_DJ_geschiedenis_wissen]}" Command="{Binding ClearHistoryCommand}" />
+                                    <Label Grid.Row="6" Text="{Binding T[Xaml_Export]}" TextColor="{StaticResource TextSecondary}" />
+                                    <Button Grid.Row="6" Grid.Column="1" Text="{Binding T[Xaml_Export_Ask_DJ_History]}" Clicked="ExportAskDJHistoryClicked" />
                                 </Grid>
                                 <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto" RowSpacing="10">
                                     <Label Text="{Binding T[Xaml_Stemactivatie]}" TextColor="{StaticResource TextSecondary}" />

@@ -16,6 +16,10 @@ Windows and macOS. It includes:
 - Ask DJ mood values, optional audio-response mode, `links[]`/`sources[]`,
   generated-text metadata sparks, stale backend action and unsupported backend
   capability handling aligned with the Home Assistant `3.2.x` contract;
+- DJ announcement output selection for device audio, Home Assistant speaker,
+  both or text-only. Windows only sends `dj_announcement_output`; the Home
+  Assistant speaker entity remains configured in Home Assistant DJConnect
+  options, and Spotify Direct playback is not modified for announcements.
 - Music DNA profile/settings/clear dashboard, opt-in/disable/clear flow,
   server-authoritative optional block rendering, websocket fast path and
   `music_dna_key` context forwarding;
@@ -49,8 +53,9 @@ Windows and macOS. It includes:
 - Real Home Assistant field testing is still needed for the synced backend
   contract paths: local app pairing, remote fallback, Music Assistant
   unsupported-capability fallbacks, stale backend action rejection, Ask DJ
-  links/sources/generated-text metadata rendering, Track Insight mood refresh
-  Music DNA profile/settings/clear behavior and Ontdek recommendation
+  links/sources/generated-text metadata rendering, DJ announcement output modes,
+  Track Insight mood refresh Music DNA profile/settings/clear behavior and
+  Ontdek recommendation
   feed/refresh/play behavior while Music DNA is enabled and disabled.
 - GitHub Actions CI and public unsigned Windows publication passed for
   `v3.1.9`. The `3.2.9` canonical v1 Home Assistant API route release still

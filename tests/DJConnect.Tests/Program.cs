@@ -38,6 +38,9 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ track insight renders unknown values generically", AskDJTrackInsightRendersUnknownValuesGenerically),
     ("Ask DJ track insight without playback actions has no stale buttons", AskDJTrackInsightWithoutPlaybackActionsHasNoStaleButtons),
     ("Ask DJ message presentation supports system audio and confirmations", AskDJMessagePresentationSupportsSystemAudioAndConfirmations),
+    ("DJ announcement capabilities without speaker lock speaker outputs", DJAnnouncementCapabilitiesWithoutSpeakerLockSpeakerOutputs),
+    ("DJ announcement capabilities with speaker support all outputs", DJAnnouncementCapabilitiesWithSpeakerSupportAllOutputs),
+    ("DJ announcement client audio follows delivery and audio URL", DJAnnouncementClientAudioFollowsDeliveryAndAudioUrl),
     ("Ask DJ history deserializes revisions trim metadata and recent items", AskDJHistoryDeserializesRevisionsTrimMetadataAndRecentItems),
     ("Ask DJ clear response flags clear local cache", AskDJClearResponseFlagsClearLocalCache),
     ("Ask DJ history clear HTTP sends identity", AskDJHistoryClearHttpSendsIdentity),
@@ -80,6 +83,7 @@ var tests = new (string Name, Action Run)[]
     ("Backend-aware actions preserve Music Assistant value", BackendAwareActionsPreserveMusicAssistantValue),
     ("Backend-aware actions carry backend revision", BackendAwareActionsCarryBackendRevision),
     ("Command payload includes current locale and preserves protocol values", CommandPayloadIncludesCurrentLocaleAndPreservesProtocolValues),
+    ("Command payload carries DJ announcement output only", CommandPayloadCarriesDjAnnouncementOutputOnly),
     ("Raw voice upload includes language headers", RawVoiceUploadIncludesLanguageHeaders),
     ("Transport options require local HA websocket auth opt-in", TransportOptionsRequireLocalHaWebSocketAuthOptIn),
     ("Fast path diagnostics formatter renders safe summary", FastPathDiagnosticsFormatterRendersSafeSummary),
@@ -466,6 +470,62 @@ static void AskDJMessagePresentationSupportsSystemAudioAndConfirmations()
     AssertTrue(audio.HasAudio, "assistant messages with audio_url must show replay UI");
     AssertEqual("Ja", yes.DisplayLabel);
     AssertEqual("Nee", no.DisplayLabel);
+}
+
+static void DJAnnouncementCapabilitiesWithoutSpeakerLockSpeakerOutputs()
+{
+    const string json = """
+    {
+      "speaker_configured": false,
+      "supported_outputs": ["client_device", "text_only"]
+    }
+    """;
+
+    var capabilities = JsonSerializer.Deserialize<DJAnnouncementCapabilities>(json, JsonOptions());
+
+    AssertNotNull(capabilities);
+    AssertTrue(capabilities!.Supports(DJAnnouncementOutput.ClientDevice), "client_device must be available without HA speaker");
+    AssertTrue(capabilities.Supports(DJAnnouncementOutput.TextOnly), "text_only must be available without HA speaker");
+    AssertTrue(!capabilities.Supports(DJAnnouncementOutput.Both), "both must be locked without HA speaker");
+    AssertTrue(!capabilities.Supports(DJAnnouncementOutput.HaSpeaker), "ha_speaker must be locked without HA speaker");
+}
+
+static void DJAnnouncementCapabilitiesWithSpeakerSupportAllOutputs()
+{
+    const string json = """
+    {
+      "speaker_configured": true,
+      "speaker_entity_id": "media_player.voice_preview",
+      "speaker_name": "Voice Preview",
+      "default_output": "both",
+      "supported_outputs": ["client_device", "both", "ha_speaker", "text_only"]
+    }
+    """;
+
+    var capabilities = JsonSerializer.Deserialize<DJAnnouncementCapabilities>(json, JsonOptions());
+
+    AssertNotNull(capabilities);
+    AssertTrue(capabilities!.HasSpeaker, "speaker config must parse");
+    AssertEqual("Voice Preview", capabilities.SpeakerDisplayName);
+    AssertEqual(DJAnnouncementOutput.Both, capabilities.EffectiveDefaultOutput());
+    AssertTrue(capabilities.Supports(DJAnnouncementOutput.ClientDevice), "client_device must be available with HA speaker");
+    AssertTrue(capabilities.Supports(DJAnnouncementOutput.Both), "both must be available with HA speaker");
+    AssertTrue(capabilities.Supports(DJAnnouncementOutput.HaSpeaker), "ha_speaker must be available with HA speaker");
+    AssertTrue(capabilities.Supports(DJAnnouncementOutput.TextOnly), "text_only must be available with HA speaker");
+}
+
+static void DJAnnouncementClientAudioFollowsDeliveryAndAudioUrl()
+{
+    var both = new AskDJMessage("both", "assistant", "Audio", null, DateTimeOffset.Now, "assistant", null, null, null, null, null, "legacy.mp3", new DJAnnouncement(null, DJAnnouncementOutput.Both, null, "both.mp3", "mp3", null, null));
+    var haSpeaker = both with { Id = "ha", Announcement = new DJAnnouncement(null, DJAnnouncementOutput.HaSpeaker, null, "ha.mp3", "mp3", null, null) };
+    var textOnly = both with { Id = "text", Announcement = new DJAnnouncement(null, DJAnnouncementOutput.TextOnly, null, "text.mp3", "mp3", null, null) };
+    var missingAnnouncementAudio = both with { Id = "missing", Announcement = new DJAnnouncement(null, DJAnnouncementOutput.Both, null, null, "mp3", null, null) };
+
+    AssertTrue(both.HasAudio, "both + audio_url must allow local replay/autoplay after response fetch");
+    AssertEqual("both.mp3", both.ClientAudioUrl);
+    AssertTrue(!haSpeaker.HasAudio, "ha_speaker must never play local client audio");
+    AssertTrue(!textOnly.HasAudio, "text_only must never play local client audio");
+    AssertTrue(!missingAnnouncementAudio.HasAudio, "announcement without audio_url must be text-only for client audio");
 }
 
 static void AskDJResponseDeserializesMediaSourcesLinksAndDjText()
@@ -1872,6 +1932,17 @@ static void CommandPayloadIncludesCurrentLocaleAndPreservesProtocolValues()
     AssertTrue(serialized.Contains("\"mood\":72"), "command payload must include current mood when available");
     AssertTrue(serialized.Contains("\"command\":\"ask_dj_followup_response\""), "command name must remain a protocol value");
     AssertTrue(serialized.Contains("\"client_type\":\"windows\""), "client_type must remain the Windows protocol value");
+}
+
+static void CommandPayloadCarriesDjAnnouncementOutputOnly()
+{
+    var identity = ClientIdentity.CreateOrLoad("abc123def4567890", "Studio PC");
+    var payload = DJConnectApiClient.BuildCommandPayload(identity, "ask_dj_followup_response", new { response = "yes" }, "msg-command-1", "nl", 42, DJAnnouncementOutput.HaSpeaker);
+    var serialized = JsonSerializer.Serialize(payload, JsonOptions());
+
+    AssertTrue(serialized.Contains("\"dj_announcement_output\":\"ha_speaker\""), "client setting must send the selected announcement output");
+    AssertTrue(!serialized.Contains("dj_announcement_speaker_entity_id", StringComparison.OrdinalIgnoreCase), "Windows must never send HA speaker entity settings");
+    AssertTrue(!serialized.Contains("media_player.", StringComparison.OrdinalIgnoreCase), "Windows command payload must not include HA speaker entity IDs");
 }
 
 static void RawVoiceUploadIncludesLanguageHeaders()

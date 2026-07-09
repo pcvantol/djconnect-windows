@@ -226,11 +226,16 @@ public sealed class DJConnectApiClient
 
     public async Task<CommandResponse> RunPlaybackActionAsync(ClientIdentity identity, PlaybackAction action, string? language, int? mood, CancellationToken cancellationToken)
     {
+        return await RunPlaybackActionAsync(identity, action, language, mood, null, cancellationToken);
+    }
+
+    public async Task<CommandResponse> RunPlaybackActionAsync(ClientIdentity identity, PlaybackAction action, string? language, int? mood, DJAnnouncementOutput? djAnnouncementOutput, CancellationToken cancellationToken)
+    {
         var command = string.IsNullOrWhiteSpace(action.Command)
             ? DefaultCommandFor(action)
             : action.Command;
         ApplyRequestContext(language, mood);
-        var payload = BuildActionCommandPayload(identity, command, ActionValueFor(action), language: language, mood: mood);
+        var payload = BuildActionCommandPayload(identity, command, ActionValueFor(action), language: language, mood: mood, djAnnouncementOutput: djAnnouncementOutput);
         payload["action"] = action;
         var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", _webSocketPayloadFactory.BuildCommand(payload, _deviceToken), TimeSpan.FromSeconds(2), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
@@ -254,6 +259,11 @@ public sealed class DJConnectApiClient
 
     public async Task<CommandResponse> RunAskDJMessageActionAsync(ClientIdentity identity, PlaybackAction action, string? language, int? mood, CancellationToken cancellationToken)
     {
+        return await RunAskDJMessageActionAsync(identity, action, language, mood, null, cancellationToken);
+    }
+
+    public async Task<CommandResponse> RunAskDJMessageActionAsync(ClientIdentity identity, PlaybackAction action, string? language, int? mood, DJAnnouncementOutput? djAnnouncementOutput, CancellationToken cancellationToken)
+    {
         var prompt = ActionTextFor(action);
         if (!string.IsNullOrWhiteSpace(prompt))
         {
@@ -267,13 +277,14 @@ public sealed class DJConnectApiClient
                 prompt,
                 Mood: mood,
                 Language: locale,
-                Locale: locale);
+                Locale: locale,
+                DJAnnouncementOutput: djAnnouncementOutput ?? DJAnnouncementOutput.ClientDevice);
             var askResponse = await SendAskDJMessageAsync(request, cancellationToken);
             return new CommandResponse(askResponse.Success, askResponse.Text ?? askResponse.DjText ?? askResponse.Message, askResponse.Text ?? askResponse.DjText, askResponse.Error);
         }
 
         ApplyRequestContext(language, mood);
-        var payload = BuildActionCommandPayload(identity, "ask_dj_message", ActionValueFor(action), language: language, mood: mood);
+        var payload = BuildActionCommandPayload(identity, "ask_dj_message", ActionValueFor(action), language: language, mood: mood, djAnnouncementOutput: djAnnouncementOutput);
         payload["action"] = action;
         var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", _webSocketPayloadFactory.BuildCommand(payload, _deviceToken), TimeSpan.FromSeconds(2), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
@@ -307,8 +318,13 @@ public sealed class DJConnectApiClient
 
     public async Task<CommandResponse> RunCommandAsync(ClientIdentity identity, string command, object? args, string? language, int? mood, CancellationToken cancellationToken)
     {
+        return await RunCommandAsync(identity, command, args, language, mood, null, cancellationToken);
+    }
+
+    public async Task<CommandResponse> RunCommandAsync(ClientIdentity identity, string command, object? args, string? language, int? mood, DJAnnouncementOutput? djAnnouncementOutput, CancellationToken cancellationToken)
+    {
         ApplyRequestContext(language, mood);
-        var payload = BuildCommandPayload(identity, command, args, language: language, mood: mood);
+        var payload = BuildCommandPayload(identity, command, args, language: language, mood: mood, djAnnouncementOutput: djAnnouncementOutput);
         var fastPath = await TryWebSocketAsync<CommandResponse>("djconnect/command", _webSocketPayloadFactory.BuildCommand(payload, _deviceToken), TimeSpan.FromSeconds(CommandTimeoutSeconds(command)), cancellationToken);
         if (fastPath.Success && fastPath.Value is not null)
         {
@@ -345,7 +361,7 @@ public sealed class DJConnectApiClient
         return $"{ApiRoutePrefix}/{route.TrimStart('/')}";
     }
 
-    public static Dictionary<string, object?> BuildCommandPayload(ClientIdentity identity, string command, object? args = null, string? clientMessageId = null, string? language = null, int? mood = null)
+    public static Dictionary<string, object?> BuildCommandPayload(ClientIdentity identity, string command, object? args = null, string? clientMessageId = null, string? language = null, int? mood = null, DJAnnouncementOutput? djAnnouncementOutput = null)
     {
         var payload = new Dictionary<string, object?>
         {
@@ -359,6 +375,10 @@ public sealed class DJConnectApiClient
 
         AddLanguage(payload, language);
         AddMood(payload, mood);
+        if (djAnnouncementOutput.HasValue)
+        {
+            payload["dj_announcement_output"] = djAnnouncementOutput.Value;
+        }
 
         if (args is not null)
         {
@@ -421,9 +441,9 @@ public sealed class DJConnectApiClient
         return payload;
     }
 
-    public static Dictionary<string, object?> BuildActionCommandPayload(ClientIdentity identity, string command, object? value = null, string? clientMessageId = null, string? language = null, int? mood = null)
+    public static Dictionary<string, object?> BuildActionCommandPayload(ClientIdentity identity, string command, object? value = null, string? clientMessageId = null, string? language = null, int? mood = null, DJAnnouncementOutput? djAnnouncementOutput = null)
     {
-        var payload = BuildCommandPayload(identity, command, null, clientMessageId, language, mood);
+        var payload = BuildCommandPayload(identity, command, null, clientMessageId, language, mood, djAnnouncementOutput);
         if (value is not null)
         {
             payload["value"] = value;
