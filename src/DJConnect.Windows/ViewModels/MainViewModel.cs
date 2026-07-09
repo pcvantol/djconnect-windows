@@ -10,17 +10,18 @@ using DJConnect.Windows.Contracts;
 using DJConnect.Windows.Models;
 using DJConnect.Windows.Resources;
 using DJConnect.Windows.Services;
+using DJAnnouncementOutputKind = DJConnect.Windows.Models.DJAnnouncementOutput;
 
 namespace DJConnect.Windows.ViewModels;
 
 public sealed class MainViewModel : ObservableObject
 {
-    private static readonly DJAnnouncementOutput[] AllDJAnnouncementOutputs =
+    private static readonly DJAnnouncementOutputKind[] AllDJAnnouncementOutputs =
     [
-        DJAnnouncementOutput.ClientDevice,
-        DJAnnouncementOutput.Both,
-        DJAnnouncementOutput.HaSpeaker,
-        DJAnnouncementOutput.TextOnly
+        DJAnnouncementOutputKind.ClientDevice,
+        DJAnnouncementOutputKind.Both,
+        DJAnnouncementOutputKind.HaSpeaker,
+        DJAnnouncementOutputKind.TextOnly
     ];
     private readonly SettingsStore _settingsStore = new();
     private readonly CredentialStore _credentialStore = new();
@@ -60,7 +61,7 @@ public sealed class MainViewModel : ObservableObject
     private string _logSearchText = "";
     private string _logNotice = "";
     private string _askDJMood = "Groove";
-    private DJAnnouncementOutput _djAnnouncementOutput = DJAnnouncementOutput.ClientDevice;
+    private DJAnnouncementOutputKind _djAnnouncementOutput = DJAnnouncementOutputKind.ClientDevice;
     private string _wakePhrase = "Hey DJ";
     private string _wakewordNotice = "";
     private PermissionExplanationKind _activePermissionKind = PermissionExplanationKind.None;
@@ -3777,22 +3778,22 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(DJAnnouncementOutputHelperText));
     }
 
-    private static string DJAnnouncementOutputLabel(DJAnnouncementOutput output) => output switch
+    private static string DJAnnouncementOutputLabel(DJAnnouncementOutputKind output) => output switch
     {
-        DJAnnouncementOutput.Both => "Dit apparaat + Home Assistant speaker",
-        DJAnnouncementOutput.HaSpeaker => "Alleen Home Assistant speaker",
-        DJAnnouncementOutput.TextOnly => "Alleen tekst",
+        DJAnnouncementOutputKind.Both => "Dit apparaat + Home Assistant speaker",
+        DJAnnouncementOutputKind.HaSpeaker => "Alleen Home Assistant speaker",
+        DJAnnouncementOutputKind.TextOnly => "Alleen tekst",
         _ => "Alleen dit apparaat"
     };
 
-    private static DJAnnouncementOutput DJAnnouncementOutputFromLabel(string? label)
+    private static DJAnnouncementOutputKind DJAnnouncementOutputFromLabel(string? label)
     {
         return label switch
         {
-            "Dit apparaat + Home Assistant speaker" => DJAnnouncementOutput.Both,
-            "Alleen Home Assistant speaker" => DJAnnouncementOutput.HaSpeaker,
-            "Alleen tekst" => DJAnnouncementOutput.TextOnly,
-            _ => DJAnnouncementOutput.ClientDevice
+            "Dit apparaat + Home Assistant speaker" => DJAnnouncementOutputKind.Both,
+            "Alleen Home Assistant speaker" => DJAnnouncementOutputKind.HaSpeaker,
+            "Alleen tekst" => DJAnnouncementOutputKind.TextOnly,
+            _ => DJAnnouncementOutputKind.ClientDevice
         };
     }
 
