@@ -30,6 +30,8 @@ Payload includes:
 - `device_name`
 - `client_type`
 - `pair_code`
+- compatibility aliases `pairing_token` and `pairing_code` with the same
+  Home Assistant pairing code value
 - `app_version`
 
 Response may include `success`, `client_type`, `device_token`, `device_id`,

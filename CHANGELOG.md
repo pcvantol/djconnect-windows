@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+## 3.2.10 - 2026-07-09
+
+- Added Windows support for DJ announcement output modes: this device,
+  Home Assistant speaker, both or text-only, while keeping HA speaker entity
+  selection owned by Home Assistant.
+- Updated Ask DJ announcement rendering so nested `announcement.audio_url`
+  drives local replay and `ha_speaker`/`text_only` deliveries never start
+  local client audio.
+- Added a Node-only Home Assistant contract fixture with HTTP and
+  `/api/websocket` e2e coverage for Windows CI, including security/log-redaction
+  validation and no Apple/APNs push bootstrap flow.
+- Synced pairing with the current Home Assistant compatibility contract by
+  sending the HA pairing code as `pair_code`, `pairing_token` and
+  `pairing_code`.
+
 ## 3.2.9 - 2026-07-05
 
 - Updated all hardcoded DJConnect Home Assistant HTTP routes to the canonical

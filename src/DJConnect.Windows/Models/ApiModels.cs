@@ -13,7 +13,14 @@ public sealed record PairingPayload(
     [property: JsonPropertyName("platform")] string Platform = "windows",
     [property: JsonPropertyName("locale")] string? Locale = null,
     [property: JsonPropertyName("language")] string? Language = null,
-    [property: JsonPropertyName("build")] string? Build = null);
+    [property: JsonPropertyName("build")] string? Build = null)
+{
+    [JsonPropertyName("pairing_token")]
+    public string PairingToken => PairCode;
+
+    [JsonPropertyName("pairing_code")]
+    public string PairingCodeAlias => PairCode;
+}
 
 public sealed record PairingResponse(
     [property: JsonPropertyName("success")] bool Success,

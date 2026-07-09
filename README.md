@@ -18,7 +18,7 @@ automatically.
 
 ## Current Version
 
-- Desktop app: `3.2.9`
+- Desktop app: `3.2.10`
 - Home Assistant protocol line: `3.2.x`
 - Current local `client_type`: `windows`
 
@@ -134,6 +134,10 @@ Key screens and flows mirrored from macOS and extended for desktop:
   Assistant websocket auth token plus DJConnect capabilities confirming
   websocket support. Remote sessions, pairing, status, history, voice, push,
   image proxy and TTS/audio URLs stay on HTTP.
+- Local contract fixture: Node scripts under `tools/` provide HTTP and
+  `/api/websocket` Home Assistant contract e2e coverage for Windows CI without
+  real Home Assistant, Spotify, Music Assistant, OpenAI, APNs, secrets or
+  external network calls.
 - Playback actions: follow-up confirmations and Play Now actions go through
   `POST /api/djconnect/v1/command`.
 - Recent played answers: compact list rendering from returned `items[]`.
@@ -216,8 +220,18 @@ Run automatic protocol/core tests:
 ./run_tests.sh
 ```
 
+Run the local Home Assistant contract fixture checks:
+
+```sh
+node tools/ha_contract_fixture.js
+node tools/http_e2e_contract.js
+node tools/websocket_e2e_contract.js
+node tools/security_log_redaction_check.js
+```
+
 GitHub Actions runs these tests on every push and pull request, plus MAUI build
-jobs for Mac Catalyst and Windows. The Windows CI baseline also runs
+jobs for Mac Catalyst and Windows. The Windows CI baseline also runs the Node
+HTTP/WebSocket contract e2e fixture checks,
 protocol/core tests and formatting on a Windows runner, publishes unsigned local
 artifacts for shape/checksum validation only, validates workflow YAML, scans
 for unexpected secret-like strings, and runs CodeQL for C# plus advisory

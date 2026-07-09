@@ -40,8 +40,8 @@ Belangrijke huidige status:
   - ESP firmware: `pcvantol/djconnect-esp32`
   - Website/docs: `pcvantol/djconnect-website`
   - Raspberry Pi client: `pcvantol/djconnect-pi`
-- Huidige lokale release/tag: `v3.2.9` voorbereid in werkboom; laatste
-  gepubliceerde 3.2-release was `v3.2.8`.
+- Huidige lokale release/tag: `v3.2.10` voorbereid in werkboom; laatste
+  gepubliceerde 3.2-release was `v3.2.9`.
 - App stack: .NET MAUI single-project desktop app.
 - Targets:
   - `net10.0-windows10.0.19041.0`
@@ -119,7 +119,7 @@ Belangrijke huidige status:
 
 Belangrijke regels:
 - Dit is een .NET MAUI desktop app voor Windows en macOS.
-- Huidige desktop app release: `3.2.9` in werkboom.
+- Huidige desktop app release: `3.2.10` in werkboom.
 - Home Assistant blijft eigenaar van pairing, Spotify OAuth/backend playback,
   Ask DJ history, Music DNA, Assist/TTS en command execution.
 - De app bewaart geen Spotify credentials, OAuth tokens, Music DNA of Ask DJ

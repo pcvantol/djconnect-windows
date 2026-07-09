@@ -187,11 +187,11 @@ static void PairingPayloadSerializesWindowsAppContract()
     AssertEqual("windows", root.GetProperty("client_type").GetString());
     AssertEqual("windows", root.GetProperty("platform").GetString());
     AssertEqual("123456", root.GetProperty("pair_code").GetString());
+    AssertEqual("123456", root.GetProperty("pairing_token").GetString());
+    AssertEqual("123456", root.GetProperty("pairing_code").GetString());
     AssertEqual("nl", root.GetProperty("locale").GetString());
     AssertEqual("nl", root.GetProperty("language").GetString());
     AssertEqual(DJConnectContract.AppVersion, root.GetProperty("app_version").GetString());
-    AssertTrue(!root.TryGetProperty("pairing_token", out _), "pairing payload must not send legacy token aliases");
-    AssertTrue(!root.TryGetProperty("pairing_code", out _), "pairing payload must not send legacy code aliases");
 }
 
 static void PairingClientPostsOnlyToHomeAssistantPairEndpoint()
@@ -223,7 +223,8 @@ static void PairingClientPostsOnlyToHomeAssistantPairEndpoint()
     AssertTrue(string.IsNullOrWhiteSpace(http.LastAuthorization), "pairing request must not use a bearer token");
     AssertTrue(string.IsNullOrWhiteSpace(http.LastDeviceIdHeader), "pairing request must not use authenticated device header before token issue");
     AssertTrue(http.LastBody.Contains("\"pair_code\":\"123456\""), "pairing body must send the HA pair code");
-    AssertTrue(!http.LastBody.Contains("pairing_token", StringComparison.OrdinalIgnoreCase), "pairing body must not send legacy pairing_token");
+    AssertTrue(http.LastBody.Contains("\"pairing_token\":\"123456\""), "pairing body must send compatibility pairing_token");
+    AssertTrue(http.LastBody.Contains("\"pairing_code\":\"123456\""), "pairing body must send compatibility pairing_code");
 }
 
 static void PairingDeepLinkAcceptsWindowsPayload()
@@ -1205,7 +1206,7 @@ static void AskDJHistoryExportUsesHttpServerEnvelope()
       "schema_version": 1,
       "exported_at": "2026-07-04T10:20:30Z",
       "exported_by_client_type": "windows",
-      "app_version": "3.2.9",
+      "app_version": "3.2.10",
       "user_id": "user-1",
       "history_revision": 12,
       "clear_revision": 2,
@@ -1231,7 +1232,7 @@ static void AskDJHistoryExportUsesHttpServerEnvelope()
     AssertTrue(http.LastBody.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\"", StringComparison.Ordinal), "export identity must include device_id");
     AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\"", StringComparison.Ordinal), "export identity must include Windows client_type");
     AssertTrue(http.LastBody.Contains("\"device_name\":\"Studio PC\"", StringComparison.Ordinal), "export identity must include device name");
-    AssertTrue(http.LastBody.Contains("\"app_version\":\"3.2.9\"", StringComparison.Ordinal), "export payload must include app_version");
+    AssertTrue(http.LastBody.Contains("\"app_version\":\"3.2.10\"", StringComparison.Ordinal), "export payload must include app_version");
     AssertTrue(!http.LastBody.Contains("device-token-123", StringComparison.Ordinal), "export HTTP body must not duplicate bearer token");
 }
 

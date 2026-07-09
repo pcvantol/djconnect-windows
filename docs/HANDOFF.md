@@ -2,7 +2,7 @@
 
 ## Current Status
 
-DJConnect desktop `3.2.9` has been scaffolded as a .NET MAUI app targeting
+DJConnect desktop `3.2.10` has been scaffolded as a .NET MAUI app targeting
 Windows and macOS. It includes:
 
 - local Home Assistant app-pairing through `/api/djconnect/v1/pair`;
@@ -58,7 +58,7 @@ Windows and macOS. It includes:
   Ontdek recommendation
   feed/refresh/play behavior while Music DNA is enabled and disabled.
 - GitHub Actions CI and public unsigned Windows publication passed for
-  `v3.1.9`. The `3.2.9` canonical v1 Home Assistant API route release still
+  `v3.1.9`. The `3.2.10` canonical v1 Home Assistant API route release still
   needs CI/release validation after push.
   Mac Catalyst release artifacts continue to skip on hosted runners
   without the required Xcode 26.4.x toolchain.

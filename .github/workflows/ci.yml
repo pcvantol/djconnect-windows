@@ -53,7 +53,7 @@ jobs:
 
           unexpected="$(mktemp)"
           grep -Ev \
-            '(^|/)(README\.md|SECURITY\.md|PRIVACY\.md|CONTRIBUTING\.md|CHAT_BOOTSTRAP\.md|CHANGELOG\.md|docs/|tests/|src/DJConnect\.Windows/MainPage\.xaml|src/DJConnect\.Windows/Platforms/Windows/Package\.appxmanifest|src/DJConnect\.Windows/Resources/Strings(\.[a-z]{2})?\.resx|src/DJConnect\.Windows/Services/ApiErrorLocalizer\.cs|src/DJConnect\.Windows/Services/DiagnosticRedactor\.cs|src/DJConnect\.Windows/Services/CredentialStore\.cs|src/DJConnect\.Windows/Services/DJConnectApiClient\.cs|src/DJConnect\.Windows/Services/DJConnectWebSocketPayloadFactory\.cs|src/DJConnect\.Windows/Services/FastPathDiagnosticsFormatter\.cs|src/DJConnect\.Windows/Services/PairingStatePolicy\.cs|src/DJConnect\.Windows/ViewModels/MainViewModel\.cs|src/DJConnect\.Windows/Models/ApiModels\.cs|\.github/workflows/public-unsigned-release\.yml|\.github/workflows/ci\.yml)' \
+            '(^|/)(README\.md|SECURITY\.md|PRIVACY\.md|CONTRIBUTING\.md|CHAT_BOOTSTRAP\.md|CHANGELOG\.md|docs/|tests/|tools/|src/DJConnect\.Windows/MainPage\.xaml|src/DJConnect\.Windows/Platforms/Windows/Package\.appxmanifest|src/DJConnect\.Windows/Resources/Strings(\.[a-z]{2})?\.resx|src/DJConnect\.Windows/Services/ApiErrorLocalizer\.cs|src/DJConnect\.Windows/Services/DiagnosticRedactor\.cs|src/DJConnect\.Windows/Services/CredentialStore\.cs|src/DJConnect\.Windows/Services/DJConnectApiClient\.cs|src/DJConnect\.Windows/Services/DJConnectWebSocketPayloadFactory\.cs|src/DJConnect\.Windows/Services/FastPathDiagnosticsFormatter\.cs|src/DJConnect\.Windows/Services/PairingStatePolicy\.cs|src/DJConnect\.Windows/ViewModels/MainViewModel\.cs|src/DJConnect\.Windows/Models/ApiModels\.cs|\.github/workflows/public-unsigned-release\.yml|\.github/workflows/ci\.yml)' \
             "$matches" > "$unexpected" || true
 
           if [[ -s "$unexpected" ]]; then
@@ -79,6 +79,27 @@ jobs:
 
       - name: Check test project formatting
         run: dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj --verify-no-changes --no-restore
+
+  contract-e2e:
+    name: Home Assistant contract fixture e2e
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: Run HTTP contract e2e
+        run: node tools/http_e2e_contract.js
+
+      - name: Run WebSocket contract e2e
+        run: node tools/websocket_e2e_contract.js
+
+      - name: Validate fixture security and log redaction
+        run: node tools/security_log_redaction_check.js
 
   dependency-tooling-hygiene:
     name: Dependency and tooling hygiene

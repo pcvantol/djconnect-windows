@@ -56,9 +56,10 @@ dotnet build DJConnect.Windows.sln
 5. Keep the app open while validating status, Ask DJ, Queue, Playlists and
    command flows.
 
-The app sends the Home Assistant pairing code only as `pair_code` with
-`client_type: "windows"` and the app version. Remote Home Assistant URLs are
-used only after successful local pairing.
+The app sends the Home Assistant pairing code as `pair_code` plus compatibility
+aliases `pairing_token` and `pairing_code`, with `client_type: "windows"` and
+the app version. Remote Home Assistant URLs are used only after successful local
+pairing.
 
 The pairing screen must remain a two-field outbound form: local Home Assistant
 URL, Home Assistant pairing code and a single pairing action. Do not add a
@@ -107,6 +108,42 @@ Automatic protocol/core tests do not require MAUI workloads:
 ./run_tests.sh
 ```
 
+## Home Assistant Contract Fixture
+
+The Windows repo includes a Node-based Home Assistant contract fixture for
+local e2e checks and CI. It uses only Node core modules, listens on
+`127.0.0.1`, supports port `0` for a random free port and does not contact real
+Home Assistant, Spotify, Music Assistant, OpenAI, APNs or external networks.
+
+Start the fixture manually:
+
+```sh
+node tools/ha_contract_fixture.js
+```
+
+Run the autonomous HTTP contract e2e check:
+
+```sh
+node tools/http_e2e_contract.js
+```
+
+Run the autonomous Home Assistant `/api/websocket` contract e2e check:
+
+```sh
+node tools/websocket_e2e_contract.js
+```
+
+Validate fixture log redaction/security guardrails:
+
+```sh
+node tools/security_log_redaction_check.js
+```
+
+The fixture uses Windows client identity fields (`client_type: "windows"`,
+`device_id`, `device_name`, `client_id`) and intentionally does not include
+Apple-only APNs or push bootstrap routes. It prints only local URLs and pass/fail
+status.
+
 Full scaffold checks:
 
 ```sh
@@ -132,6 +169,8 @@ Jobs:
 
 - `protocol-tests`: runs `./run_tests.sh` and formatting for the test project
   on Ubuntu without MAUI workloads.
+- `contract-e2e`: runs the Node HTTP contract e2e, WebSocket contract e2e and
+  fixture security/log-redaction validation on Ubuntu.
 - `maui-macos-build`: restores MAUI workloads and builds `net10.0-maccatalyst`
   on macOS.
 - `maui-windows-build`: restores MAUI workloads and builds
