@@ -160,6 +160,7 @@ public sealed class DJConnectApiClient
             { new StringContent(locale), "language" },
             { new StringContent(locale), "locale" }
         };
+        AddMultipartProfileContext(content, request.ProfileId, request.SessionId, request.PrivateSession, request.RequestSource ?? ProfileRequestSources.Voice);
         using var audio = new StreamContent(wavAudio);
         audio.Headers.ContentType = new MediaTypeHeaderValue("audio/wav");
         content.Add(audio, "audio", "ask-dj.wav");
@@ -182,7 +183,9 @@ public sealed class DJConnectApiClient
             ["device_id"] = identity.DeviceId,
             ["client_id"] = identity.DeviceId,
             ["device_name"] = identity.DeviceName,
-            ["client_type"] = identity.ClientType
+            ["client_type"] = identity.ClientType,
+            ["private_session"] = false,
+            ["request_source"] = ProfileRequestSources.AskDJ
         };
         var fastPath = await TryWebSocketAsync<AskDJHistoryResponse>(
             "djconnect/ask_dj/history/clear",
@@ -370,7 +373,9 @@ public sealed class DJConnectApiClient
             ["client_id"] = identity.DeviceId,
             ["device_id"] = identity.DeviceId,
             ["device_name"] = identity.DeviceName,
-            ["client_type"] = identity.ClientType
+            ["client_type"] = identity.ClientType,
+            ["private_session"] = false,
+            ["request_source"] = ProfileRequestSources.DeviceCommand
         };
 
         AddLanguage(payload, language);
@@ -552,7 +557,11 @@ public sealed class DJConnectApiClient
             ["language"] = request.Language,
             ["locale"] = request.Locale,
             ["mood"] = request.Mood?.ToString(System.Globalization.CultureInfo.InvariantCulture),
-            ["music_dna_key"] = request.MusicDnaKey
+            ["music_dna_key"] = request.MusicDnaKey,
+            ["profile_id"] = request.ProfileId,
+            ["session_id"] = request.SessionId,
+            ["private_session"] = request.PrivateSession?.ToString().ToLowerInvariant(),
+            ["request_source"] = request.RequestSource
         };
         var query = string.Join("&", values
             .Where(pair => !string.IsNullOrWhiteSpace(pair.Value))
@@ -578,6 +587,59 @@ public sealed class DJConnectApiClient
         {
             payload["mood"] = mood.Value;
         }
+    }
+
+    private static void AddProfileContext(
+        Dictionary<string, object?> payload,
+        string? profileId,
+        string? sessionId,
+        bool? privateSession,
+        string? requestSource)
+    {
+        if (!string.IsNullOrWhiteSpace(profileId))
+        {
+            payload["profile_id"] = profileId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            payload["session_id"] = sessionId;
+        }
+
+        if (privateSession.HasValue)
+        {
+            payload["private_session"] = privateSession.Value;
+        }
+
+        if (!string.IsNullOrWhiteSpace(requestSource))
+        {
+            payload["request_source"] = requestSource;
+        }
+    }
+
+    private static void AddMultipartProfileContext(
+        MultipartFormDataContent content,
+        string? profileId,
+        string? sessionId,
+        bool? privateSession,
+        string requestSource)
+    {
+        if (!string.IsNullOrWhiteSpace(profileId))
+        {
+            content.Add(new StringContent(profileId), "profile_id");
+        }
+
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            content.Add(new StringContent(sessionId), "session_id");
+        }
+
+        if (privateSession.HasValue)
+        {
+            content.Add(new StringContent(privateSession.Value ? "true" : "false"), "private_session");
+        }
+
+        content.Add(new StringContent(requestSource), "request_source");
     }
 
     private void ApplyRequestContext(string? language, int? mood)

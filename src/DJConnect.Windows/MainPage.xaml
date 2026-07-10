@@ -855,7 +855,7 @@
 
                             <VerticalStackLayout Grid.Column="1" Spacing="12">
                                 <Label Text="{Binding T[Xaml_DIAGNOSTIEK]}" FontAttributes="Bold" TextColor="{StaticResource TextSecondary}" />
-                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto" RowSpacing="10">
+                                <Grid ColumnDefinitions="190,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto" RowSpacing="10">
                                     <Label Text="{Binding T[Xaml_Logniveau]}" TextColor="{StaticResource TextSecondary}" />
                                     <Picker Grid.Column="1" SelectedItem="{Binding LogLevel}" TextColor="{StaticResource TextPrimary}" BackgroundColor="#2B3262">
                                         <Picker.Items>
@@ -872,14 +872,20 @@
                                     </Grid>
                                     <Label Grid.Row="2" Text="{Binding T[Xaml_Remote_support]}" TextColor="{StaticResource TextSecondary}" />
                                     <Label Grid.Row="2" Grid.Column="1" Text="{Binding RemoteSupportText}" TextColor="{StaticResource TextPrimary}" />
-                                    <Label Grid.Row="3" Text="{Binding T[Xaml_Music_backend]}" TextColor="{StaticResource TextSecondary}" />
-                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding MusicBackendNameText}" TextColor="{StaticResource TextPrimary}" />
-                                    <Label Grid.Row="4" Text="{Binding T[Xaml_Backend_status]}" TextColor="{StaticResource TextSecondary}" />
-                                    <Label Grid.Row="4" Grid.Column="1" Text="{Binding MusicBackendStatusText}" TextColor="{StaticResource TextPrimary}" />
-                                    <Label Grid.Row="5" Text="{Binding T[Xaml_Target_player]}" TextColor="{StaticResource TextSecondary}" />
-                                    <Label Grid.Row="5" Grid.Column="1" Text="{Binding MusicTargetPlayerText}" TextColor="{StaticResource TextPrimary}" />
-                                    <Label Grid.Row="6" Text="{Binding T[Xaml_Capabilities]}" TextColor="{StaticResource TextSecondary}" />
-                                    <Label Grid.Row="6" Grid.Column="1" Text="{Binding MusicBackendCapabilitiesText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="3" Text="{Binding T[Xaml_Current_profile]}" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="3" Grid.Column="1" Text="{Binding CurrentProfileText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="4" Text="{Binding T[Xaml_Current_household]}" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="4" Grid.Column="1" Text="{Binding CurrentHouseholdText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="5" Text="{Binding T[Xaml_Privacy_mode]}" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="5" Grid.Column="1" Text="{Binding CurrentPrivacyModeText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="6" Text="{Binding T[Xaml_Music_backend]}" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="6" Grid.Column="1" Text="{Binding MusicBackendNameText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="7" Text="{Binding T[Xaml_Backend_status]}" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="7" Grid.Column="1" Text="{Binding MusicBackendStatusText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="8" Text="{Binding T[Xaml_Target_player]}" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="8" Grid.Column="1" Text="{Binding MusicTargetPlayerText}" TextColor="{StaticResource TextPrimary}" />
+                                    <Label Grid.Row="9" Text="{Binding T[Xaml_Capabilities]}" TextColor="{StaticResource TextSecondary}" />
+                                    <Label Grid.Row="9" Grid.Column="1" Text="{Binding MusicBackendCapabilitiesText}" TextColor="{StaticResource TextPrimary}" />
                                 </Grid>
                                 <Label Text="{Binding T[Xaml_Logs_worden_vóór_kopiëren_geredigeerd_Secret]}" TextColor="{StaticResource TextSecondary}" LineBreakMode="WordWrap" />
                             </VerticalStackLayout>

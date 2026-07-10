@@ -20,6 +20,7 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["language"] = request.Language;
         payload["locale"] = request.Locale;
         payload["music_dna_key"] = request.MusicDnaKey;
+        AddProfileContext(payload, request.ProfileId, request.SessionId, request.PrivateSession, request.RequestSource);
 
         if (request.Metadata?.TryGetValue("music_dna_key", out var musicDnaKey) == true && musicDnaKey is not null)
         {
@@ -48,6 +49,7 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["music_dna_key"] = request.MusicDnaKey;
         payload["force_refresh"] = request.ForceRefresh;
         payload["include_visual_profile"] = request.IncludeVisualProfile;
+        AddProfileContext(payload, request.ProfileId, request.SessionId, request.PrivateSession, request.RequestSource);
         return payload;
     }
 
@@ -58,6 +60,7 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["locale"] = request.Locale;
         payload["mood"] = request.Mood;
         payload["music_dna_key"] = request.MusicDnaKey;
+        AddProfileContext(payload, request.ProfileId, request.SessionId, request.PrivateSession, request.RequestSource);
         return payload;
     }
 
@@ -69,6 +72,7 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["locale"] = request.Locale;
         payload["mood"] = request.Mood;
         payload["music_dna_key"] = request.MusicDnaKey;
+        AddProfileContext(payload, request.ProfileId, request.SessionId, request.PrivateSession, request.RequestSource);
         return payload;
     }
 
@@ -79,6 +83,7 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["locale"] = request.Locale;
         payload["mood"] = request.Mood;
         payload["music_dna_key"] = request.MusicDnaKey;
+        AddProfileContext(payload, request.ProfileId, request.SessionId, request.PrivateSession, request.RequestSource);
         return payload;
     }
 
@@ -89,6 +94,7 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["locale"] = request.Locale;
         payload["mood"] = request.Mood;
         payload["music_dna_key"] = request.MusicDnaKey;
+        AddProfileContext(payload, request.ProfileId, request.SessionId, request.PrivateSession, request.RequestSource);
         return payload;
     }
 
@@ -105,6 +111,7 @@ public sealed class DJConnectWebSocketPayloadFactory
         payload["locale"] = request.Locale;
         payload["mood"] = request.Mood;
         payload["music_dna_key"] = request.MusicDnaKey;
+        AddProfileContext(payload, request.ProfileId, request.SessionId, request.PrivateSession, request.RequestSource);
         return payload;
     }
 
@@ -148,5 +155,33 @@ public sealed class DJConnectWebSocketPayloadFactory
             ["client_type"] = clientType,
             ["device_token"] = deviceToken
         };
+    }
+
+    private static void AddProfileContext(
+        Dictionary<string, object?> payload,
+        string? profileId,
+        string? sessionId,
+        bool? privateSession,
+        string? requestSource)
+    {
+        if (!string.IsNullOrWhiteSpace(profileId))
+        {
+            payload["profile_id"] = profileId;
+        }
+
+        if (!string.IsNullOrWhiteSpace(sessionId))
+        {
+            payload["session_id"] = sessionId;
+        }
+
+        if (privateSession.HasValue)
+        {
+            payload["private_session"] = privateSession.Value;
+        }
+
+        if (!string.IsNullOrWhiteSpace(requestSource))
+        {
+            payload["request_source"] = requestSource;
+        }
     }
 }

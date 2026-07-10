@@ -64,6 +64,15 @@ public static class ApiErrorLocalizer
             "unauthorized" or "invalid_token" or "forbidden" => AppStrings.Get("ApiError_Unauthorized"),
             "stale_backend_action" => AppStrings.Get("ApiError_StaleBackendAction"),
             "unsupported_backend_capability" => AppStrings.Get("ApiError_UnsupportedBackendCapability"),
+            "profile_required" => AppStrings.Get("ApiError_ProfileRequired"),
+            "invalid_profile" => AppStrings.Get("ApiError_InvalidProfile"),
+            "device_not_mapped" => AppStrings.Get("ApiError_DeviceNotMapped"),
+            "profile_backend_missing" => AppStrings.Get("ApiError_ProfileBackendMissing"),
+            "profile_music_account_missing" => AppStrings.Get("ApiError_ProfileMusicAccountMissing"),
+            "profile_backend_account_mismatch" => AppStrings.Get("ApiError_ProfileBackendAccountMismatch"),
+            "profile_access_denied" => AppStrings.Get("ApiError_ProfileAccessDenied"),
+            "private_session_restriction" => AppStrings.Get("ApiError_PrivateSessionRestriction"),
+            "invalid_request_context" => AppStrings.Get("ApiError_InvalidRequestContext"),
             _ => null
         };
 

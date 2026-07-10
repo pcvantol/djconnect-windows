@@ -9,6 +9,7 @@ it is a first-class app client identified by `client_type`.
 Home Assistant owns:
 
 - pairing and DJConnect bearer-token lifecycle;
+- Profile resolution, Profile privacy policy and Profile-scoped persistence;
 - Spotify OAuth and playback backend credentials;
 - Ask DJ intent interpretation, Music DNA and server-side chat history;
 - playback commands and follow-up confirmation state;
@@ -21,10 +22,16 @@ The desktop app owns:
 - stable app install identity and `device_id`;
 - app-private storage for the DJConnect bearer token only;
 - rendering Ask DJ messages, actions, recent-played lists and status.
+- sending request context signals such as `device_id`, optional `profile_id`,
+  `session_id`, `private_session` and `request_source`.
 
 The app must never store Spotify credentials, Home Assistant long-lived access
 tokens, OAuth refresh tokens, Music DNA or Ask DJ history as the source of
 truth.
+
+Apple is the reference implementation for Profile Platform adoption. Windows
+performs an Apple parity review before client adoption work and differs only for
+native Windows presentation.
 
 ## Targets
 
@@ -85,6 +92,8 @@ connection flow rather than in a mobile-style tab bar.
     trim metadata and renders system messages, optional audio replay,
     response-owned images/sources/items and backend-returned actions without
     client-side intent, Music DNA, follow-up or playback reconstruction.
+    Profile context is sent as backend resolver input; conversation ownership
+    remains backend-side.
 12. Playback actions and follow-up buttons are sent through
    `POST /api/djconnect/v1/command`.
 13. Track Insight is a first-class navigation destination and sends the current
@@ -95,6 +104,8 @@ connection flow rather than in a mobile-style tab bar.
     app renders eligible dashboard blocks returned by Home Assistant, forwards
     `music_dna_key` context where available and clears local display state when
     the profile is disabled, stale or reset.
+    Profile-scoped `music_dna_key` values are consumed only when returned by the
+    backend.
 15. Ontdek / Music Discovery is gated by Music DNA opt-in. The app shows consent
     UI while Music DNA is disabled, does not request recommendations until
     Music DNA is enabled, renders only supported backend recommendation kinds
