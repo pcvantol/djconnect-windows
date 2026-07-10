@@ -1877,4 +1877,10 @@ High {2}</value>
   <data name="Vm_DemoAskDJAssistantMessage" xml:space="preserve">
     <value>Ask for music, context or a voice reply. I show here what actions and answers look like.</value>
   </data>
+  <data name="Output_RecentlySeen" xml:space="preserve">
+    <value>Recently seen</value>
+  </data>
+  <data name="Vm_CachedSpotifyOutputUnavailable" xml:space="preserve">
+    <value>Spotify does not expose this output right now. Open Spotify on that device once and try again.</value>
+  </data>
 </root>

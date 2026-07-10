@@ -1877,4 +1877,10 @@ High {2}</value>
   <data name="Vm_DemoAskDJAssistantMessage" xml:space="preserve">
     <value>Frage nach Musik, Kontext oder einer Sprachantwort. Hier zeige ich, wie Aktionen und Antworten aussehen.</value>
   </data>
+  <data name="Output_RecentlySeen" xml:space="preserve">
+    <value>Kürzlich gesehen</value>
+  </data>
+  <data name="Vm_CachedSpotifyOutputUnavailable" xml:space="preserve">
+    <value>Spotify zeigt dieses Ausgabegerät gerade nicht über die API an. Öffne Spotify einmal auf diesem Gerät und versuche es erneut.</value>
+  </data>
 </root>

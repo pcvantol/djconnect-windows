@@ -1877,4 +1877,10 @@ Récord {2}</value>
   <data name="Vm_DemoAskDJAssistantMessage" xml:space="preserve">
     <value>Pide música, contexto o una respuesta de voz. Aquí muestro cómo se ven las acciones y respuestas.</value>
   </data>
+  <data name="Output_RecentlySeen" xml:space="preserve">
+    <value>Visto recientemente</value>
+  </data>
+  <data name="Vm_CachedSpotifyOutputUnavailable" xml:space="preserve">
+    <value>Spotify no muestra esta salida mediante la API ahora mismo. Abre Spotify una vez en ese dispositivo e inténtalo de nuevo.</value>
+  </data>
 </root>

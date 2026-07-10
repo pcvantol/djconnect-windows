@@ -2260,7 +2260,7 @@ public sealed class MainViewModel : ObservableObject
         await SeekAsync(target);
     }
 
-    private async Task RunPlaybackCommandAsync(string command, object? args = null)
+    private async Task RunPlaybackCommandAsync(string command, object? args = null, PlaybackOutput? selectedOutput = null)
     {
         if (!CanUsePlaybackFeatures)
         {
@@ -2302,7 +2302,9 @@ public sealed class MainViewModel : ObservableObject
 
         if (!response.Success)
         {
-            Notice = BackendActionErrorMessage(response.Error, response.Message);
+            Notice = selectedOutput?.IsCachedSpotify == true
+                ? P("Vm_CachedSpotifyOutputUnavailable")
+                : BackendActionErrorMessage(response.Error, response.Message);
             AddDiagnostic("WRN Playback command failed: " + command);
             return;
         }
@@ -4602,7 +4604,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         _suppressOutputCommand = true;
-        SelectedOutput = OutputDevices.FirstOrDefault(output => output.IsActive == true)
+        SelectedOutput = OutputDevices.FirstOrDefault(output => output.IsCurrent)
             ?? MatchOutput(SelectedOutput);
         _suppressOutputCommand = false;
         OnPropertyChanged(nameof(SelectedOutputText));
@@ -4717,7 +4719,7 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        await RunPlaybackCommandAsync("select_output", new { output_id_or_name = output.CommandValue });
+        await RunPlaybackCommandAsync("select_output", new { output_id_or_name = output.CommandValue }, output);
     }
 
     private void QueueVolumeCommand()

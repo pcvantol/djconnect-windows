@@ -49,6 +49,11 @@ var tests = new (string Name, Action Run)[]
     ("Ask DJ higher clear revision clears before merge", AskDJHigherClearRevisionClearsBeforeMerge),
     ("Ask DJ empty messages after clear do not restore old messages", AskDJEmptyMessagesAfterClearDoNotRestoreOldMessages),
     ("Playback action deserializes confirmation command", PlaybackActionDeserializesConfirmationCommand),
+    ("Playback output preserves HA cached Spotify metadata", PlaybackOutputPreservesHaCachedSpotifyMetadata),
+    ("Playback output active state ignores cached alone", PlaybackOutputActiveStateIgnoresCachedAlone),
+    ("Output picker renders live and cached HA outputs", OutputPickerRendersLiveAndCachedHaOutputs),
+    ("Output picker replaces latest HA output list", OutputPickerReplacesLatestHaOutputList),
+    ("Ask DJ output action preserves cached output metadata", AskDJOutputActionPreservesCachedOutputMetadata),
     ("Playback action detects backend play now recommendations", PlaybackActionDetectsBackendPlayNowRecommendations),
     ("Playback action detects save current track control", PlaybackActionDetectsSaveCurrentTrackControl),
     ("Playback command payload stays generic", PlaybackCommandPayloadStaysGeneric),
@@ -474,6 +479,137 @@ static void AskDJMessagePresentationSupportsSystemAudioAndConfirmations()
     AssertTrue(audio.HasAudio, "assistant messages with audio_url must show replay UI");
     AssertEqual("Ja", yes.DisplayLabel);
     AssertEqual("Nee", no.DisplayLabel);
+}
+
+static void PlaybackOutputPreservesHaCachedSpotifyMetadata()
+{
+    const string json = """
+    {
+      "success": true,
+      "available_outputs": [
+        {
+          "id": "spotify-speaker-1",
+          "name": "Kitchen Speaker",
+          "type": "speaker",
+          "cached": true,
+          "provider": "spotify",
+          "source": "spotify",
+          "supports_volume": true,
+          "volume_percent": 37,
+          "first_seen_at": "2026-06-01T10:00:00Z",
+          "last_seen_at": "2026-07-09T20:30:00Z"
+        }
+      ]
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<StatusResponse>(json, JsonOptions());
+    var output = response!.ResolvedOutputs()!.Single();
+
+    AssertEqual("spotify-speaker-1", output.Id);
+    AssertEqual("Kitchen Speaker", output.Name);
+    AssertEqual("speaker", output.Type);
+    AssertTrue(output.Cached == true, "cached flag must be preserved");
+    AssertEqual("spotify", output.Provider);
+    AssertEqual("spotify", output.Source);
+    AssertTrue(output.SupportsVolume == true, "supports_volume must be preserved");
+    AssertEqual(37, output.VolumePercent);
+    AssertEqual(DateTimeOffset.Parse("2026-06-01T10:00:00Z"), output.FirstSeenAt);
+    AssertEqual(DateTimeOffset.Parse("2026-07-09T20:30:00Z"), output.LastSeenAt);
+    AssertTrue(output.IsCachedSpotify, "Spotify cached target should be detectable for friendly failure copy");
+}
+
+static void PlaybackOutputActiveStateIgnoresCachedAlone()
+{
+    var cached = new PlaybackOutput("cached", "Cached Speaker", null, null, Cached: true, Provider: "spotify");
+    var active = new PlaybackOutput("active", "Active Speaker", null, null, Active: true, Cached: true, Provider: "spotify");
+    var isActive = new PlaybackOutput("is-active", "Is Active Speaker", null, true, Cached: true, Provider: "spotify");
+
+    AssertTrue(!cached.IsCurrent, "cached:true alone must not mark an output active/current");
+    AssertTrue(active.IsCurrent, "active:true should mark the output current");
+    AssertTrue(isActive.IsCurrent, "is_active:true should mark the output current");
+}
+
+static void OutputPickerRendersLiveAndCachedHaOutputs()
+{
+    AppStrings.UseLanguage("en");
+    var outputDevices = new List<PlaybackOutput>();
+    ReplaceOutputList(outputDevices,
+    [
+        new PlaybackOutput("live", "Living Room", null, true, Provider: "spotify"),
+        new PlaybackOutput("cached", "Kitchen", null, null, Cached: true, Provider: "spotify", LastSeenAt: DateTimeOffset.Parse("2026-07-01T10:00:00Z"))
+    ]);
+
+    var selectedOutput = outputDevices.FirstOrDefault(output => output.IsCurrent);
+
+    AssertEqual(2, outputDevices.Count);
+    AssertEqual("Living Room", outputDevices[0].DisplayNameWithStatus);
+    AssertEqual("Kitchen · Recently seen", outputDevices[1].DisplayNameWithStatus);
+    AssertEqual("cached", outputDevices[1].CommandValue);
+    AssertTrue(outputDevices[1].IsCachedSpotify, "cached output remains selectable through its HA id");
+    AssertEqual("Living Room", selectedOutput!.DisplayName);
+}
+
+static void OutputPickerReplacesLatestHaOutputList()
+{
+    var outputDevices = new List<PlaybackOutput>();
+    ReplaceOutputList(outputDevices,
+    [
+        new PlaybackOutput("live", "Living Room", null, true),
+        new PlaybackOutput("cached", "Kitchen", null, null, Cached: true, Provider: "spotify")
+    ]);
+    ReplaceOutputList(outputDevices,
+    [
+        new PlaybackOutput("live", "Living Room", null, true)
+    ]);
+
+    AssertEqual(1, outputDevices.Count);
+    AssertTrue(!outputDevices.Any(output => output.Id == "cached"), "outputs missing from the latest HA response must not be resurrected locally");
+}
+
+static void AskDJOutputActionPreservesCachedOutputMetadata()
+{
+    const string json = """
+    {
+      "id": "assistant-output-action",
+      "role": "assistant",
+      "text": "Use Kitchen?",
+      "playback_actions": [
+        {
+          "id": "cached-output-action",
+          "kind": "output",
+          "command": "set_output",
+          "label": "Kitchen",
+          "cached": true,
+          "provider": "spotify",
+          "source": "spotify",
+          "first_seen_at": "2026-06-01T10:00:00Z",
+          "last_seen_at": "2026-07-09T20:30:00Z",
+          "output": {
+            "id": "spotify-kitchen",
+            "name": "Kitchen",
+            "cached": true,
+            "provider": "spotify",
+            "source": "spotify",
+            "last_seen_at": "2026-07-09T20:30:00Z"
+          }
+        }
+      ]
+    }
+    """;
+
+    var message = JsonSerializer.Deserialize<AskDJMessage>(json, JsonOptions());
+    var action = message!.PlaybackActions!.Single();
+
+    AssertEqual("output", action.Kind);
+    AssertTrue(action.Cached == true, "Ask DJ output action cached flag must be preserved");
+    AssertEqual("spotify", action.Provider);
+    AssertEqual("spotify", action.Source);
+    AssertEqual(DateTimeOffset.Parse("2026-06-01T10:00:00Z"), action.FirstSeenAt);
+    AssertEqual(DateTimeOffset.Parse("2026-07-09T20:30:00Z"), action.LastSeenAt);
+    AssertNotNull(action.Output);
+    AssertTrue(action.Output!.IsCachedSpotify, "nested output metadata must survive decoding");
+    AssertEqual("spotify-kitchen", action.Output.CommandValue);
 }
 
 static void DJAnnouncementCapabilitiesWithoutSpeakerLockSpeakerOutputs()
@@ -2730,6 +2866,12 @@ static void WindowsClientCodeAvoidsRemovedDjconnectHaPlaybackEntities()
 }
 
 static JsonSerializerOptions JsonOptions() => new(JsonSerializerDefaults.Web);
+
+static void ReplaceOutputList(List<PlaybackOutput> outputDevices, IReadOnlyList<PlaybackOutput> outputs)
+{
+    outputDevices.Clear();
+    outputDevices.AddRange(outputs.Where(output => !string.IsNullOrWhiteSpace(output.DisplayName)));
+}
 
 static string NormalizeJson(string json)
 {

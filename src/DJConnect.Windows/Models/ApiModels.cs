@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DJConnect.Windows.Resources;
 using DJConnect.Windows.Services;
 
 namespace DJConnect.Windows.Models;
@@ -1724,7 +1725,14 @@ public sealed record PlaybackAction(
     [property: JsonPropertyName("response_value")] string? ResponseValue = null,
     [property: JsonPropertyName("image_url")] string? ImageUrl = null,
     [property: JsonPropertyName("source_url")] string? SourceUrl = null,
-    [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null)
+    [property: JsonPropertyName("music_backend_revision")] int? MusicBackendRevision = null,
+    [property: JsonPropertyName("cached")] bool? Cached = null,
+    [property: JsonPropertyName("provider")] string? Provider = null,
+    [property: JsonPropertyName("source")] string? Source = null,
+    [property: JsonPropertyName("first_seen_at")] DateTimeOffset? FirstSeenAt = null,
+    [property: JsonPropertyName("last_seen_at")] DateTimeOffset? LastSeenAt = null,
+    [property: JsonPropertyName("output")] PlaybackOutput? Output = null,
+    [property: JsonPropertyName("device")] PlaybackOutput? Device = null)
 {
     public string DisplayLabel
     {
@@ -1830,6 +1838,7 @@ public sealed record StatusResponse(
     [property: JsonPropertyName("playlist_collection")] PlaylistEnvelope? PlaylistCollection,
     [property: JsonPropertyName("outputs")] IReadOnlyList<PlaybackOutput>? Outputs,
     [property: JsonPropertyName("output_devices")] IReadOnlyList<PlaybackOutput>? OutputDevices,
+    [property: JsonPropertyName("available_outputs")] IReadOnlyList<PlaybackOutput>? AvailableOutputs,
     [property: JsonPropertyName("devices")] IReadOnlyList<PlaybackOutput>? Devices,
     [property: JsonPropertyName("error")] string? Error,
     [property: JsonPropertyName("ha_local_url")] string? HomeAssistantLocalUrl = null,
@@ -1865,10 +1874,24 @@ public sealed record PlaybackOutput(
     [property: JsonPropertyName("id")] string? Id,
     [property: JsonPropertyName("name")] string? Name,
     [property: JsonPropertyName("label")] string? Label,
-    [property: JsonPropertyName("is_active")] bool? IsActive)
+    [property: JsonPropertyName("is_active")] bool? IsActive,
+    [property: JsonPropertyName("active")] bool? Active = null,
+    [property: JsonPropertyName("type")] string? Type = null,
+    [property: JsonPropertyName("supports_volume")] bool? SupportsVolume = null,
+    [property: JsonPropertyName("volume_percent")] int? VolumePercent = null,
+    [property: JsonPropertyName("provider")] string? Provider = null,
+    [property: JsonPropertyName("source")] string? Source = null,
+    [property: JsonPropertyName("cached")] bool? Cached = null,
+    [property: JsonPropertyName("first_seen_at")] DateTimeOffset? FirstSeenAt = null,
+    [property: JsonPropertyName("last_seen_at")] DateTimeOffset? LastSeenAt = null)
 {
     public string DisplayName => Label ?? Name ?? Id ?? "";
+    public string DisplayNameWithStatus => Cached == true ? $"{DisplayName} · {AppStrings.Get("Output_RecentlySeen")}" : DisplayName;
     public string CommandValue => Id ?? Name ?? Label ?? "";
+    public bool IsCurrent => Active == true || IsActive == true;
+    public bool IsCachedSpotify => Cached == true
+        && (string.Equals(Provider, "spotify", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(Source, "spotify", StringComparison.OrdinalIgnoreCase));
 }
 
 public sealed record QueueEnvelope(
@@ -1969,7 +1992,7 @@ public static class StatusResponseExtensions
 {
     public static IReadOnlyList<PlaybackOutput>? ResolvedOutputs(this StatusResponse response)
     {
-        return response.Outputs ?? response.OutputDevices ?? response.Devices;
+        return response.Outputs ?? response.OutputDevices ?? response.AvailableOutputs ?? response.Devices;
     }
 
     public static IReadOnlyList<QueueItem>? ResolvedQueue(this StatusResponse response)
