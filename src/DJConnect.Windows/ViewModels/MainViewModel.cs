@@ -35,6 +35,10 @@ public sealed class MainViewModel : ObservableObject
     private HomeAssistantConnectionMode _connectionMode = HomeAssistantConnectionMode.Offline;
     private MusicBackendSummary _musicBackendSummary = MusicBackendSummary.Empty;
     private DJAnnouncementCapabilities _djAnnouncementCapabilities = new(false, null, null, null, null, null, null, null);
+    private string _currentProfileId = "";
+    private string _currentProfileName = "";
+    private string _currentProfileType = "";
+    private string _currentPrivacyMode = "";
     private string _token = "";
     private string _pairingCode = "";
     private string _askDJText = "";
@@ -1133,6 +1137,9 @@ public sealed class MainViewModel : ObservableObject
     public string MusicBackendCapabilitiesText => string.IsNullOrWhiteSpace(_musicBackendSummary.Capabilities?.CompactSummary)
         ? "-"
         : _musicBackendSummary.Capabilities!.CompactSummary;
+    public string CurrentProfileText => FirstNonEmpty(_currentProfileName, _currentProfileId, "-");
+    public string CurrentHouseholdText => "-";
+    public string CurrentPrivacyModeText => FirstNonEmpty(_currentPrivacyMode, _currentProfileType, "-");
     public bool CanUsePlaybackFeatures => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && !_musicBackendSummary.IsUnavailable && _connectionMode != HomeAssistantConnectionMode.Offline);
     public bool CanStartPlayback => CanUsePlaybackFeatures && SelectedOutput is not null;
     public bool CanUseAskDJ => IsDemoMode || (IsPaired && _backendAvailable && _runtimeCompatible && _connectionMode != HomeAssistantConnectionMode.Offline);
@@ -1695,6 +1702,7 @@ public sealed class MainViewModel : ObservableObject
         _backendAvailable = statusResponse.BackendAvailable ?? true;
         ApplyVersionCompatibility(statusResponse);
         ApplyBackendSummary(BackendSummaryFrom(statusResponse));
+        ApplyProfileMetadata(statusResponse.ProfileId, statusResponse.MusicDnaKey, statusResponse.ResolvedProfile, statusResponse.Resolution, statusResponse.ProfilePrivacyMode, statusResponse.ProfilePrivacy);
         ApplyDJAnnouncementCapabilities(AnnouncementCapabilitiesFrom(statusResponse));
         ApplyPlaybackState(statusResponse.Playback);
         ReplaceOutputs(statusResponse.ResolvedOutputs());
@@ -1821,6 +1829,7 @@ public sealed class MainViewModel : ObservableObject
         _backendAvailable = response.BackendAvailable ?? true;
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ApplyProfileMetadata(response.ProfileId, response.MusicDnaKey, response.ResolvedProfile, response.Resolution, response.ProfilePrivacyMode, response.ProfilePrivacy);
         ApplyDJAnnouncementCapabilities(AnnouncementCapabilitiesFrom(response));
         ApplyVersionCompatibility(response);
         ApplyPlaybackState(response.Playback);
@@ -1926,6 +1935,7 @@ public sealed class MainViewModel : ObservableObject
 
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ApplyProfileMetadata(response.ProfileId, response.MusicDnaKey, response.ResolvedProfile, response.Resolution, response.ProfilePrivacyMode, response.ProfilePrivacy);
         ApplyDJAnnouncementCapabilities(response.DJAnnouncementCapabilities ?? response.DJAnnouncement ?? _djAnnouncementCapabilities);
         MarkMessageSent(clientMessageId);
 
@@ -2169,6 +2179,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void ApplyHistoryRevisions(AskDJHistoryResponse response)
     {
+        ApplyProfileMetadata(response.ProfileId, response.MusicDnaKey, response.ResolvedProfile, response.Resolution, response.ProfilePrivacyMode, response.ProfilePrivacy);
         _settings.HistoryRevision = Math.Max(_settings.HistoryRevision, response.HistoryRevision);
         _settings.ClearRevision = Math.Max(_settings.ClearRevision, response.ClearRevision);
     }
@@ -2197,6 +2208,7 @@ public sealed class MainViewModel : ObservableObject
         ApplyVersionCompatibility(response);
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ApplyProfileMetadata(response.ProfileId, response.MusicDnaKey, response.ResolvedProfile, response.Resolution, response.ProfilePrivacyMode, response.ProfilePrivacy);
         ApplyDJAnnouncementCapabilities(AnnouncementCapabilitiesFrom(response));
         if (!_runtimeCompatible)
         {
@@ -2279,6 +2291,7 @@ public sealed class MainViewModel : ObservableObject
         ApplyVersionCompatibility(response);
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ApplyProfileMetadata(response.ProfileId, response.MusicDnaKey, response.ResolvedProfile, response.Resolution, response.ProfilePrivacyMode, response.ProfilePrivacy);
         ApplyDJAnnouncementCapabilities(AnnouncementCapabilitiesFrom(response));
         if (!_runtimeCompatible)
         {
@@ -2377,6 +2390,7 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
+            ApplyProfileMetadata(response.ProfileId, response.MusicDnaKey, response.ResolvedProfile, response.Resolution, response.ProfilePrivacyMode, response.ProfilePrivacy);
             TrackInsightPanel = TrackInsightPresentation.From(response.ResolvedTrackInsight);
             TrackInsightNotice = HasTrackInsightPanel ? "" : P("Vm_No_Track_Insight_available");
             AddDiagnostic("INF Track Insight loaded from Home Assistant.");
@@ -2436,6 +2450,7 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
+            ApplyProfileMetadata(response.ProfileId, response.MusicDnaKey, response.ResolvedProfile, response.Resolution, response.ProfilePrivacyMode, response.ProfilePrivacy);
             MusicDnaDashboard = MusicDnaDashboard.From(response);
             MusicDnaNotice = response.Enabled == false ? "Music DNA is off. Enable it to build your profile in Home Assistant." : "";
             AddDiagnostic("INF Music DNA profile refreshed.");
@@ -2662,6 +2677,7 @@ public sealed class MainViewModel : ObservableObject
                 return;
             }
 
+            ApplyProfileMetadata(response.ProfileId, response.MusicDnaKey, response.ResolvedProfile, response.Resolution, response.ProfilePrivacyMode, response.ProfilePrivacy);
             ReplaceDiscoverItems(response.DisplayItems);
             DiscoverNotice = DiscoverItems.Count == 0 ? response.EmptyState ?? response.Message ?? "Nog geen aanbevelingen beschikbaar." : "";
             AddDiagnostic(forceRefresh ? "INF Music Discovery refreshed." : "INF Music Discovery loaded.");
@@ -3718,6 +3734,34 @@ public sealed class MainViewModel : ObservableObject
         RaisePlaybackStateProperties();
     }
 
+    private void ApplyProfileMetadata(
+        string? profileId,
+        string? musicDnaKey,
+        DJConnectResolvedProfile? resolvedProfile,
+        DJConnectProfileResolution? resolution,
+        string? profilePrivacyMode,
+        DJConnectProfilePrivacy? profilePrivacy)
+    {
+        _currentProfileId = FirstNonEmpty(resolvedProfile?.Id, profileId, ProfileIdFromMusicDnaKey(musicDnaKey));
+        _currentProfileName = resolvedProfile?.Name ?? "";
+        _currentProfileType = resolvedProfile?.Type ?? "";
+        _currentPrivacyMode = FirstNonEmpty(profilePrivacy?.Mode, profilePrivacyMode, resolvedProfile?.PrivacyMode);
+        RaiseTransportProperties();
+    }
+
+    private static string ProfileIdFromMusicDnaKey(string? musicDnaKey)
+    {
+        const string prefix = "profile:";
+        return !string.IsNullOrWhiteSpace(musicDnaKey) && musicDnaKey.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            ? musicDnaKey[prefix.Length..]
+            : "";
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        return values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+    }
+
     private static MusicBackendSummary BackendSummaryFrom(PairingResponse response) => new(
         response.MusicBackend,
         response.MusicBackendName,
@@ -4090,6 +4134,7 @@ public sealed class MainViewModel : ObservableObject
 
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
+        ApplyProfileMetadata(response.ProfileId, response.MusicDnaKey, response.ResolvedProfile, response.Resolution, response.ProfilePrivacyMode, response.ProfilePrivacy);
         AskDJNotice = "";
         Status = response.DjText ?? response.Message ?? P("Vm_Command_executed_4");
         await RefreshAsync();
@@ -5218,6 +5263,9 @@ public sealed class MainViewModel : ObservableObject
         OnPropertyChanged(nameof(MusicBackendRevisionText));
         OnPropertyChanged(nameof(MusicTargetPlayerText));
         OnPropertyChanged(nameof(MusicBackendCapabilitiesText));
+        OnPropertyChanged(nameof(CurrentProfileText));
+        OnPropertyChanged(nameof(CurrentHouseholdText));
+        OnPropertyChanged(nameof(CurrentPrivacyModeText));
         OnPropertyChanged(nameof(CanUsePlaybackFeatures));
         OnPropertyChanged(nameof(CanUseAskDJ));
         OnPropertyChanged(nameof(CanSendAskDJ));

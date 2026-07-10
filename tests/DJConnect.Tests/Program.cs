@@ -97,6 +97,9 @@ var tests = new (string Name, Action Run)[]
     ("WebSocket Track Insight success renders Music DNA", WebSocketTrackInsightSuccessRendersMusicDna),
     ("Track Insight payload includes identity and title artist", TrackInsightPayloadIncludesIdentityAndTitleArtist),
     ("Track Insight payload includes mood and Music DNA key", TrackInsightPayloadIncludesMoodAndMusicDnaKey),
+    ("Profile-aware requests generate canonical Windows context", ProfileAwareRequestsGenerateCanonicalWindowsContext),
+    ("Profile response metadata decodes canonical envelope", ProfileResponseMetadataDecodesCanonicalEnvelope),
+    ("Profile platform errors localize as repair states", ProfilePlatformErrorsLocalizeAsRepairStates),
     ("Music DNA profile decodes mood and energy backend shapes", MusicDnaProfileDecodesMoodAndEnergyBackendShapes),
     ("Music DNA dashboard hides disabled and empty blocks", MusicDnaDashboardHidesDisabledAndEmptyBlocks),
     ("Music DNA dashboard renders optional eligible blocks", MusicDnaDashboardRendersOptionalEligibleBlocks),
@@ -2757,6 +2760,81 @@ static TrackInsightRequest TestTrackInsightRequest() => new(
     IncludeVisualProfile: true,
     ClientId: "djconnect-windows-ABC123DEF456",
     MusicDnaKey: "dna-studio");
+
+static void ProfileAwareRequestsGenerateCanonicalWindowsContext()
+{
+    var ask = TestAskRequest("What should I play?");
+    ask = ask with
+    {
+        ProfileId = "profile-peter",
+        SessionId = "session-windows-1",
+        PrivateSession = true
+    };
+
+    using var askDocument = JsonSerializer.SerializeToDocument(ask, JsonOptions());
+    var askRoot = askDocument.RootElement;
+    AssertEqual("profile-peter", askRoot.GetProperty("profile_id").GetString());
+    AssertEqual("session-windows-1", askRoot.GetProperty("session_id").GetString());
+    AssertTrue(askRoot.GetProperty("private_session").GetBoolean(), "Ask DJ should carry private_session");
+    AssertEqual("ask_dj", askRoot.GetProperty("request_source").GetString());
+
+    var discovery = TestMusicDiscoveryRequest() with
+    {
+        ProfileId = "profile-peter",
+        PrivateSession = true
+    };
+    var query = typeof(DJConnectApiClient)
+        .GetMethod("MusicDiscoveryQuery", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!
+        .Invoke(null, [discovery])!
+        .ToString();
+
+    AssertTrue(query!.Contains("profile_id=profile-peter", StringComparison.Ordinal), "Discover query should include profile_id");
+    AssertTrue(query.Contains("private_session=true", StringComparison.Ordinal), "Discover query should include private_session");
+    AssertTrue(query.Contains("request_source=discover", StringComparison.Ordinal), "Discover query should include request_source");
+}
+
+static void ProfileResponseMetadataDecodesCanonicalEnvelope()
+{
+    const string json = """
+    {
+      "success": true,
+      "enabled": true,
+      "profile_id": "profile-peter",
+      "music_dna_key": "profile:profile-peter",
+      "resolved_profile": {
+        "id": "profile-peter",
+        "name": "Peter",
+        "type": "personal",
+        "privacy_mode": "normal"
+      },
+      "resolution": {
+        "source": "device_mapping",
+        "fallback_used": false
+      },
+      "profile": {
+        "summary": "Backend-owned Music DNA"
+      }
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<MusicDnaProfileResponse>(json, JsonOptions())!;
+
+    AssertEqual("profile-peter", response.ProfileId);
+    AssertEqual("profile:profile-peter", response.MusicDnaKey);
+    AssertEqual("Peter", response.ResolvedProfile!.Name);
+    AssertEqual("normal", response.ResolvedProfile.PrivacyMode);
+    AssertEqual("device_mapping", response.Resolution!.Source);
+    AssertTrue(response.Resolution.FallbackUsed == false, "resolution should preserve fallback flag");
+}
+
+static void ProfilePlatformErrorsLocalizeAsRepairStates()
+{
+    AssertTrue(ApiErrorLocalizer.FromApiCode("device_not_mapped")!.Contains("Profile", StringComparison.Ordinal), "device_not_mapped should be profile guidance");
+    var privateSession = ApiErrorLocalizer.FromApiCode("private_session_restriction")!;
+    AssertTrue(!privateSession.Contains("pair", StringComparison.OrdinalIgnoreCase), "private session restriction should not look like auth or pairing");
+    var accountMissing = ApiErrorLocalizer.FromApiCode("profile_music_account_missing")!;
+    AssertTrue(!accountMissing.Contains("pair", StringComparison.OrdinalIgnoreCase), "music account error should not look like auth or pairing");
+}
 
 static MusicDnaProfileRequest TestMusicDnaProfileRequest() => new(
     "djconnect-windows-ABC123DEF456",

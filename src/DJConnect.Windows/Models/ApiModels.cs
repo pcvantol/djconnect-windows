@@ -48,7 +48,13 @@ public sealed record PairingResponse(
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
     [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null,
     [property: JsonPropertyName("dj_announcement")] DJAnnouncementCapabilities? DJAnnouncement = null,
-    [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null);
+    [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("resolved_profile")] DJConnectResolvedProfile? ResolvedProfile = null,
+    [property: JsonPropertyName("resolution")] DJConnectProfileResolution? Resolution = null,
+    [property: JsonPropertyName("profile_privacy_mode")] string? ProfilePrivacyMode = null,
+    [property: JsonPropertyName("profile_privacy")] DJConnectProfilePrivacy? ProfilePrivacy = null);
 
 [JsonConverter(typeof(DJAnnouncementOutputJsonConverter))]
 public enum DJAnnouncementOutput
@@ -249,6 +255,40 @@ public sealed record MusicBackendSummary(
     public bool IsUnavailable => Available == false || !string.IsNullOrWhiteSpace(ErrorText);
 }
 
+public static class ProfileRequestSources
+{
+    public const string AskDJ = "ask_dj";
+    public const string DeviceCommand = "device_command";
+    public const string Voice = "voice";
+    public const string TrackInsight = "track_insight";
+    public const string Discover = "discover";
+}
+
+public sealed record DJConnectProfileContext(
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("session_id")] string? SessionId = null,
+    [property: JsonPropertyName("private_session")] bool? PrivateSession = null,
+    [property: JsonPropertyName("request_source")] string? RequestSource = null);
+
+public sealed record DJConnectResolvedProfile(
+    [property: JsonPropertyName("id")] string Id,
+    [property: JsonPropertyName("name")] string? Name = null,
+    [property: JsonPropertyName("type")] string? Type = null,
+    [property: JsonPropertyName("privacy_mode")] string? PrivacyMode = null);
+
+public sealed record DJConnectProfileResolution(
+    [property: JsonPropertyName("source")] string? Source = null,
+    [property: JsonPropertyName("fallback_used")] bool? FallbackUsed = null);
+
+public sealed record DJConnectProfilePrivacy(
+    [property: JsonPropertyName("mode")] string? Mode = null,
+    [property: JsonPropertyName("private_session")] bool? PrivateSession = null,
+    [property: JsonPropertyName("allow_history")] bool? AllowHistory = null,
+    [property: JsonPropertyName("allow_music_dna_updates")] bool? AllowMusicDnaUpdates = null,
+    [property: JsonPropertyName("allow_recommendation_updates")] bool? AllowRecommendationUpdates = null,
+    [property: JsonPropertyName("allow_likes_dislikes")] bool? AllowLikesDislikes = null,
+    [property: JsonPropertyName("allow_mood_persistence")] bool? AllowMoodPersistence = null);
+
 public sealed record AskDJRequest(
     [property: JsonPropertyName("client_message_id")] string ClientMessageId,
     [property: JsonPropertyName("client_id")] string ClientId,
@@ -264,7 +304,11 @@ public sealed record AskDJRequest(
     [property: JsonPropertyName("language")] string? Language = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
     [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
-    [property: JsonPropertyName("dj_announcement_output")] DJAnnouncementOutput DJAnnouncementOutput = DJAnnouncementOutput.ClientDevice);
+    [property: JsonPropertyName("dj_announcement_output")] DJAnnouncementOutput DJAnnouncementOutput = DJAnnouncementOutput.ClientDevice,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("session_id")] string? SessionId = null,
+    [property: JsonPropertyName("private_session")] bool? PrivateSession = false,
+    [property: JsonPropertyName("request_source")] string? RequestSource = ProfileRequestSources.AskDJ);
 
 public sealed record AskDJHistoryResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -276,7 +320,13 @@ public sealed record AskDJHistoryResponse(
     [property: JsonPropertyName("history_trimmed_before")] DateTimeOffset? HistoryTrimmedBefore,
     [property: JsonPropertyName("history_trimmed_count")] int? HistoryTrimmedCount,
     [property: JsonPropertyName("messages")] IReadOnlyList<AskDJMessage> Messages,
-    [property: JsonPropertyName("error")] string? Error = null)
+    [property: JsonPropertyName("error")] string? Error = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("resolved_profile")] DJConnectResolvedProfile? ResolvedProfile = null,
+    [property: JsonPropertyName("resolution")] DJConnectProfileResolution? Resolution = null,
+    [property: JsonPropertyName("profile_privacy_mode")] string? ProfilePrivacyMode = null,
+    [property: JsonPropertyName("profile_privacy")] DJConnectProfilePrivacy? ProfilePrivacy = null)
 {
     public bool RequiresLocalClearAfterClearResponse(long localClearRevision)
     {
@@ -436,7 +486,13 @@ public sealed record AskDJMessageResponse(
     [property: JsonPropertyName("dj_announcement")] DJAnnouncementCapabilities? DJAnnouncement = null,
     [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null,
     [property: JsonPropertyName("links")] IReadOnlyList<AskDJSource>? Links = null,
-    [property: JsonPropertyName("is_generated_text")] bool? IsGeneratedText = null);
+    [property: JsonPropertyName("is_generated_text")] bool? IsGeneratedText = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("resolved_profile")] DJConnectResolvedProfile? ResolvedProfile = null,
+    [property: JsonPropertyName("resolution")] DJConnectProfileResolution? Resolution = null,
+    [property: JsonPropertyName("profile_privacy_mode")] string? ProfilePrivacyMode = null,
+    [property: JsonPropertyName("profile_privacy")] DJConnectProfilePrivacy? ProfilePrivacy = null);
 
 public sealed record TrackInsightRequest(
     [property: JsonPropertyName("device_id")] string DeviceId,
@@ -452,7 +508,11 @@ public sealed record TrackInsightRequest(
     [property: JsonPropertyName("force_refresh")] bool ForceRefresh = false,
     [property: JsonPropertyName("include_visual_profile")] bool IncludeVisualProfile = true,
     [property: JsonPropertyName("client_id")] string? ClientId = null,
-    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("session_id")] string? SessionId = null,
+    [property: JsonPropertyName("private_session")] bool? PrivateSession = false,
+    [property: JsonPropertyName("request_source")] string? RequestSource = ProfileRequestSources.TrackInsight);
 
 public sealed record TrackInsightResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -460,7 +520,13 @@ public sealed record TrackInsightResponse(
     [property: JsonPropertyName("track")] TrackInsightTrack? Track = null,
     [property: JsonPropertyName("analysis")] TrackInsightAnalysis? Analysis = null,
     [property: JsonPropertyName("error")] string? Error = null,
-    [property: JsonPropertyName("message")] string? Message = null)
+    [property: JsonPropertyName("message")] string? Message = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("resolved_profile")] DJConnectResolvedProfile? ResolvedProfile = null,
+    [property: JsonPropertyName("resolution")] DJConnectProfileResolution? Resolution = null,
+    [property: JsonPropertyName("profile_privacy_mode")] string? ProfilePrivacyMode = null,
+    [property: JsonPropertyName("profile_privacy")] DJConnectProfilePrivacy? ProfilePrivacy = null)
 {
     public TrackInsightResult? ResolvedTrackInsight => TrackInsight ?? (Track is not null || Analysis is not null
         ? new TrackInsightResult(Track, null, null, null, null, Analysis, null, null, null, null, null, null, null, null, null)
@@ -543,7 +609,11 @@ public sealed record MusicDnaProfileRequest(
     [property: JsonPropertyName("language")] string? Language = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
     [property: JsonPropertyName("mood")] int? Mood = null,
-    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("session_id")] string? SessionId = null,
+    [property: JsonPropertyName("private_session")] bool? PrivateSession = false,
+    [property: JsonPropertyName("request_source")] string? RequestSource = null);
 
 public sealed record MusicDnaSettingsRequest(
     [property: JsonPropertyName("client_id")] string ClientId,
@@ -554,7 +624,11 @@ public sealed record MusicDnaSettingsRequest(
     [property: JsonPropertyName("language")] string? Language = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
     [property: JsonPropertyName("mood")] int? Mood = null,
-    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("session_id")] string? SessionId = null,
+    [property: JsonPropertyName("private_session")] bool? PrivateSession = false,
+    [property: JsonPropertyName("request_source")] string? RequestSource = null);
 
 public sealed record MusicDnaClearRequest(
     [property: JsonPropertyName("client_id")] string ClientId,
@@ -564,14 +638,24 @@ public sealed record MusicDnaClearRequest(
     [property: JsonPropertyName("language")] string? Language = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
     [property: JsonPropertyName("mood")] int? Mood = null,
-    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("session_id")] string? SessionId = null,
+    [property: JsonPropertyName("private_session")] bool? PrivateSession = false,
+    [property: JsonPropertyName("request_source")] string? RequestSource = null);
 
 public sealed record MusicDnaProfileResponse(
     [property: JsonPropertyName("success")] bool Success,
     [property: JsonPropertyName("enabled")] bool? Enabled,
     [property: JsonPropertyName("profile")] MusicDnaProfile? Profile,
     [property: JsonPropertyName("error")] string? Error = null,
-    [property: JsonPropertyName("message")] string? Message = null);
+    [property: JsonPropertyName("message")] string? Message = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("resolved_profile")] DJConnectResolvedProfile? ResolvedProfile = null,
+    [property: JsonPropertyName("resolution")] DJConnectProfileResolution? Resolution = null,
+    [property: JsonPropertyName("profile_privacy_mode")] string? ProfilePrivacyMode = null,
+    [property: JsonPropertyName("profile_privacy")] DJConnectProfilePrivacy? ProfilePrivacy = null);
 
 public sealed record MusicDnaSettingsResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -1011,7 +1095,11 @@ public sealed record MusicDiscoveryRequest(
     [property: JsonPropertyName("language")] string? Language = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
     [property: JsonPropertyName("mood")] int? Mood = null,
-    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("session_id")] string? SessionId = null,
+    [property: JsonPropertyName("private_session")] bool? PrivateSession = false,
+    [property: JsonPropertyName("request_source")] string? RequestSource = ProfileRequestSources.Discover);
 
 public sealed record MusicDiscoveryPlayRequest(
     [property: JsonPropertyName("client_id")] string ClientId,
@@ -1027,7 +1115,11 @@ public sealed record MusicDiscoveryPlayRequest(
     [property: JsonPropertyName("language")] string? Language = null,
     [property: JsonPropertyName("locale")] string? Locale = null,
     [property: JsonPropertyName("mood")] int? Mood = null,
-    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null);
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("session_id")] string? SessionId = null,
+    [property: JsonPropertyName("private_session")] bool? PrivateSession = false,
+    [property: JsonPropertyName("request_source")] string? RequestSource = ProfileRequestSources.Discover);
 
 public sealed record MusicDiscoveryResponse(
     [property: JsonPropertyName("success")] bool Success,
@@ -1039,7 +1131,13 @@ public sealed record MusicDiscoveryResponse(
     [property: JsonPropertyName("empty_state")] string? EmptyState = null,
     [property: JsonPropertyName("cache")] TrackInsightCache? Cache = null,
     [property: JsonPropertyName("revision")] long? Revision = null,
-    [property: JsonPropertyName("error")] string? Error = null)
+    [property: JsonPropertyName("error")] string? Error = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("resolved_profile")] DJConnectResolvedProfile? ResolvedProfile = null,
+    [property: JsonPropertyName("resolution")] DJConnectProfileResolution? Resolution = null,
+    [property: JsonPropertyName("profile_privacy_mode")] string? ProfilePrivacyMode = null,
+    [property: JsonPropertyName("profile_privacy")] DJConnectProfilePrivacy? ProfilePrivacy = null)
 {
     public bool CanRenderFeed => Success && Enabled != false;
 
@@ -1551,7 +1649,11 @@ public sealed record AskDJVoiceRequest(
     string AudioResponse = "auto",
     string? Language = null,
     string? Locale = null,
-    int? Mood = null);
+    int? Mood = null,
+    string? ProfileId = null,
+    string? SessionId = null,
+    bool? PrivateSession = false,
+    string? RequestSource = ProfileRequestSources.Voice);
 
 public sealed record AskDJImage(
     [property: JsonPropertyName("url")] string? Url,
@@ -1695,7 +1797,13 @@ public sealed record CommandResponse(
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
     [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null,
     [property: JsonPropertyName("dj_announcement")] DJAnnouncementCapabilities? DJAnnouncement = null,
-    [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null);
+    [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("resolved_profile")] DJConnectResolvedProfile? ResolvedProfile = null,
+    [property: JsonPropertyName("resolution")] DJConnectProfileResolution? Resolution = null,
+    [property: JsonPropertyName("profile_privacy_mode")] string? ProfilePrivacyMode = null,
+    [property: JsonPropertyName("profile_privacy")] DJConnectProfilePrivacy? ProfilePrivacy = null);
 
 public sealed record StatusResponse(
     [property: JsonPropertyName("success")] bool Success,

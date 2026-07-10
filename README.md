@@ -8,6 +8,10 @@ actions, recent listening list rendering, playback controls, status, Settings,
 Logs, Privacy, Feedback, Crash report, Demo Mode and compact legal/about
 sections.
 
+Apple is the reference implementation for Profile Platform adoption. Windows
+starts Profile Platform work with an Apple parity review, then implements the
+same canonical backend contract with Windows-native presentation only.
+
 Home Assistant remains the trusted backend. The desktop app does not store
 Spotify credentials, Spotify OAuth tokens, Music DNA or Ask DJ server history as
 the source of truth. The only app-owned credential is the DJConnect bearer token
@@ -64,6 +68,9 @@ API contracts rather than copying SwiftUI or Apple-specific code.
 - [docs/ARCHITECTURE_DECISIONS.md](docs/ARCHITECTURE_DECISIONS.md): stack and
   design decisions.
 - [docs/API_CONTRACT.md](docs/API_CONTRACT.md): Home Assistant endpoint shapes.
+- [WINDOWS_PROFILE_ADOPTION_REPORT.md](WINDOWS_PROFILE_ADOPTION_REPORT.md):
+  Epic 3B Windows parity checklist, implemented Profile Platform work,
+  intentional differences and remaining gaps.
 - [docs/TRACK_INSIGHT_PLATFORM.md](docs/TRACK_INSIGHT_PLATFORM.md): Windows
   Track Insight product architecture, navigation, shared engine, demo mode and
   visualizer roadmap.

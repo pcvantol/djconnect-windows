@@ -18,6 +18,37 @@ Current local constants:
 `windows` is canonical for protocol `3.2.x`. Windows does not expose a
 client-hosted local API or mDNS pairing service.
 
+## Profile Context
+
+Apple is the reference implementation for Profile Platform adoption. Windows
+uses the same canonical Profile Platform request envelope and does not implement
+Windows-specific Profile behavior.
+
+Profile-aware requests may include:
+
+- `profile_id`
+- `session_id`
+- `private_session`
+- `request_source`
+- existing `device_id`, `client_id`, `device_name` and `client_type`
+
+The backend resolves Profile context from explicit `profile_id`, device mapping,
+Home Assistant/user/room hints, fallback Profile or structured Profile errors.
+Windows never implements its own resolver order. Existing paired Windows devices
+may omit `profile_id` when Home Assistant maps their `device_id`.
+
+Profile-aware responses may include `profile_id`, profile-scoped
+`music_dna_key`, `resolved_profile`, `resolution`, `profile_privacy_mode` and
+`profile_privacy`. Windows may display this metadata, but must not persist Music
+DNA, Ask DJ history, recommendation state, mood state or profile memory as the
+source of truth.
+
+Structured Profile Platform errors are canonical:
+`profile_required`, `invalid_profile`, `device_not_mapped`,
+`profile_backend_missing`, `profile_music_account_missing`,
+`profile_backend_account_mismatch`, `profile_access_denied`,
+`private_session_restriction` and `invalid_request_context`.
+
 ## Pairing
 
 ```http

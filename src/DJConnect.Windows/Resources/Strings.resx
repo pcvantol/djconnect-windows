@@ -48,6 +48,33 @@
   <data name="ApiError_UnsupportedBackendCapability" xml:space="preserve">
     <value>This music service does not support that action.</value>
   </data>
+  <data name="ApiError_ProfileRequired" xml:space="preserve">
+    <value>Select or map a DJConnect Profile in Home Assistant before using this feature.</value>
+  </data>
+  <data name="ApiError_InvalidProfile" xml:space="preserve">
+    <value>The selected DJConnect Profile is no longer available. Refresh profile settings in Home Assistant.</value>
+  </data>
+  <data name="ApiError_DeviceNotMapped" xml:space="preserve">
+    <value>This Windows device is paired, but it is not mapped to a DJConnect Profile yet.</value>
+  </data>
+  <data name="ApiError_ProfileBackendMissing" xml:space="preserve">
+    <value>The current DJConnect Profile needs a music backend before this feature can run.</value>
+  </data>
+  <data name="ApiError_ProfileMusicAccountMissing" xml:space="preserve">
+    <value>The current DJConnect Profile needs a linked music account before this feature can run.</value>
+  </data>
+  <data name="ApiError_ProfileBackendAccountMismatch" xml:space="preserve">
+    <value>The current DJConnect Profile is linked to a different music backend account.</value>
+  </data>
+  <data name="ApiError_ProfileAccessDenied" xml:space="preserve">
+    <value>You do not have access to this DJConnect Profile.</value>
+  </data>
+  <data name="ApiError_PrivateSessionRestriction" xml:space="preserve">
+    <value>This action is not available during a private session.</value>
+  </data>
+  <data name="ApiError_InvalidRequestContext" xml:space="preserve">
+    <value>DJConnect could not use this Profile request context. Refresh and try again.</value>
+  </data>
   <data name="Format_AppProtocol" xml:space="preserve">
     <value>App: {0}.x</value>
   </data>
@@ -788,6 +815,15 @@
   </data>
   <data name="Xaml_Capabilities" xml:space="preserve">
     <value>Capabilities</value>
+  </data>
+  <data name="Xaml_Current_profile" xml:space="preserve">
+    <value>Current Profile</value>
+  </data>
+  <data name="Xaml_Current_household" xml:space="preserve">
+    <value>Current Household</value>
+  </data>
+  <data name="Xaml_Privacy_mode" xml:space="preserve">
+    <value>Privacy mode</value>
   </data>
   <data name="Xaml_Chill" xml:space="preserve">
     <value>Chill</value>
