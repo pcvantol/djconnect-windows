@@ -24,6 +24,15 @@ env:
   WINDOWS_TFM: net10.0-windows10.0.19041.0
 
 jobs:
+  software-assurance-governance:
+    name: Software Assurance governance
+    permissions:
+      contents: read
+    uses: pcvantol/djconnect/.github/workflows/software-assurance-governance.yml@b02217ab54ff5a93e9ba5ae406ac608f43ff8792
+    with:
+      execution_profile: release
+      owner: pcvantol/djconnect-windows
+
   resolve-version:
     name: Resolve release version
     runs-on: ubuntu-latest
