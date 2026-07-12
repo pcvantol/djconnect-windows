@@ -18,6 +18,7 @@ var tests = new (string Name, Action Run)[]
     ("Pairing errors show localized user guidance", PairingErrorsShowLocalizedUserGuidance),
     ("Authenticated requests include bearer token and device header", AuthenticatedRequestsIncludeBearerTokenAndDeviceHeader),
     ("Status payload serializes app protocol metadata", StatusPayloadSerializesAppProtocolMetadata),
+    ("Status response parses Profile metadata", StatusResponseParsesProfileMetadata),
     ("Ask DJ request serializes server-side message contract", AskDJRequestSerializesServerSideContract),
     ("Ask DJ message request includes current locale", AskDJMessageRequestIncludesCurrentLocale),
     ("Ask DJ app client contract omits raw route and legacy aliases", AskDJAppClientContractOmitsRawRouteAndLegacyAliases),
@@ -345,6 +346,42 @@ static void StatusPayloadSerializesAppProtocolMetadata()
     AssertTrue(serialized.Contains("\"firmware\":\"windows-app\""), "status must identify the app surface as firmware metadata for HA compatibility");
     AssertTrue(serialized.Contains($"\"app_version\":\"{DJConnectContract.AppVersion}\""), "status must include app version");
     AssertTrue(serialized.Contains("\"protocol_version\":\"3.2\""), "status must include protocol line");
+}
+
+static void StatusResponseParsesProfileMetadata()
+{
+    const string json = """
+    {
+      "success": true,
+      "profile_id": "profile-peter",
+      "music_dna_key": "profile:profile-peter",
+      "resolved_profile": {
+        "id": "profile-peter",
+        "name": "Peter",
+        "type": "personal",
+        "privacy_mode": "normal"
+      },
+      "resolution": {
+        "source": "device_mapping",
+        "fallback_used": false
+      },
+      "profile_privacy_mode": "normal",
+      "profile_privacy": {
+        "mode": "normal",
+        "private_session": false
+      }
+    }
+    """;
+
+    var response = JsonSerializer.Deserialize<StatusResponse>(json, JsonOptions());
+
+    AssertNotNull(response);
+    AssertEqual("profile-peter", response!.ProfileId);
+    AssertEqual("profile:profile-peter", response.MusicDnaKey);
+    AssertEqual("Peter", response.ResolvedProfile!.Name);
+    AssertEqual("device_mapping", response.Resolution!.Source);
+    AssertEqual("normal", response.ProfilePrivacyMode);
+    AssertTrue(response.ProfilePrivacy!.PrivateSession == false, "privacy object should preserve private session flag");
 }
 
 static void AskDJRequestSerializesServerSideContract()

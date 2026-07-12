@@ -1852,7 +1852,13 @@ public sealed record StatusResponse(
     [property: JsonPropertyName("music_target_player")] MusicTargetPlayer? MusicTargetPlayer = null,
     [property: JsonPropertyName("music_backend_error")] MusicBackendError? MusicBackendError = null,
     [property: JsonPropertyName("dj_announcement")] DJAnnouncementCapabilities? DJAnnouncement = null,
-    [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null);
+    [property: JsonPropertyName("dj_announcement_capabilities")] DJAnnouncementCapabilities? DJAnnouncementCapabilities = null,
+    [property: JsonPropertyName("profile_id")] string? ProfileId = null,
+    [property: JsonPropertyName("music_dna_key")] string? MusicDnaKey = null,
+    [property: JsonPropertyName("resolved_profile")] DJConnectResolvedProfile? ResolvedProfile = null,
+    [property: JsonPropertyName("resolution")] DJConnectProfileResolution? Resolution = null,
+    [property: JsonPropertyName("profile_privacy_mode")] string? ProfilePrivacyMode = null,
+    [property: JsonPropertyName("profile_privacy")] DJConnectProfilePrivacy? ProfilePrivacy = null);
 
 public sealed record PlaybackState(
     [property: JsonPropertyName("title")] string? Title,
