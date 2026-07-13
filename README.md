@@ -22,8 +22,8 @@ automatically.
 
 ## Current Version
 
-- Desktop app: `3.2.10`
-- Home Assistant protocol line: `3.2.x`
+- Desktop app: `3.3.0`
+- Home Assistant protocol line: `3.3.x`
 - Current local `client_type`: `windows`
 
 ## Cross-Repo Source Of Truth

@@ -3,11 +3,11 @@
 ## Scope
 
 This repository contains the MIT-licensed DJConnect desktop app scaffold for
-Windows and macOS. The app targets the DJConnect `3.2.x` Home Assistant
+Windows and macOS. The app targets the DJConnect `3.3.x` Home Assistant
 protocol line and remains a thin client for Home Assistant-owned playback,
 Ask DJ and Music DNA state.
 
-Current app release: `3.2.10`.
+Current app release: `3.3.0`.
 
 ## Project Shape
 

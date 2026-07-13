@@ -1,7 +1,7 @@
 # TODO
 
-- Validate the `3.2.10` local-pairing, remote-fallback, localization and Ask DJ/Track Insight/Music DNA/Ontdek contract upgrade against a live
-  Home Assistant DJConnect `3.2.x` backend.
+- Validate the `3.3.0` local-pairing, remote-fallback, localization and Ask DJ/Track Insight/Music DNA/Ontdek contract upgrade against a live
+  Home Assistant DJConnect `3.3.x` backend.
 - Run the Home Assistant `FIELD_TEST_APP_CLIENTS.md` checklist for Windows and
   record app build, HA version, DJConnect integration version, backend
   (`spotify_direct` or `music_assistant`), local pairing result, remote command

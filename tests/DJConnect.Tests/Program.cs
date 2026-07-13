@@ -1382,7 +1382,7 @@ static void AskDJHistoryExportUsesHttpServerEnvelope()
       "schema_version": 1,
       "exported_at": "2026-07-04T10:20:30Z",
       "exported_by_client_type": "windows",
-      "app_version": "3.2.10",
+      "app_version": "3.3.0",
       "user_id": "user-1",
       "history_revision": 12,
       "clear_revision": 2,
@@ -1408,7 +1408,7 @@ static void AskDJHistoryExportUsesHttpServerEnvelope()
     AssertTrue(http.LastBody.Contains("\"device_id\":\"djconnect-windows-ABC123DEF456\"", StringComparison.Ordinal), "export identity must include device_id");
     AssertTrue(http.LastBody.Contains("\"client_type\":\"windows\"", StringComparison.Ordinal), "export identity must include Windows client_type");
     AssertTrue(http.LastBody.Contains("\"device_name\":\"Studio PC\"", StringComparison.Ordinal), "export identity must include device name");
-    AssertTrue(http.LastBody.Contains("\"app_version\":\"3.2.10\"", StringComparison.Ordinal), "export payload must include app_version");
+    AssertTrue(http.LastBody.Contains($"\"app_version\":\"{DJConnectContract.AppVersion}\"", StringComparison.Ordinal), "export payload must include app_version");
     AssertTrue(!http.LastBody.Contains("device-token-123", StringComparison.Ordinal), "export HTTP body must not duplicate bearer token");
 }
 
