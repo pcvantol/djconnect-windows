@@ -143,7 +143,7 @@ jobs:
 
   build-windows:
     name: Build unsigned Windows app
-    runs-on: windows-latest
+    runs-on: [self-hosted, internal-release, qualification, windows11]
     needs: resolve-version
     timeout-minutes: 45
     steps:
