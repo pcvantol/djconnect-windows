@@ -2,7 +2,7 @@
 
 ## Current Status
 
-DJConnect desktop `3.2.10` has been scaffolded as a .NET MAUI app targeting
+DJConnect desktop `3.3.0` is a .NET MAUI app targeting
 Windows and macOS. It includes:
 
 - local Home Assistant app-pairing through `/api/djconnect/v1/pair`;
@@ -15,7 +15,7 @@ Windows and macOS. It includes:
 - Ask DJ timeline, Track Insight, action and recent-played rendering;
 - Ask DJ mood values, optional audio-response mode, `links[]`/`sources[]`,
   generated-text metadata sparks, stale backend action and unsupported backend
-  capability handling aligned with the Home Assistant `3.2.x` contract;
+  capability handling aligned with the Home Assistant `3.3.x` contract;
 - DJ announcement output selection for device audio, Home Assistant speaker,
   both or text-only. Windows only sends `dj_announcement_output`; the Home
   Assistant speaker entity remains configured in Home Assistant DJConnect
