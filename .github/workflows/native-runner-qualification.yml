@@ -1,0 +1,58 @@
+name: Native runner qualification
+
+on:
+  push:
+    branches:
+      - release/native-runner-alignment-windows
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify-windows-runner:
+    if: ${{ github.actor == github.repository_owner }}
+    runs-on: [self-hosted, internal-release, qualification, windows11]
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        with:
+          global-json-file: global.json
+
+      - name: Build unsigned Windows qualification artifact
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+          $project = "src/DJConnect.Windows/DJConnect.Windows.csproj"
+          $tfm = "net10.0-windows10.0.19041.0"
+          dotnet workload restore $project -p:TargetFramework=$tfm
+          dotnet restore $project -p:TargetFramework=$tfm -p:RuntimeIdentifier=win-x64 -r win-x64
+          dotnet publish $project -c Release -f $tfm -r win-x64 --no-restore `
+            -p:RuntimeIdentifier=win-x64 -p:PublishReadyToRun=false -p:WindowsPackageType=None `
+            -o .runner-qualification/windows
+          Compress-Archive -Path ".runner-qualification/windows/*" `
+            -DestinationPath ".runner-qualification/DJConnect-Windows-x64-unsigned.zip" -Force
+
+      - name: Collect redacted runner evidence
+        shell: pwsh
+        run: |
+          $hash = Get-FileHash -Algorithm SHA256 ".runner-qualification/DJConnect-Windows-x64-unsigned.zip"
+          [ordered]@{
+            runner_name = $env:RUNNER_NAME
+            runner_os = $env:RUNNER_OS
+            runner_arch = $env:RUNNER_ARCH
+            required_role = "windows"
+            git_sha = $env:GITHUB_SHA
+            dotnet = (dotnet --version)
+            artifact_sha256 = $hash.Hash.ToLowerInvariant()
+          } | ConvertTo-Json | Set-Content -Encoding utf8 ".runner-qualification/runner-evidence.json"
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-native-runner-qualification
+          path: |
+            .runner-qualification/DJConnect-Windows-x64-unsigned.zip
+            .runner-qualification/runner-evidence.json
+          if-no-files-found: error
