@@ -14,11 +14,14 @@ jobs:
     if: ${{ github.actor == github.repository_owner }}
     runs-on: [self-hosted, internal-release, qualification, windows11]
     timeout-minutes: 45
+    defaults:
+      run:
+        shell: powershell -ExecutionPolicy Bypass -File {0}
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Build unsigned Windows qualification artifact
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = "Stop"
           $project = "src/DJConnect.Windows/DJConnect.Windows.csproj"
@@ -32,7 +35,7 @@ jobs:
             -DestinationPath ".runner-qualification/DJConnect-Windows-x64-unsigned.zip" -Force
 
       - name: Collect redacted runner evidence
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $hash = Get-FileHash -Algorithm SHA256 ".runner-qualification/DJConnect-Windows-x64-unsigned.zip"
           [ordered]@{

@@ -211,6 +211,9 @@ jobs:
     runs-on: [self-hosted, internal-release, qualification, windows11]
     env:
       DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
+    defaults:
+      run:
+        shell: powershell -ExecutionPolicy Bypass -File {0}
     steps:
       - name: Check out repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -233,11 +236,11 @@ jobs:
         run: dotnet build src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-windows10.0.19041.0 --no-restore
 
       - name: Run protocol/core tests on Windows
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: dotnet run --project tests/DJConnect.Tests/DJConnect.Tests.csproj --no-restore
 
       - name: Check test project formatting on Windows
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj --verify-no-changes --no-restore
 
   windows-release-artifact-sanity:
@@ -246,6 +249,9 @@ jobs:
     runs-on: [self-hosted, internal-release, qualification, windows11]
     env:
       DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
+    defaults:
+      run:
+        shell: powershell -ExecutionPolicy Bypass -File {0}
     steps:
       - name: Check out repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -256,11 +262,11 @@ jobs:
           global-json-file: global.json
 
       - name: Install MAUI workload
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: dotnet workload restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-windows10.0.19041.0
 
       - name: Publish unsigned Windows artifacts
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = "Stop"
           $project = "src/DJConnect.Windows/DJConnect.Windows.csproj"
@@ -294,7 +300,7 @@ jobs:
           }
 
       - name: Validate unsigned artifact shape
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = "Stop"
           $zips = Get-ChildItem ".public-release/artifacts" -Filter "DJConnect-Windows-*-unsigned.zip"
@@ -316,7 +322,7 @@ jobs:
 
       - name: Record runner qualification evidence
         if: always()
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = "Stop"
           New-Item -ItemType Directory -Force -Path "runner-evidence" | Out-Null
