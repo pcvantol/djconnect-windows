@@ -144,6 +144,8 @@ jobs:
   build-windows:
     name: Build unsigned Windows app
     runs-on: [self-hosted, internal-release, qualification, windows11]
+    env:
+      DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
     needs: resolve-version
     timeout-minutes: 45
     steps:

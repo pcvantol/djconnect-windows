@@ -14,6 +14,8 @@ jobs:
     if: ${{ github.actor == github.repository_owner }}
     runs-on: [self-hosted, internal-release, qualification, windows11]
     timeout-minutes: 45
+    env:
+      DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 

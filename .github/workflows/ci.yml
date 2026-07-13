@@ -209,6 +209,8 @@ jobs:
     name: MAUI Windows build
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: [self-hosted, internal-release, qualification, windows11]
+    env:
+      DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
     steps:
       - name: Check out repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -242,6 +244,8 @@ jobs:
     name: Windows release artifact sanity
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: [self-hosted, internal-release, qualification, windows11]
+    env:
+      DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
     steps:
       - name: Check out repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
