@@ -14,14 +14,8 @@ jobs:
     if: ${{ github.actor == github.repository_owner }}
     runs-on: [self-hosted, internal-release, qualification, windows11]
     timeout-minutes: 45
-    env:
-      DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
     steps:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
-
-      - uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
-        with:
-          global-json-file: global.json
 
       - name: Build unsigned Windows qualification artifact
         shell: pwsh
