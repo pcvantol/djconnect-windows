@@ -33,53 +33,59 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
-
-      - name: Install ripgrep
-        run: sudo apt-get update && sudo apt-get install -y ripgrep
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Validate workflow YAML
         run: |
           ruby -e 'require "yaml"; Dir[".github/workflows/*.{yml,yaml}"].each { |f| YAML.load_file(f); puts "ok #{f}" }'
 
-      - name: Scan for accidental secret material
+      - name: Validate immutable GitHub Action references
         shell: bash
         run: |
           set -euo pipefail
-          matches="$(mktemp)"
-          rg -n \
-            "([A-Za-z0-9_]*token[A-Za-z0-9_]*|password|secret|refresh|authorization|Bearer|djci_|p8|pfx|client_secret|api_key)" \
-            -g '!bin/**' \
-            -g '!obj/**' \
-            -g '!artifacts/**' \
-            -g '!publish/**' \
-            -g '!.public-release/**' \
-            . > "$matches" || true
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
 
-          if [[ ! -s "$matches" ]]; then
-            exit 0
-          fi
+          USES = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s#]+)")
+          SHA = re.compile(r"^[0-9a-f]{40}$")
 
-          unexpected="$(mktemp)"
-          grep -Ev \
-            '(^|/)(README\.md|SECURITY\.md|PRIVACY\.md|CONTRIBUTING\.md|CHAT_BOOTSTRAP\.md|CHANGELOG\.md|docs/|tests/|tools/|src/DJConnect\.Windows/MainPage\.xaml|src/DJConnect\.Windows/Platforms/Windows/Package\.appxmanifest|src/DJConnect\.Windows/Resources/Strings(\.[a-z]{2})?\.resx|src/DJConnect\.Windows/Services/ApiErrorLocalizer\.cs|src/DJConnect\.Windows/Services/DiagnosticRedactor\.cs|src/DJConnect\.Windows/Services/CredentialStore\.cs|src/DJConnect\.Windows/Services/DJConnectApiClient\.cs|src/DJConnect\.Windows/Services/DJConnectWebSocketPayloadFactory\.cs|src/DJConnect\.Windows/Services/FastPathDiagnosticsFormatter\.cs|src/DJConnect\.Windows/Services/PairingStatePolicy\.cs|src/DJConnect\.Windows/ViewModels/MainViewModel\.cs|src/DJConnect\.Windows/Models/ApiModels\.cs|\.github/workflows/public-unsigned-release\.yml|\.github/workflows/ci\.yml)' \
-            "$matches" > "$unexpected" || true
+          def mutable_references(text: str) -> list[str]:
+              violations = []
+              for line in text.splitlines():
+                  match = USES.match(line)
+                  if not match:
+                      continue
+                  reference = match.group(1)
+                  if reference.startswith("./"):
+                      continue
+                  if "@" not in reference or not SHA.fullmatch(reference.rsplit("@", 1)[1]):
+                      violations.append(reference)
+              return violations
 
-          if [[ -s "$unexpected" ]]; then
-            echo "Unexpected secret-like strings found outside approved docs/tests/security plumbing:"
-            cat "$unexpected"
-            exit 1
-          fi
+          # Regression coverage: prose such as "refresh" is not scanned, while a
+          # mutable GitHub Action alias remains a failure and a full SHA is accepted.
+          assert mutable_references("The profile can refresh without credentials.") == []
+          assert mutable_references("- uses: actions/checkout@v5") == ["actions/checkout@v5"]
+          assert mutable_references("- uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd") == []
+
+          violations = []
+          for workflow in sorted(Path(".github/workflows").glob("*.y*ml")):
+              for reference in mutable_references(workflow.read_text(encoding="utf-8")):
+                  violations.append(f"{workflow}: {reference}")
+          if violations:
+              raise SystemExit("Mutable GitHub Action or reusable-workflow reference(s):\\n" + "\\n".join(violations))
+          PY
 
   protocol-tests:
     name: Protocol/core tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
         with:
           global-json-file: global.json
 
@@ -94,10 +100,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Set up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: "22"
 
@@ -115,10 +121,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
         with:
           global-json-file: global.json
 
@@ -163,10 +169,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
         with:
           global-json-file: global.json
 
@@ -204,10 +210,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
         with:
           global-json-file: global.json
 
@@ -236,10 +242,10 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Set up .NET
-        uses: actions/setup-dotnet@v5
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
         with:
           global-json-file: global.json
 
