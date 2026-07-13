@@ -47,7 +47,7 @@ jobs:
           from pathlib import Path
           import re
 
-          USES = re.compile(r"^\\s*(?:-\\s*)?uses:\\s*([^\\s#]+)")
+          USES = re.compile(r"^\s*(?:-\s*)?uses:\s*([^\s#]+)")
           SHA = re.compile(r"^[0-9a-f]{40}$")
 
           def mutable_references(text: str) -> list[str]:
