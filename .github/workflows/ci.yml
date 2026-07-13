@@ -207,7 +207,13 @@ jobs:
 
   maui-windows-build:
     name: MAUI Windows build
-    runs-on: windows-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: [self-hosted, internal-release, qualification, windows11]
+    env:
+      DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
+    defaults:
+      run:
+        shell: powershell -ExecutionPolicy Bypass -File {0}
     steps:
       - name: Check out repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -230,16 +236,22 @@ jobs:
         run: dotnet build src/DJConnect.Windows/DJConnect.Windows.csproj -f net10.0-windows10.0.19041.0 --no-restore
 
       - name: Run protocol/core tests on Windows
-        shell: pwsh
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: dotnet run --project tests/DJConnect.Tests/DJConnect.Tests.csproj --no-restore
 
       - name: Check test project formatting on Windows
-        shell: pwsh
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj --verify-no-changes --no-restore
 
   windows-release-artifact-sanity:
     name: Windows release artifact sanity
-    runs-on: windows-latest
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    runs-on: [self-hosted, internal-release, qualification, windows11]
+    env:
+      DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
+    defaults:
+      run:
+        shell: powershell -ExecutionPolicy Bypass -File {0}
     steps:
       - name: Check out repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
@@ -250,11 +262,11 @@ jobs:
           global-json-file: global.json
 
       - name: Install MAUI workload
-        shell: pwsh
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: dotnet workload restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-windows10.0.19041.0
 
       - name: Publish unsigned Windows artifacts
-        shell: pwsh
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = "Stop"
           $project = "src/DJConnect.Windows/DJConnect.Windows.csproj"
@@ -288,7 +300,7 @@ jobs:
           }
 
       - name: Validate unsigned artifact shape
-        shell: pwsh
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = "Stop"
           $zips = Get-ChildItem ".public-release/artifacts" -Filter "DJConnect-Windows-*-unsigned.zip"
@@ -307,6 +319,32 @@ jobs:
             if (-not ($listing -match "DJConnect\.exe")) {
               throw "Artifact does not contain DJConnect.exe: $($zip.Name)."
             }
+
+      - name: Record runner qualification evidence
+        if: always()
+        shell: powershell -ExecutionPolicy Bypass -File {0}
+        run: |
+          $ErrorActionPreference = "Stop"
+          New-Item -ItemType Directory -Force -Path "runner-evidence" | Out-Null
+          [ordered]@{
+            runner_name = $env:RUNNER_NAME
+            runner_os = $env:RUNNER_OS
+            runner_arch = $env:RUNNER_ARCH
+            required_role = "windows"
+            git_sha = $env:GITHUB_SHA
+            dotnet = (dotnet --version)
+            msbuild = (Get-Command msbuild -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source -First 1)
+          } | ConvertTo-Json | Set-Content -Encoding utf8 "runner-evidence/runner-evidence.json"
+
+      - name: Upload Windows artifacts and runner evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-unsigned-artifacts-and-runner-evidence
+          path: |
+            .public-release/artifacts/*
+            runner-evidence/runner-evidence.json
+          if-no-files-found: error
           }
 
   cleanup-workflow-runs:
