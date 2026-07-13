@@ -319,6 +319,7 @@ jobs:
             if (-not ($listing -match "DJConnect\.exe")) {
               throw "Artifact does not contain DJConnect.exe: $($zip.Name)."
             }
+          }
 
       - name: Record runner qualification evidence
         if: always()
