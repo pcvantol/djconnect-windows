@@ -92,6 +92,23 @@ jobs:
       - name: Run automatic tests
         run: ./run_tests.sh
 
+      - name: Generate protocol/core coverage evidence
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          dotnet tool install --global dotnet-coverage
+          "$HOME/.dotnet/tools/dotnet-coverage" collect "dotnet run --project tests/DJConnect.Tests/DJConnect.Tests.csproj --no-restore" --output coverage.xml --output-format cobertura
+          printf '%s\n' "$GITHUB_SHA" > coverage-main-sha.txt
+
+      - name: Upload protocol/core coverage evidence
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: windows-cobertura-coverage
+          path: |
+            coverage.xml
+            coverage-main-sha.txt
+          if-no-files-found: error
+
       - name: Check test project formatting
         run: dotnet format tests/DJConnect.Tests/DJConnect.Tests.csproj --verify-no-changes --no-restore
 
