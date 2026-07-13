@@ -345,7 +345,6 @@ jobs:
             .public-release/artifacts/*
             runner-evidence/runner-evidence.json
           if-no-files-found: error
-          }
 
   cleanup-workflow-runs:
     name: Cleanup workflow runs
