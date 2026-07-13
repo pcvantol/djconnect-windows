@@ -158,15 +158,15 @@ jobs:
           global-json-file: global.json
 
       - name: Install MAUI workload
-        shell: pwsh
+        shell: powershell
         run: dotnet workload restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM
 
       - name: Restore app dependencies
-        shell: pwsh
+        shell: powershell
         run: dotnet restore $env:PROJECT_PATH -p:TargetFramework=$env:WINDOWS_TFM
 
       - name: Publish unsigned Windows app
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           $version = "${{ needs.resolve-version.outputs.version }}"

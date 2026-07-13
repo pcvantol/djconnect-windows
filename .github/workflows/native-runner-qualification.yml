@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
       - name: Build unsigned Windows qualification artifact
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           $project = "src/DJConnect.Windows/DJConnect.Windows.csproj"
@@ -32,7 +32,7 @@ jobs:
             -DestinationPath ".runner-qualification/DJConnect-Windows-x64-unsigned.zip" -Force
 
       - name: Collect redacted runner evidence
-        shell: pwsh
+        shell: powershell
         run: |
           $hash = Get-FileHash -Algorithm SHA256 ".runner-qualification/DJConnect-Windows-x64-unsigned.zip"
           [ordered]@{
