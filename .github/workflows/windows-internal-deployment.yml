@@ -1,0 +1,44 @@
+name: Windows internal deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      action: {required: true, type: choice, options: [deployment]}
+      candidate_sha: {required: true, type: string}
+      execution_mode: {required: true, type: choice, options: [execute]}
+      manifest_id: {required: true, type: string}
+      artifact_id: {required: true, type: string}
+      artifact_sha256: {required: true, type: string}
+      target: {required: true, type: choice, options: [windows_internal_arm64]}
+      platform_version: {required: true, type: string}
+      release_profile: {required: true, type: choice, options: [INTERNAL_RELEASE]}
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, Windows, ARM64, internal-release]
+    environment: windows-internal-deployment
+    steps:
+      - name: Validate immutable deployment request
+        shell: pwsh
+        env:
+          ACTION: ${{ inputs.action }}
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          EXECUTION_MODE: ${{ inputs.execution_mode }}
+          MANIFEST_ID: ${{ inputs.manifest_id }}
+          ARTIFACT_ID: ${{ inputs.artifact_id }}
+          ARTIFACT_SHA256: ${{ inputs.artifact_sha256 }}
+          TARGET: ${{ inputs.target }}
+          PLATFORM_VERSION: ${{ inputs.platform_version }}
+          RELEASE_PROFILE: ${{ inputs.release_profile }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:ACTION -ne 'deployment' -or $env:EXECUTION_MODE -ne 'execute' -or $env:TARGET -ne 'windows_internal_arm64' -or $env:RELEASE_PROFILE -ne 'INTERNAL_RELEASE') { throw 'Invalid deployment request' }
+          if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$' -or $env:MANIFEST_ID -notmatch '^release-[A-Za-z0-9._-]+$' -or $env:ARTIFACT_ID -notmatch '^[0-9]+$' -or $env:ARTIFACT_SHA256 -notmatch '^[0-9a-f]{64}$' -or $env:PLATFORM_VERSION -notmatch '^[0-9]+\.[0-9]+$') { throw 'Invalid immutable release identity' }
+      - name: Refuse deployment without an approved operational manifest
+        shell: pwsh
+        run: |
+          throw 'WINDOWS_INTERNAL_DEPLOYMENT_NOT_AUTHORIZED: no approved current-main operational release manifest is available.'
