@@ -1,14 +1,11 @@
 # Windows Engineering Status
 
-**State:** `LOCAL_IN_PROGRESS` — RG-WINDOWS-001 governance adoption.
+**State:** `LOCAL_IN_PROGRESS` — Windows Internal Deployment Consumer Remediation.
 
-Current main is synchronized at `6c0c3c3478c81472e479184dc03e51fd095dc4b2`.
-This docs-only increment establishes local Version 2.2 governance records.
-No application implementation is in scope.
+The Version 2.2 governance adoption was merged as PR #17. This increment replaces the static fail-closed Windows deployment and smoke placeholders with a manifest-bound internal ARM64 consumer. It does not dispatch a release.
 
-**Blockers/limitations:** signed Windows distribution requires approved signing
-and release authorization.
+**Blockers/limitations:** the only registered self-hosted Windows runner, `djconnect-windows11-parallels`, reports `X64`; a genuine ARM64 runner and the documented `windows-internal-deployment` environment variable are required before operational qualification. Windows also lacks an explicit current manifest target authorization.
 
-**Deferred work:** all non-governance product and release work.
+**Deferred work:** target configuration, explicit authorization and the manifest-bound deployment plus separate smoke operation.
 
-**Recommended next prompt:** after merge, reconcile this adoption increment.
+**Recommended next prompt:** after this PR merges, configure a genuine Windows ARM64 runner and the documented Environment variable, then obtain exact Windows target authorization before dispatch.

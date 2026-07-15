@@ -1,5 +1,5 @@
 # Windows Roadmap Index
 
 This is local navigation only; central planning remains in `pcvantol/djconnect`.
-Current work is RG-WINDOWS-001. After merge/reconciliation, select one local,
-evidence-backed increment from current repository reality.
+
+The governance adoption is merged. Current work is the Windows Internal Deployment Consumer Remediation increment. After merge, configure the evidence-backed ARM64 target prerequisites before selecting an authorized deployment operation.

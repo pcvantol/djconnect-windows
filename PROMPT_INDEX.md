@@ -4,12 +4,11 @@ Status: repository-local prompt navigation
 
 Repository: `pcvantol/djconnect-windows`
 
-This file tracks only this repository's local phase state. It must not copy the
-canonical platform roadmap from `pcvantol/djconnect/PROMPT_INDEX.md`.
+This file tracks only this repository's local phase state. It must not copy the canonical platform roadmap from `pcvantol/djconnect/PROMPT_INDEX.md`.
 
 ## Current Repository Phase
 
-RG-WINDOWS-001: Windows governance adoption.
+Windows Internal Deployment Consumer Remediation.
 
 ## Status
 
@@ -23,19 +22,16 @@ LOCAL_IN_PROGRESS
 
 ## Current Prompt
 
-Windows governance adoption
+Replace the static fail-closed Windows deployment and smoke entrypoints with the canonical manifest-bound consumer contract. Do not dispatch a deployment.
 
 ## Completion Report
 
-`docs/history/prompts/2026-07-15-rg-windows-001.md`
+`docs/history/prompts/2026-07-16-windows-internal-deployment-consumer-remediation.md`
 
 ## Next Repository Phase
 
-Complete repository-local bootstrap alignment, then wait for the next
-repository-specific implementation, verification, release or documentation
-prompt.
+After this increment is merged, provision a genuine ARM64 runner, configure the internal installation root and obtain an exact Windows authorization before dispatching deployment and then smoke.
 
 ## Boundary
 
-Do not add Pi phases, ESP phases, Apple phases, platform verification phases or
-unrelated repository roadmaps here unless this repository owns that work.
+Do not add Pi phases, ESP phases, Apple phases, platform verification phases or unrelated repository roadmaps here unless this repository owns that work.
