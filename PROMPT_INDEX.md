@@ -12,7 +12,7 @@ Windows Internal Deployment Consumer Remediation.
 
 ## Status
 
-LOCAL_IN_PROGRESS
+REVIEWABLE_FROZEN
 
 ## Depends On
 

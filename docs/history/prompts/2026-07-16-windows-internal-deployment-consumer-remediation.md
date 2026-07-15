@@ -6,7 +6,7 @@
 - **Engineering program:** Platform Release Engineering
 - **Branch:** `codex/windows-3-3-deployment-consumer`
 - **Commit SHA:** `176b18c3a8fec3a5bdf0da66c3de8c4d977b4ca1`
-- **Pull request:** pending
+- **Pull request:** [#18](https://github.com/pcvantol/djconnect-windows/pull/18)
 - **Decision:** `WINDOWS_INTERNAL_DEPLOYMENT_CONSUMER_IMPLEMENTATION_READY_OPERATIONAL_QUALIFICATION_BLOCKED`
 
 ## Validation summary

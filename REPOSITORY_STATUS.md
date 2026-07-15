@@ -22,7 +22,7 @@ Windows Internal Deployment Consumer Remediation.
 
 ## Status
 
-Static implementation in progress; operational deployment remains blocked.
+Reviewable implementation freeze; operational deployment remains blocked.
 
 ## Blocking Dependencies
 
