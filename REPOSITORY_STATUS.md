@@ -18,14 +18,11 @@ Does not own: backend intelligence, provider-specific playback logic, canonical 
 
 ## Current Phase
 
-Platform Governance Phase: Cross-Repository Bootstrap Alignment.
-
-This phase is documentation and governance only. It is not a product
-implementation phase and not a verification execution phase.
+RG-WINDOWS-001: Version 2.2 governance adoption. Documentation only.
 
 ## Status
 
-Active for repository-local bootstrap alignment.
+Governance adoption in progress.
 
 ## Blocking Dependencies
 
@@ -36,11 +33,11 @@ Active for repository-local bootstrap alignment.
 
 ## Current Prompt
 
-Platform Governance Phase - Cross-Repository Bootstrap Alignment
+Windows governance adoption
 
 ## Completion Report
 
-Repository-local documentation branch and commit
+Local governance branch and immutable Prompt History.
 
 ## Last Qualification
 
