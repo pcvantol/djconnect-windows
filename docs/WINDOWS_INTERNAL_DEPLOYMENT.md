@@ -25,7 +25,7 @@ Set-Location <djconnect-windows-clone>
 .\scripts\runner\Install-DJConnectPowerShell7Maintenance.ps1 -RunNow
 ```
 
-The task runs daily at 03:30 as `SYSTEM`, uses `winget` to install or upgrade
+The task runs daily at 10:00 local time as `SYSTEM`, uses `winget` to install or upgrade
 the machine-scoped `Microsoft.PowerShell` and `Microsoft.DotNet.SDK.10`
 packages, runs `dotnet workload update --no-cache`, and records only version,
 workload and error metadata in
