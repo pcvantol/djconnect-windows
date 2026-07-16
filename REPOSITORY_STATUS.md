@@ -18,23 +18,24 @@ Does not own: backend intelligence, provider-specific playback logic, canonical 
 
 ## Current Phase
 
-Windows runner tooling maintenance automation.
+Windows native-preflight consumer adoption, reviewable.
 
 ## Status
 
-PowerShell 7 and .NET 10 maintenance automation in progress; the authorized
-operation remains pending a rerun.
+The Windows consumers now pin the immutable central native-preflight action
+revision and no longer require Bash/WSL. The authorized operation remains
+pending a post-merge rerun.
 
 ## Blocking Dependencies
 
-- The maintenance automation and the central native-preflight remediation must
-  merge before consumer adoption and rerun.
-- `winget` must be available to the SYSTEM scheduled task for machine-level
-  PowerShell 7 and .NET 10 maintenance.
+- This consumer-adoption PR must merge before the authorized rerun.
+- PowerShell 7 must be visible to the Windows runner service account. The
+  maintenance task runs in an interactive administrator context; WinGet is not
+  a `SYSTEM` dependency.
 
 ## Current Prompt
 
-Windows runner tooling maintenance automation
+Windows native-preflight consumer adoption
 
 ## Completion Report
 
@@ -45,10 +46,11 @@ Windows runner tooling maintenance automation
 The ARM64 runner qualified successfully in service context. Authorized deployment
 run `29482534415` failed before preflight or installation because `pwsh` was not
 available to `NETWORK SERVICE`; no artifact or target mutation occurred. After
-PR #19, rerun `29483069749` again stopped before preflight because the machine
-PowerShell Execution Policy blocked the generated GitHub Actions script. The
-shared native-preflight remediation is pending; this increment adds automatic
-machine-level PowerShell 7 and .NET 10 maintenance for the runner service.
+PR #19, rerun `29483069749` stopped before preflight because the local Execution
+Policy blocked the generated GitHub Actions script. A later run reached the
+previous shared preflight, where Bash resolved to WSL. The consumer now adopts
+the merged native PowerShell 7 preflight; deployment remains pending this PR's
+merge and a fresh authorized run.
 
 ## Validated Base SHA
 
@@ -59,8 +61,7 @@ consumer remediation increment.
 
 ## Repository-Local Next Action
 
-Review and merge the maintenance automation. Then adopt the merged central
-native-preflight SHA in the consumer and rerun the already authorized
+Review and merge this consumer update. Then rerun the already authorized
 manifest-bound deployment, followed by smoke only on success.
 
 ## Notes

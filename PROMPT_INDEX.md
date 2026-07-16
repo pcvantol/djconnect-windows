@@ -8,11 +8,11 @@ This file tracks only this repository's local phase state. It must not copy the 
 
 ## Current Repository Phase
 
-Windows runner tooling maintenance automation.
+Windows native-preflight consumer adoption.
 
 ## Status
 
-IMPLEMENTATION_IN_PROGRESS
+REVIEWABLE_FROZEN
 
 ## Depends On
 
@@ -22,21 +22,18 @@ IMPLEMENTATION_IN_PROGRESS
 
 ## Current Prompt
 
-Install a verified, daily SYSTEM maintenance task that keeps machine-level
-PowerShell 7 and .NET 10 current for the Windows runner, and make Windows
-build jobs consume that machine SDK rather than a temporary SDK. Do not alter
-the manifest, artifact or deployment authorization.
+Adopt the immutable merged central deployment-readiness preflight revision in
+the Windows deployment and smoke consumers and remove the obsolete Bash
+prerequisite. Do not alter the manifest, artifact or deployment authorization.
 
 ## Completion Report
 
-`docs/history/prompts/2026-07-16-windows-runner-powershell-7-maintenance.md`
+`docs/history/prompts/2026-07-16-windows-native-preflight-consumer-adoption.md`
 
 ## Next Repository Phase
 
-After this increment and the central native-preflight remediation merge, adopt
-the immutable action SHA in the Windows consumer, remove the obsolete Bash
-prerequisite, then rerun the already authorized deployment and dispatch smoke
-only if that deployment succeeds.
+After this increment merges, rerun the already authorized deployment and
+dispatch smoke only if that deployment succeeds.
 
 ## Boundary
 

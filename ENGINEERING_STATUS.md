@@ -1,11 +1,11 @@
 # Windows Engineering Status
 
-**State:** `IMPLEMENTATION_IN_PROGRESS` — Windows runner tooling maintenance automation.
+**State:** `REVIEWABLE_FROZEN` — Windows native-preflight consumer adoption.
 
-The Version 2.2 governance adoption and manifest-bound consumer were merged as PRs #17 and #18. The genuine ARM64 runner, Environment configuration and target-scoped manifest authorization are now in place. Earlier retries stopped before target mutation because `NETWORK SERVICE` could not access user-profile `pwsh`, and then because the local Execution Policy blocked generated scripts. The shared-preflight remediation selects native PowerShell 7 on Windows; this increment installs a daily SYSTEM maintenance task that installs or upgrades machine-scoped PowerShell 7 and .NET 10 through `winget`, updates installed .NET workloads and verifies the resulting machine tooling. Windows build jobs use that machine SDK rather than a temporary per-job installation.
+The Version 2.2 governance adoption and manifest-bound consumer were merged as PRs #17 and #18. The genuine ARM64 runner, Environment configuration and target-scoped manifest authorization are now in place. Earlier retries stopped before target mutation because `NETWORK SERVICE` could not access PowerShell 7, and then because the prior shared Bash preflight resolved to WSL. The merged central native-preflight action selects PowerShell 7 on Windows. This increment pins that immutable central revision in both Windows deployment consumers and removes their obsolete Bash prerequisite. The separately merged maintenance task keeps PowerShell 7, .NET 10 and installed workloads current through an interactive administrator task; it is not a deployment authorization.
 
-**Blockers/limitations:** the maintenance PR and the central native-preflight PR must merge. The Windows consumer must then pin the merged central action SHA and remove its obsolete Bash prerequisite before rerun. The first SYSTEM maintenance execution is an objective environment gate; if `winget` is unavailable to SYSTEM, it reports a log-backed blocker.
+**Blockers/limitations:** this reviewable consumer update must merge. The runner service must expose machine-visible `pwsh`; the preflight fails closed if it does not. The daily maintenance task is an administrator-context task because WinGet is unavailable to `SYSTEM`; its successful log is evidence that the interactive tooling path is current.
 
-**Deferred work:** install and verify the maintenance task once on the runner, pin the native preflight action in the Windows consumer, then rerun the already authorized deployment and, only after it succeeds, its separate smoke operation.
+**Deferred work:** after this PR merges, rerun the already authorized manifest-bound Windows deployment and, only after it succeeds, dispatch its separate smoke operation.
 
-**Recommended next prompt:** after the two remediation PRs merge, adopt the central immutable preflight SHA in this consumer and remove the local Bash prerequisite; then qualify the authorized deployment and smoke.
+**Recommended next prompt:** after this PR merges, qualify the already authorized Windows deployment and post-deployment smoke. Do not dispatch smoke before a successful deployment run.
