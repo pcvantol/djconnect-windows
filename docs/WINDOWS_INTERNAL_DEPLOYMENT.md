@@ -25,17 +25,25 @@ Set-Location <djconnect-windows-clone>
 .\scripts\runner\Install-DJConnectPowerShell7Maintenance.ps1 -RunNow
 ```
 
-The task runs daily at 10:00 local time as `SYSTEM`, uses `winget` to install or upgrade
-the machine-scoped `Microsoft.PowerShell` and `Microsoft.DotNet.SDK.10`
-packages, runs `dotnet workload update --no-cache`, and records only version,
-workload and error metadata in
+The task runs daily at 10:00 local time as the administrator who installed it,
+using an interactive scheduled-task token with the highest privilege level and
+without storing that user's password. This is required because WinGet/App
+Installer is registered in a signed-in user's Windows context and must not be
+run under `SYSTEM`. The administrator must therefore be logged in at the
+scheduled time; use `-RunNow` after login for an immediate run.
+
+The task uses WinGet to install or upgrade the machine-scoped
+`Microsoft.PowerShell` and `Microsoft.DotNet.SDK.10` packages, runs
+`dotnet workload update --no-cache`, and records only version, workload and
+error metadata in
 `C:\ProgramData\DJConnect\runner-maintenance\runner-tooling-maintenance.log`.
 The initial `-RunNow` invocation must succeed before a Windows consumer that
 uses the native preflight can be dispatched. Windows CI and unsigned release
 builds then use this machine SDK directly instead of a per-job temporary
 `DOTNET_INSTALL_DIR`; they fail closed if a compatible .NET 10 SDK is absent.
-If `winget` is unavailable to `SYSTEM`, the log records that objective
-environment blocker; do not fall back to WSL or a user-profile-only `pwsh`.
+If WinGet is unavailable, sign in once with the maintenance administrator and
+complete App Installer registration; do not fall back to WSL or a
+user-profile-only `pwsh`.
 
 ## Deployment contract
 
