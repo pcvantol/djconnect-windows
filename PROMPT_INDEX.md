@@ -8,7 +8,7 @@ This file tracks only this repository's local phase state. It must not copy the 
 
 ## Current Repository Phase
 
-Windows runner PowerShell 7 maintenance automation.
+Windows runner tooling maintenance automation.
 
 ## Status
 
@@ -23,8 +23,9 @@ IMPLEMENTATION_IN_PROGRESS
 ## Current Prompt
 
 Install a verified, daily SYSTEM maintenance task that keeps machine-level
-PowerShell 7 current for the Windows runner. Do not alter the manifest,
-artifact or deployment authorization.
+PowerShell 7 and .NET 10 current for the Windows runner, and make Windows
+build jobs consume that machine SDK rather than a temporary SDK. Do not alter
+the manifest, artifact or deployment authorization.
 
 ## Completion Report
 

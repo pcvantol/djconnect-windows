@@ -12,12 +12,12 @@ The runner must be online with `self-hosted`, `Windows`, `ARM64` and `internal-r
 
 The registered `djconnect-windows11-parallels-arm64` runner is a genuine Windows-on-ARM target. Its first authorized deployment attempt stopped safely before preflight or installation because `pwsh` was unavailable to the service account. The next attempt reached the shared preflight and proved that its Bash dependency resolved to WSL. The pending native-preflight adoption removes this WSL dependency; the consumer's own ephemeral Windows PowerShell steps continue to use a workflow-scoped `-ExecutionPolicy Bypass`.
 
-## PowerShell 7 maintenance
+## Windows runner tooling maintenance
 
 The canonical shared readiness preflight uses native PowerShell 7 on Windows;
-it does not use WSL. Keep PowerShell 7 machine-wide and current by installing
-the repository maintenance task once from an elevated Windows PowerShell
-session after this script is available on the runner:
+it does not use WSL. Keep PowerShell 7 and the .NET 10 SDK machine-wide and
+current by installing the repository maintenance task once from an elevated
+Windows PowerShell session after this script is available on the runner:
 
 ```powershell
 Set-Location <djconnect-windows-clone>
@@ -25,13 +25,15 @@ Set-Location <djconnect-windows-clone>
 ```
 
 The task runs daily at 03:30 as `SYSTEM`, uses `winget` to install or upgrade
-the machine-scoped `Microsoft.PowerShell` package, and records only version and
-error metadata in
-`C:\ProgramData\DJConnect\runner-maintenance\powershell7-maintenance.log`.
+the machine-scoped `Microsoft.PowerShell` and `Microsoft.DotNet.SDK.10`
+packages, and records only version and error metadata in
+`C:\ProgramData\DJConnect\runner-maintenance\runner-tooling-maintenance.log`.
 The initial `-RunNow` invocation must succeed before a Windows consumer that
-uses the native preflight can be dispatched. If `winget` is unavailable to
-`SYSTEM`, the log records that objective environment blocker; do not fall back
-to WSL or a user-profile-only `pwsh`.
+uses the native preflight can be dispatched. Windows CI and unsigned release
+builds then use this machine SDK directly instead of a per-job temporary
+`DOTNET_INSTALL_DIR`; they fail closed if a compatible .NET 10 SDK is absent.
+If `winget` is unavailable to `SYSTEM`, the log records that objective
+environment blocker; do not fall back to WSL or a user-profile-only `pwsh`.
 
 ## Deployment contract
 

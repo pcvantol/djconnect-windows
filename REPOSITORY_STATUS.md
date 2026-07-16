@@ -18,22 +18,23 @@ Does not own: backend intelligence, provider-specific playback logic, canonical 
 
 ## Current Phase
 
-Windows runner PowerShell 7 maintenance automation.
+Windows runner tooling maintenance automation.
 
 ## Status
 
-PowerShell 7 maintenance automation in progress; the authorized operation remains pending a rerun.
+PowerShell 7 and .NET 10 maintenance automation in progress; the authorized
+operation remains pending a rerun.
 
 ## Blocking Dependencies
 
 - The maintenance automation and the central native-preflight remediation must
   merge before consumer adoption and rerun.
 - `winget` must be available to the SYSTEM scheduled task for machine-level
-  PowerShell 7 maintenance.
+  PowerShell 7 and .NET 10 maintenance.
 
 ## Current Prompt
 
-Windows runner PowerShell 7 maintenance automation
+Windows runner tooling maintenance automation
 
 ## Completion Report
 
@@ -47,7 +48,7 @@ available to `NETWORK SERVICE`; no artifact or target mutation occurred. After
 PR #19, rerun `29483069749` again stopped before preflight because the machine
 PowerShell Execution Policy blocked the generated GitHub Actions script. The
 shared native-preflight remediation is pending; this increment adds automatic
-machine-level PowerShell 7 maintenance for the runner service.
+machine-level PowerShell 7 and .NET 10 maintenance for the runner service.
 
 ## Validated Base SHA
 

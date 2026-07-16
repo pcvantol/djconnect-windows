@@ -1,8 +1,8 @@
 # Windows Engineering Status
 
-**State:** `IMPLEMENTATION_IN_PROGRESS` — Windows runner PowerShell 7 maintenance automation.
+**State:** `IMPLEMENTATION_IN_PROGRESS` — Windows runner tooling maintenance automation.
 
-The Version 2.2 governance adoption and manifest-bound consumer were merged as PRs #17 and #18. The genuine ARM64 runner, Environment configuration and target-scoped manifest authorization are now in place. Earlier retries stopped before target mutation because `NETWORK SERVICE` could not access user-profile `pwsh`, and then because the local Execution Policy blocked generated scripts. The shared-preflight remediation selects native PowerShell 7 on Windows; this increment installs a daily SYSTEM maintenance task that installs or upgrades the machine-scoped PowerShell 7 package through `winget` and verifies its result.
+The Version 2.2 governance adoption and manifest-bound consumer were merged as PRs #17 and #18. The genuine ARM64 runner, Environment configuration and target-scoped manifest authorization are now in place. Earlier retries stopped before target mutation because `NETWORK SERVICE` could not access user-profile `pwsh`, and then because the local Execution Policy blocked generated scripts. The shared-preflight remediation selects native PowerShell 7 on Windows; this increment installs a daily SYSTEM maintenance task that installs or upgrades machine-scoped PowerShell 7 and .NET 10 through `winget` and verifies both results. Windows build jobs use that machine SDK rather than a temporary per-job installation.
 
 **Blockers/limitations:** the maintenance PR and the central native-preflight PR must merge. The Windows consumer must then pin the merged central action SHA and remove its obsolete Bash prerequisite before rerun. The first SYSTEM maintenance execution is an objective environment gate; if `winget` is unavailable to SYSTEM, it reports a log-backed blocker.
 
