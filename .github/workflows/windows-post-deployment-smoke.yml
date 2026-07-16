@@ -24,7 +24,7 @@ jobs:
       DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT: ${{ vars.DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT }}
     steps:
       - name: Validate immutable smoke request
-        shell: pwsh
+        shell: powershell
         env:
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           MANIFEST_ID: ${{ inputs.manifest_id }}
@@ -38,6 +38,13 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$' -or $env:MANIFEST_ID -notmatch '^release-[A-Za-z0-9._-]+$' -or $env:ARTIFACT_ID -notmatch '^release-asset:pcvantol/djconnect-app-releases:windows/v[0-9]+\.[0-9]+\.[0-9]+:DJConnect-Windows-arm64-[0-9]+\.[0-9]+\.[0-9]+-unsigned\.zip$' -or $env:ARTIFACT_SHA256 -notmatch '^[0-9a-f]{64}$' -or $env:PLATFORM_VERSION -notmatch '^[0-9]+\.[0-9]+$' -or $env:DEPLOYMENT_WORKFLOW_RUN -notmatch '^[0-9]+$') { throw 'Invalid immutable smoke identity' }
           if ($env:TARGET -ne 'windows_internal_arm64' -or $env:RELEASE_PROFILE -ne 'INTERNAL_RELEASE') { throw 'Invalid smoke target or profile' }
+      - name: Verify service shell prerequisites
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
+            throw 'Windows deployment service requires Bash in the machine-level PATH for the canonical readiness preflight.'
+          }
       - name: Verify target deployment readiness
         uses: pcvantol/djconnect/.github/actions/deployment-readiness-preflight@962609ad77668c615b00c88b22167ed6b20bffc3
         with:
@@ -52,7 +59,7 @@ jobs:
           smoke_contract: windows-internal-arm64-smoke-v1
       - id: manifest
         name: Verify approved central manifest binding
-        shell: pwsh
+        shell: powershell
         env:
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           MANIFEST_ID: ${{ inputs.manifest_id }}
@@ -78,7 +85,7 @@ jobs:
           github-token: ${{ github.token }}
           path: deployment-evidence
       - name: Verify successful deployment evidence and perform bounded smoke
-        shell: pwsh
+        shell: powershell
         env:
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           MANIFEST_ID: ${{ inputs.manifest_id }}
@@ -89,6 +96,7 @@ jobs:
           RELEASE_PROFILE: ${{ inputs.release_profile }}
           DEPLOYMENT_WORKFLOW_RUN: ${{ inputs.deployment_workflow_run }}
           EXPECTED_VERSION: ${{ steps.manifest.outputs.release_version }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           $ErrorActionPreference = 'Stop'
           $evidencePath = @(Get-ChildItem -Path deployment-evidence -Filter windows-internal-deployment-evidence.json -Recurse)
@@ -113,8 +121,6 @@ jobs:
           if ($recentCrashes.Count -gt 0) { throw 'A bounded DJConnect crash event was observed after launch.' }
           $smoke = [ordered]@{ schema_version = 1; repository = $env:GITHUB_REPOSITORY; candidate_sha = $env:CANDIDATE_SHA; platform_version = $env:PLATFORM_VERSION; manifest_id = $env:MANIFEST_ID; deployment_workflow_run = $env:DEPLOYMENT_WORKFLOW_RUN; smoke_workflow_run = $env:GITHUB_RUN_ID; runner_identity = "$env:RUNNER_OS/$env:RUNNER_ARCH"; target = $env:TARGET; route_type = 'local_application'; protocol = 'process'; endpoint_class = 'not_applicable'; authentication_mode = 'not_applicable'; artifact_id = $env:ARTIFACT_ID; artifact_sha256 = $env:ARTIFACT_SHA256; expected_version = $env:EXPECTED_VERSION; observed_version = $observedVersion; health_result = 'PASS'; websocket_result = 'NOT_APPLICABLE'; startup_marker_result = 'PROCESS_ALIVE'; crash_log_result = 'NO_MATCHING_CRASH_EVENT'; retry_count = 0; stabilization_window = 'PT10S'; timestamps = @{ started_at = $start.ToUniversalTime().ToString('o'); observed_at = (Get-Date).ToUniversalTime().ToString('o') }; final_result = 'SMOKE_PASS'; failure_classification = 'none'; recovery_reference = 'windows-internal-arm64-smoke-v1' }
           $smoke | ConvertTo-Json -Depth 4 -Compress | Set-Content -NoNewline -Encoding utf8 windows-post-deployment-smoke-evidence.json
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: windows-post-deployment-smoke-evidence
