@@ -18,44 +18,45 @@ Does not own: backend intelligence, provider-specific playback logic, canonical 
 
 ## Current Phase
 
-RG-WINDOWS-001: Version 2.2 governance adoption. Documentation only.
+Windows Internal Deployment Consumer Remediation.
 
 ## Status
 
-Governance adoption in progress.
+Reviewable implementation freeze; operational deployment remains blocked.
 
 ## Blocking Dependencies
 
-- Cross-repository completion depends on all active DJConnect repositories being
-  aligned and reviewed.
-- Pull request creation requires network/GitHub access and maintainer approval
-  from the local environment.
+- A genuine self-hosted Windows ARM64 runner is not currently registered.
+- `windows-internal-deployment` needs the documented absolute installation-root
+  configuration variable.
+- The current operational manifest has no separately authorized Windows target
+  operation.
 
 ## Current Prompt
 
-Windows governance adoption
+Windows internal deployment consumer remediation
 
 ## Completion Report
 
-Local governance branch and immutable Prompt History.
+`docs/WINDOWS_INTERNAL_DEPLOYMENT.md` and immutable Prompt History.
 
 ## Last Qualification
 
-No repository-local verification qualification was executed for this
-documentation-only bootstrap alignment pass.
+The prior static entrypoints were validated as fail-closed only. Operational
+deployment and post-deployment smoke have not been executed.
 
 ## Validated Base SHA
 
-`2b2af372bc3c5829152da5709ada73bb2238f581`
+`b44c0e5c2f5b4c3cfd4fd1d1d2fcb27e9248bca7`
 
-This value records the repository SHA inspected at the start of the
-repository-local bootstrap alignment pass.
+This records the synchronized main SHA inspected at the start of the Windows
+consumer remediation increment.
 
 ## Repository-Local Next Action
 
-Review and merge the repository-local bootstrap alignment branch, then keep
-future work scoped to this repository's ownership boundary.
+Review and merge the remediation PR. Then configure the ARM64 execution target
+and obtain a separately authorized manifest-bound deployment operation.
 
 ## Notes
 
-Current Windows app version migrated from CHAT_BOOTSTRAP.md: 3.2.10.
+Current release target under preparation: Internal Release 3.3.0 Windows ARM64.

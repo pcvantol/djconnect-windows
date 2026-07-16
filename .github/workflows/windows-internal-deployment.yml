@@ -21,6 +21,8 @@ jobs:
   deploy:
     runs-on: [self-hosted, Windows, ARM64, internal-release]
     environment: windows-internal-deployment
+    env:
+      DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT: ${{ vars.DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT }}
     steps:
       - name: Validate immutable deployment request
         shell: pwsh
@@ -37,8 +39,89 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
           if ($env:ACTION -ne 'deployment' -or $env:EXECUTION_MODE -ne 'execute' -or $env:TARGET -ne 'windows_internal_arm64' -or $env:RELEASE_PROFILE -ne 'INTERNAL_RELEASE') { throw 'Invalid deployment request' }
-          if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$' -or $env:MANIFEST_ID -notmatch '^release-[A-Za-z0-9._-]+$' -or $env:ARTIFACT_ID -notmatch '^[0-9]+$' -or $env:ARTIFACT_SHA256 -notmatch '^[0-9a-f]{64}$' -or $env:PLATFORM_VERSION -notmatch '^[0-9]+\.[0-9]+$') { throw 'Invalid immutable release identity' }
-      - name: Refuse deployment without an approved operational manifest
+          if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$' -or $env:MANIFEST_ID -notmatch '^release-[A-Za-z0-9._-]+$' -or $env:ARTIFACT_ID -notmatch '^release-asset:pcvantol/djconnect-app-releases:windows/v[0-9]+\.[0-9]+\.[0-9]+:DJConnect-Windows-arm64-[0-9]+\.[0-9]+\.[0-9]+-unsigned\.zip$' -or $env:ARTIFACT_SHA256 -notmatch '^[0-9a-f]{64}$' -or $env:PLATFORM_VERSION -notmatch '^[0-9]+\.[0-9]+$') { throw 'Invalid immutable release identity' }
+      - name: Verify target deployment readiness
+        uses: pcvantol/djconnect/.github/actions/deployment-readiness-preflight@962609ad77668c615b00c88b22167ed6b20bffc3
+        with:
+          target: ${{ inputs.target }}
+          manifest_id: ${{ inputs.manifest_id }}
+          candidate_sha: ${{ inputs.candidate_sha }}
+          artifact_id: ${{ inputs.artifact_id }}
+          artifact_sha256: ${{ inputs.artifact_sha256 }}
+          expected_runner_os: Windows
+          expected_runner_arch: ARM64
+          required_configuration: DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT
+          smoke_contract: windows-internal-arm64-smoke-v1
+      - id: manifest
+        name: Require approved central operational manifest binding
         shell: pwsh
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          MANIFEST_ID: ${{ inputs.manifest_id }}
+          ARTIFACT_ID: ${{ inputs.artifact_id }}
+          ARTIFACT_SHA256: ${{ inputs.artifact_sha256 }}
+          TARGET: ${{ inputs.target }}
+          PLATFORM_VERSION: ${{ inputs.platform_version }}
+          RELEASE_PROFILE: ${{ inputs.release_profile }}
         run: |
-          throw 'WINDOWS_INTERNAL_DEPLOYMENT_NOT_AUTHORIZED: no approved current-main operational release manifest is available.'
+          $ErrorActionPreference = 'Stop'
+          $manifest = Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/pcvantol/djconnect/main/docs/release/PLATFORM_3_3_CURRENT_MAIN_MANIFEST_PROPOSAL.json'
+          if ($manifest.status -notin @('APPROVED_DEPLOYMENT_DISPATCH_PENDING', 'APPROVED_PARTIAL_DEPLOYMENT_OPERATIONAL') -or $manifest.approval.state -ne 'APPROVED') { throw 'Windows deployment requires an approved operational manifest.' }
+          if ($manifest.manifest_id -ne $env:MANIFEST_ID -or $manifest.release_profile -ne $env:RELEASE_PROFILE -or $manifest.platform_version -ne $env:PLATFORM_VERSION) { throw 'Manifest identity does not match the deployment request.' }
+          $source = @($manifest.repositories | Where-Object { $_.repository -eq $env:GITHUB_REPOSITORY -and $_.source_sha -eq $env:CANDIDATE_SHA -and $_.version -eq $manifest.release_version })
+          if ($source.Count -ne 1) { throw 'Candidate SHA is not the approved Windows source binding.' }
+          $binding = @($manifest.artifact_bindings | Where-Object { $_.target -eq $env:TARGET -and $_.artifact_id -eq $env:ARTIFACT_ID -and $_.artifact_sha256 -eq $env:ARTIFACT_SHA256 })
+          if ($binding.Count -ne 1 -or [string]::IsNullOrWhiteSpace($binding[0].artifact_url)) { throw 'Artifact is not the unique approved Windows binding.' }
+          $authorization = @($manifest.approval.additional_target_authorizations | Where-Object { $_.target -eq $env:TARGET -and $_.candidate_sha -eq $env:CANDIDATE_SHA -and $_.artifact_id -eq $env:ARTIFACT_ID -and $_.artifact_sha256 -eq $env:ARTIFACT_SHA256 })
+          if ($authorization.Count -ne 1) { throw 'Windows deployment requires one exact target-scoped manifest authorization.' }
+          "artifact_url=$($binding[0].artifact_url)" >> $env:GITHUB_OUTPUT
+          "release_version=$($manifest.release_version)" >> $env:GITHUB_OUTPUT
+      - name: Install the exact approved Windows ARM64 artifact
+        shell: pwsh
+        env:
+          ARTIFACT_URL: ${{ steps.manifest.outputs.artifact_url }}
+          ARTIFACT_SHA256: ${{ inputs.artifact_sha256 }}
+          RELEASE_VERSION: ${{ steps.manifest.outputs.release_version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ([string]::IsNullOrWhiteSpace($env:DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT) -or -not [IO.Path]::IsPathRooted($env:DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT)) { throw 'DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT must be an absolute path.' }
+          $root = [IO.Path]::GetFullPath($env:DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT)
+          $zip = Join-Path $env:RUNNER_TEMP "djconnect-windows-$env:GITHUB_RUN_ID.zip"
+          $staging = Join-Path $root ".staging-$env:GITHUB_RUN_ID"
+          $current = Join-Path $root 'current'
+          $backup = Join-Path $root "previous-$env:GITHUB_RUN_ID"
+          Invoke-WebRequest -Uri $env:ARTIFACT_URL -OutFile $zip
+          if ((Get-FileHash -Algorithm SHA256 $zip).Hash.ToLowerInvariant() -ne $env:ARTIFACT_SHA256) { throw 'Artifact checksum mismatch.' }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [IO.Compression.ZipFile]::OpenRead($zip)
+          try {
+            foreach ($entry in $archive.Entries) {
+              if ($entry.FullName.StartsWith('/') -or $entry.FullName -match '(^|[\\/])\.\.([\\/]|$)') { throw 'Artifact archive contains an unsafe path.' }
+            }
+          } finally { $archive.Dispose() }
+          New-Item -ItemType Directory -Force -Path $root | Out-Null
+          if (Test-Path $staging) { Remove-Item -Recurse -Force $staging }
+          Expand-Archive -Path $zip -DestinationPath $staging -Force
+          $executable = Join-Path $staging 'DJConnect.exe'
+          if (-not (Test-Path $executable) -or -not (Test-Path (Join-Path $staging 'DJConnect.dll'))) { throw 'Artifact does not contain the expected portable Windows application.' }
+          if (Test-Path $current) { Move-Item -Path $current -Destination $backup }
+          Move-Item -Path $staging -Destination $current
+      - name: Publish redacted deployment evidence
+        shell: pwsh
+        env:
+          CANDIDATE_SHA: ${{ inputs.candidate_sha }}
+          MANIFEST_ID: ${{ inputs.manifest_id }}
+          ARTIFACT_ID: ${{ inputs.artifact_id }}
+          ARTIFACT_SHA256: ${{ inputs.artifact_sha256 }}
+          TARGET: ${{ inputs.target }}
+          PLATFORM_VERSION: ${{ inputs.platform_version }}
+          RELEASE_PROFILE: ${{ inputs.release_profile }}
+          RELEASE_VERSION: ${{ steps.manifest.outputs.release_version }}
+        run: |
+          $evidence = [ordered]@{ schema_version = 1; kind = 'windows_internal_deployment'; repository = $env:GITHUB_REPOSITORY; candidate_sha = $env:CANDIDATE_SHA; manifest_id = $env:MANIFEST_ID; artifact_id = $env:ARTIFACT_ID; artifact_sha256 = $env:ARTIFACT_SHA256; target = $env:TARGET; platform_version = $env:PLATFORM_VERSION; release_profile = $env:RELEASE_PROFILE; expected_version = $env:RELEASE_VERSION; deployment_workflow_run = $env:GITHUB_RUN_ID; runner_os = $env:RUNNER_OS; runner_arch = $env:RUNNER_ARCH; deployment_result = 'DEPLOYED_PENDING_SMOKE'; timestamp = (Get-Date).ToUniversalTime().ToString('o') }
+          $evidence | ConvertTo-Json -Compress | Set-Content -NoNewline -Encoding utf8 windows-internal-deployment-evidence.json
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: windows-internal-deployment-evidence
+          path: windows-internal-deployment-evidence.json
+          if-no-files-found: error
