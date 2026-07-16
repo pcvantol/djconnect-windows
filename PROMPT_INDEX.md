@@ -8,11 +8,11 @@ This file tracks only this repository's local phase state. It must not copy the 
 
 ## Current Repository Phase
 
-Windows Internal Deployment Consumer Remediation.
+Windows internal deployment service-shell remediation.
 
 ## Status
 
-REVIEWABLE_FROZEN
+REVIEWABLE
 
 ## Depends On
 
@@ -22,15 +22,15 @@ REVIEWABLE_FROZEN
 
 ## Current Prompt
 
-Replace the static fail-closed Windows deployment and smoke entrypoints with the canonical manifest-bound consumer contract. Do not dispatch a deployment.
+Make the existing manifest-bound Windows deployment and smoke workflows executable by the `NETWORK SERVICE` runner account after the first authorized attempt stopped before preflight because `pwsh` was unavailable. Do not alter the manifest, artifact or deployment authorization.
 
 ## Completion Report
 
-`docs/history/prompts/2026-07-16-windows-internal-deployment-consumer-remediation.md`
+`docs/history/prompts/2026-07-16-windows-internal-deployment-service-shell-remediation.md`
 
 ## Next Repository Phase
 
-After this increment is merged, provision a genuine ARM64 runner, configure the internal installation root and obtain an exact Windows authorization before dispatching deployment and then smoke.
+After this increment is merged, rerun the already authorized manifest-bound deployment and dispatch smoke only if that deployment succeeds.
 
 ## Boundary
 

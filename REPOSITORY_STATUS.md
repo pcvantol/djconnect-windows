@@ -18,23 +18,21 @@ Does not own: backend intelligence, provider-specific playback logic, canonical 
 
 ## Current Phase
 
-Windows Internal Deployment Consumer Remediation.
+Windows internal deployment service-shell remediation.
 
 ## Status
 
-Reviewable implementation freeze; operational deployment remains blocked.
+Reviewable service-shell remediation; the authorized operation remains pending a rerun.
 
 ## Blocking Dependencies
 
-- A genuine self-hosted Windows ARM64 runner is not currently registered.
-- `windows-internal-deployment` needs the documented absolute installation-root
-  configuration variable.
-- The current operational manifest has no separately authorized Windows target
-  operation.
+- The remediation must merge before rerun.
+- Bash must be available through the machine-level `PATH` of the `NETWORK SERVICE`
+  runner account for the canonical readiness preflight.
 
 ## Current Prompt
 
-Windows internal deployment consumer remediation
+Windows internal deployment service-shell remediation
 
 ## Completion Report
 
@@ -42,8 +40,9 @@ Windows internal deployment consumer remediation
 
 ## Last Qualification
 
-The prior static entrypoints were validated as fail-closed only. Operational
-deployment and post-deployment smoke have not been executed.
+The ARM64 runner qualified successfully in service context. Authorized deployment
+run `29482534415` failed before preflight or installation because `pwsh` was not
+available to `NETWORK SERVICE`; no artifact or target mutation occurred.
 
 ## Validated Base SHA
 
@@ -54,8 +53,8 @@ consumer remediation increment.
 
 ## Repository-Local Next Action
 
-Review and merge the remediation PR. Then configure the ARM64 execution target
-and obtain a separately authorized manifest-bound deployment operation.
+Review and merge the remediation PR. Then rerun the already authorized
+manifest-bound deployment and, on success, its separate smoke workflow.
 
 ## Notes
 

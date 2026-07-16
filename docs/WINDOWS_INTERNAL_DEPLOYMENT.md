@@ -1,6 +1,6 @@
 # Windows Internal Deployment Consumer
 
-Status: `IMPLEMENTATION_READY_OPERATIONAL_QUALIFICATION_BLOCKED`
+Status: `IMPLEMENTATION_READY_SERVICE_SHELL_REMEDIATION_REVIEWABLE`
 
 The Windows ARM64 deployment consumer installs one manifest-bound portable artifact on the qualified self-hosted Windows-on-ARM runner. It is an internal deployment path only; it does not create an installer, publish a release, modify release tags or provide Store distribution.
 
@@ -8,7 +8,9 @@ The Windows ARM64 deployment consumer installs one manifest-bound portable artif
 
 The `windows-internal-deployment` GitHub Environment must expose the non-secret configuration variable `DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT`. Its value must be an absolute, writable directory for the runner service account. The consumer installs the verified artifact below `current` and preserves any pre-existing installation as a run-scoped `previous-<run-id>` directory. No rollback is automatic.
 
-The runner must be online with `self-hosted`, `Windows`, `ARM64` and `internal-release` labels, and provide Bash for the canonical shared readiness-preflight action. The currently registered `djconnect-windows11-parallels` runner reports `X64`. It is not a valid execution target for `windows_internal_arm64`; relabelling an x64 runner as ARM64 is not valid remediation. Provision or register a genuine Windows-on-ARM runner before dispatch.
+The runner must be online with `self-hosted`, `Windows`, `ARM64` and `internal-release` labels, and provide Bash in the machine-level `PATH` for the canonical shared readiness-preflight action. The service also requires the built-in `powershell.exe`; workflows deliberately do not depend on a user-profile or MSIX-installed `pwsh`. For a `NETWORK SERVICE` runner, place the runner under a service-readable path such as `C:\actions-runner-arm64`, not below a user profile, and ensure every parent directory is traversable by that account.
+
+The registered `djconnect-windows11-parallels-arm64` runner is a genuine Windows-on-ARM target. Its first authorized deployment attempt stopped safely before preflight or installation because `pwsh` was unavailable to the service account. The workflows now use built-in Windows PowerShell and fail with an explicit prerequisite error if Bash is not visible to that same service context.
 
 ## Deployment contract
 
