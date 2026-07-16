@@ -18,21 +18,22 @@ Does not own: backend intelligence, provider-specific playback logic, canonical 
 
 ## Current Phase
 
-Windows internal deployment execution-policy remediation.
+Windows runner PowerShell 7 maintenance automation.
 
 ## Status
 
-Execution-policy remediation in progress; the authorized operation remains pending a rerun.
+PowerShell 7 maintenance automation in progress; the authorized operation remains pending a rerun.
 
 ## Blocking Dependencies
 
-- The execution-policy remediation must merge before rerun.
-- Bash must be available through the machine-level `PATH` of the `NETWORK SERVICE`
-  runner account for the canonical readiness preflight.
+- The maintenance automation and the central native-preflight remediation must
+  merge before consumer adoption and rerun.
+- `winget` must be available to the SYSTEM scheduled task for machine-level
+  PowerShell 7 maintenance.
 
 ## Current Prompt
 
-Windows internal deployment execution-policy remediation
+Windows runner PowerShell 7 maintenance automation
 
 ## Completion Report
 
@@ -44,7 +45,9 @@ The ARM64 runner qualified successfully in service context. Authorized deploymen
 run `29482534415` failed before preflight or installation because `pwsh` was not
 available to `NETWORK SERVICE`; no artifact or target mutation occurred. After
 PR #19, rerun `29483069749` again stopped before preflight because the machine
-PowerShell Execution Policy blocked the generated GitHub Actions script.
+PowerShell Execution Policy blocked the generated GitHub Actions script. The
+shared native-preflight remediation is pending; this increment adds automatic
+machine-level PowerShell 7 maintenance for the runner service.
 
 ## Validated Base SHA
 
@@ -55,8 +58,9 @@ consumer remediation increment.
 
 ## Repository-Local Next Action
 
-Review and merge the execution-policy remediation PR. Then rerun the already authorized
-manifest-bound deployment and, on success, its separate smoke workflow.
+Review and merge the maintenance automation. Then adopt the merged central
+native-preflight SHA in the consumer and rerun the already authorized
+manifest-bound deployment, followed by smoke only on success.
 
 ## Notes
 

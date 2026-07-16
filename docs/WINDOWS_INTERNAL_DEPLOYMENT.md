@@ -8,9 +8,30 @@ The Windows ARM64 deployment consumer installs one manifest-bound portable artif
 
 The `windows-internal-deployment` GitHub Environment must expose the non-secret configuration variable `DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT`. Its value must be an absolute, writable directory for the runner service account. The consumer installs the verified artifact below `current` and preserves any pre-existing installation as a run-scoped `previous-<run-id>` directory. No rollback is automatic.
 
-The runner must be online with `self-hosted`, `Windows`, `ARM64` and `internal-release` labels, and provide Bash in the machine-level `PATH` for the canonical shared readiness-preflight action. The service also requires the built-in `powershell.exe`; workflows deliberately do not depend on a user-profile or MSIX-installed `pwsh` and invoke Windows PowerShell with `-ExecutionPolicy Bypass` for their ephemeral GitHub Actions scripts. For a `NETWORK SERVICE` runner, place the runner under a service-readable path such as `C:\actions-runner-arm64`, not below a user profile, and ensure every parent directory is traversable by that account.
+The runner must be online with `self-hosted`, `Windows`, `ARM64` and `internal-release` labels. The native shared preflight requires a machine-level PowerShell 7 (`pwsh`) installation that is visible to `NETWORK SERVICE`; it must not depend on WSL or a user-profile/MSIX shell. Until the consumer adopts the merged native-preflight action SHA, its current pinned action still has a temporary Bash requirement. For a `NETWORK SERVICE` runner, place the runner under a service-readable path such as `C:\actions-runner-arm64`, not below a user profile, and ensure every parent directory is traversable by that account.
 
-The registered `djconnect-windows11-parallels-arm64` runner is a genuine Windows-on-ARM target. Its first authorized deployment attempt stopped safely before preflight or installation because `pwsh` was unavailable to the service account. The next attempt reached the built-in shell but stopped at its first script because the local PowerShell execution policy blocked generated scripts. The workflows use `-ExecutionPolicy Bypass` narrowly for their own ephemeral steps and fail with an explicit prerequisite error if Bash is not visible to that same service context.
+The registered `djconnect-windows11-parallels-arm64` runner is a genuine Windows-on-ARM target. Its first authorized deployment attempt stopped safely before preflight or installation because `pwsh` was unavailable to the service account. The next attempt reached the shared preflight and proved that its Bash dependency resolved to WSL. The pending native-preflight adoption removes this WSL dependency; the consumer's own ephemeral Windows PowerShell steps continue to use a workflow-scoped `-ExecutionPolicy Bypass`.
+
+## PowerShell 7 maintenance
+
+The canonical shared readiness preflight uses native PowerShell 7 on Windows;
+it does not use WSL. Keep PowerShell 7 machine-wide and current by installing
+the repository maintenance task once from an elevated Windows PowerShell
+session after this script is available on the runner:
+
+```powershell
+Set-Location <djconnect-windows-clone>
+.\scripts\runner\Install-DJConnectPowerShell7Maintenance.ps1 -RunNow
+```
+
+The task runs daily at 03:30 as `SYSTEM`, uses `winget` to install or upgrade
+the machine-scoped `Microsoft.PowerShell` package, and records only version and
+error metadata in
+`C:\ProgramData\DJConnect\runner-maintenance\powershell7-maintenance.log`.
+The initial `-RunNow` invocation must succeed before a Windows consumer that
+uses the native preflight can be dispatched. If `winget` is unavailable to
+`SYSTEM`, the log records that objective environment blocker; do not fall back
+to WSL or a user-profile-only `pwsh`.
 
 ## Deployment contract
 

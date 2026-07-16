@@ -8,7 +8,7 @@ This file tracks only this repository's local phase state. It must not copy the 
 
 ## Current Repository Phase
 
-Windows internal deployment execution-policy remediation.
+Windows runner PowerShell 7 maintenance automation.
 
 ## Status
 
@@ -22,15 +22,20 @@ IMPLEMENTATION_IN_PROGRESS
 
 ## Current Prompt
 
-Make the existing manifest-bound Windows deployment and smoke workflows executable by the `NETWORK SERVICE` runner account after rerun `29483069749` stopped before preflight because the machine PowerShell Execution Policy blocked generated runner scripts. Do not alter the manifest, artifact or deployment authorization.
+Install a verified, daily SYSTEM maintenance task that keeps machine-level
+PowerShell 7 current for the Windows runner. Do not alter the manifest,
+artifact or deployment authorization.
 
 ## Completion Report
 
-`docs/history/prompts/2026-07-16-windows-internal-deployment-execution-policy-remediation.md`
+`docs/history/prompts/2026-07-16-windows-runner-powershell-7-maintenance.md`
 
 ## Next Repository Phase
 
-After this increment is merged, rerun the already authorized manifest-bound deployment and dispatch smoke only if that deployment succeeds.
+After this increment and the central native-preflight remediation merge, adopt
+the immutable action SHA in the Windows consumer, remove the obsolete Bash
+prerequisite, then rerun the already authorized deployment and dispatch smoke
+only if that deployment succeeds.
 
 ## Boundary
 
