@@ -50,22 +50,40 @@ try {
 
     Write-MaintenanceLog "Running as interactive administrator $([Security.Principal.WindowsIdentity]::GetCurrent().Name)."
 
-    function Install-OrUpgrade([string] $packageId, [bool] $isInstalled, [string] $description) {
+    function Install-OrUpgrade([string] $packageId, [bool] $isInstalled, [string] $description, [bool] $machineScoped) {
         $operation = if ($isInstalled) { 'upgrade' } else { 'install' }
         Write-MaintenanceLog "Starting $description $operation through winget."
-        & $winget.Source $operation --id $packageId --exact --source winget --scope machine --silent --disable-interactivity --accept-package-agreements --accept-source-agreements
+        $wingetArguments = @(
+            $operation,
+            '--id', $packageId,
+            '--exact',
+            '--source', 'winget',
+            '--silent',
+            '--disable-interactivity',
+            '--accept-package-agreements',
+            '--accept-source-agreements'
+        )
+        if ($machineScoped) {
+            $wingetArguments += @('--scope', 'machine')
+        }
+        & $winget.Source @wingetArguments
         if ($LASTEXITCODE -ne 0) {
             throw "winget $operation for $packageId failed with exit code $LASTEXITCODE."
         }
     }
 
-    $pwshPath = Join-Path $env:ProgramFiles 'PowerShell\7\pwsh.exe'
-    Install-OrUpgrade 'Microsoft.PowerShell' (Test-Path $pwshPath) 'PowerShell 7'
-    if (-not (Test-Path $pwshPath)) {
-        throw "PowerShell 7 was not found at $pwshPath after maintenance."
+    # PowerShell may be installed through the Microsoft Store/App Installer,
+    # where it is exposed through WindowsApps rather than Program Files. Do
+    # not mistake that valid user installation for absence and then force a
+    # machine-wide installation, which is not supported by every WinGet source.
+    $pwsh = Get-Command pwsh.exe -ErrorAction SilentlyContinue
+    Install-OrUpgrade 'Microsoft.PowerShell' ($null -ne $pwsh) 'PowerShell 7' $false
+    $pwsh = Get-Command pwsh.exe -ErrorAction SilentlyContinue
+    if ($null -eq $pwsh) {
+        throw 'PowerShell 7 was not found through pwsh.exe after maintenance.'
     }
-    $version = (& $pwshPath -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()').Trim()
-    Write-MaintenanceLog "PowerShell 7 machine installation verified at version $version."
+    $version = (& $pwsh.Source -NoLogo -NoProfile -Command '$PSVersionTable.PSVersion.ToString()').Trim()
+    Write-MaintenanceLog "PowerShell 7 installation verified at version $version from $($pwsh.Source)."
 
     $dotnetPath = Join-Path $env:ProgramFiles 'dotnet\dotnet.exe'
     $dotnet10Sdks = if (Test-Path $dotnetPath) {
@@ -74,7 +92,7 @@ try {
         @()
     }
     $dotnet10Installed = $dotnet10Sdks.Count -gt 0
-    Install-OrUpgrade 'Microsoft.DotNet.SDK.10' $dotnet10Installed '.NET 10 SDK'
+    Install-OrUpgrade 'Microsoft.DotNet.SDK.10' $dotnet10Installed '.NET 10 SDK' $true
     if (-not (Test-Path $dotnetPath)) {
         throw ".NET SDK was not found at $dotnetPath after maintenance."
     }
