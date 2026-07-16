@@ -8,11 +8,11 @@ This file tracks only this repository's local phase state. It must not copy the 
 
 ## Current Repository Phase
 
-Windows internal deployment service-shell remediation.
+Windows internal deployment execution-policy remediation.
 
 ## Status
 
-REVIEWABLE
+IMPLEMENTATION_IN_PROGRESS
 
 ## Depends On
 
@@ -22,11 +22,11 @@ REVIEWABLE
 
 ## Current Prompt
 
-Make the existing manifest-bound Windows deployment and smoke workflows executable by the `NETWORK SERVICE` runner account after the first authorized attempt stopped before preflight because `pwsh` was unavailable. Do not alter the manifest, artifact or deployment authorization.
+Make the existing manifest-bound Windows deployment and smoke workflows executable by the `NETWORK SERVICE` runner account after rerun `29483069749` stopped before preflight because the machine PowerShell Execution Policy blocked generated runner scripts. Do not alter the manifest, artifact or deployment authorization.
 
 ## Completion Report
 
-`docs/history/prompts/2026-07-16-windows-internal-deployment-service-shell-remediation.md`
+`docs/history/prompts/2026-07-16-windows-internal-deployment-execution-policy-remediation.md`
 
 ## Next Repository Phase
 

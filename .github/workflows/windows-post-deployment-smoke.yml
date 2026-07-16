@@ -24,7 +24,7 @@ jobs:
       DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT: ${{ vars.DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT }}
     steps:
       - name: Validate immutable smoke request
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         env:
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           MANIFEST_ID: ${{ inputs.manifest_id }}
@@ -39,7 +39,7 @@ jobs:
           if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$' -or $env:MANIFEST_ID -notmatch '^release-[A-Za-z0-9._-]+$' -or $env:ARTIFACT_ID -notmatch '^release-asset:pcvantol/djconnect-app-releases:windows/v[0-9]+\.[0-9]+\.[0-9]+:DJConnect-Windows-arm64-[0-9]+\.[0-9]+\.[0-9]+-unsigned\.zip$' -or $env:ARTIFACT_SHA256 -notmatch '^[0-9a-f]{64}$' -or $env:PLATFORM_VERSION -notmatch '^[0-9]+\.[0-9]+$' -or $env:DEPLOYMENT_WORKFLOW_RUN -notmatch '^[0-9]+$') { throw 'Invalid immutable smoke identity' }
           if ($env:TARGET -ne 'windows_internal_arm64' -or $env:RELEASE_PROFILE -ne 'INTERNAL_RELEASE') { throw 'Invalid smoke target or profile' }
       - name: Verify service shell prerequisites
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = 'Stop'
           if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
@@ -59,7 +59,7 @@ jobs:
           smoke_contract: windows-internal-arm64-smoke-v1
       - id: manifest
         name: Verify approved central manifest binding
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         env:
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           MANIFEST_ID: ${{ inputs.manifest_id }}
@@ -85,7 +85,7 @@ jobs:
           github-token: ${{ github.token }}
           path: deployment-evidence
       - name: Verify successful deployment evidence and perform bounded smoke
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         env:
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           MANIFEST_ID: ${{ inputs.manifest_id }}
