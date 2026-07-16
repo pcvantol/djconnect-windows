@@ -25,7 +25,7 @@ jobs:
       DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT: ${{ vars.DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT }}
     steps:
       - name: Validate immutable deployment request
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         env:
           ACTION: ${{ inputs.action }}
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
@@ -41,7 +41,7 @@ jobs:
           if ($env:ACTION -ne 'deployment' -or $env:EXECUTION_MODE -ne 'execute' -or $env:TARGET -ne 'windows_internal_arm64' -or $env:RELEASE_PROFILE -ne 'INTERNAL_RELEASE') { throw 'Invalid deployment request' }
           if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$' -or $env:MANIFEST_ID -notmatch '^release-[A-Za-z0-9._-]+$' -or $env:ARTIFACT_ID -notmatch '^release-asset:pcvantol/djconnect-app-releases:windows/v[0-9]+\.[0-9]+\.[0-9]+:DJConnect-Windows-arm64-[0-9]+\.[0-9]+\.[0-9]+-unsigned\.zip$' -or $env:ARTIFACT_SHA256 -notmatch '^[0-9a-f]{64}$' -or $env:PLATFORM_VERSION -notmatch '^[0-9]+\.[0-9]+$') { throw 'Invalid immutable release identity' }
       - name: Verify service shell prerequisites
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = 'Stop'
           if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
@@ -61,7 +61,7 @@ jobs:
           smoke_contract: windows-internal-arm64-smoke-v1
       - id: manifest
         name: Require approved central operational manifest binding
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         env:
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           MANIFEST_ID: ${{ inputs.manifest_id }}
@@ -84,7 +84,7 @@ jobs:
           "artifact_url=$($binding[0].artifact_url)" >> $env:GITHUB_OUTPUT
           "release_version=$($manifest.release_version)" >> $env:GITHUB_OUTPUT
       - name: Install the exact approved Windows ARM64 artifact
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         env:
           ARTIFACT_URL: ${{ steps.manifest.outputs.artifact_url }}
           ARTIFACT_SHA256: ${{ inputs.artifact_sha256 }}
@@ -114,7 +114,7 @@ jobs:
           if (Test-Path $current) { Move-Item -Path $current -Destination $backup }
           Move-Item -Path $staging -Destination $current
       - name: Publish redacted deployment evidence
-        shell: powershell
+        shell: powershell -ExecutionPolicy Bypass -File {0}
         env:
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           MANIFEST_ID: ${{ inputs.manifest_id }}
