@@ -1,6 +1,6 @@
 # Windows Internal Deployment Consumer
 
-Status: `IMPLEMENTATION_READY_SERVICE_SHELL_REMEDIATION_REVIEWABLE`
+Status: `NATIVE_PREFLIGHT_CONSUMER_ADOPTION_REVIEWABLE`
 
 The Windows ARM64 deployment consumer installs one manifest-bound portable artifact on the qualified self-hosted Windows-on-ARM runner. It is an internal deployment path only; it does not create an installer, publish a release, modify release tags or provide Store distribution.
 
@@ -8,9 +8,9 @@ The Windows ARM64 deployment consumer installs one manifest-bound portable artif
 
 The `windows-internal-deployment` GitHub Environment must expose the non-secret configuration variable `DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT`. Its value must be an absolute, writable directory for the runner service account. The consumer installs the verified artifact below `current` and preserves any pre-existing installation as a run-scoped `previous-<run-id>` directory. No rollback is automatic.
 
-The runner must be online with `self-hosted`, `Windows`, `ARM64` and `internal-release` labels. The native shared preflight requires a machine-level PowerShell 7 (`pwsh`) installation that is visible to `NETWORK SERVICE`; it must not depend on WSL or a user-profile/MSIX shell. Until the consumer adopts the merged native-preflight action SHA, its current pinned action still has a temporary Bash requirement. For a `NETWORK SERVICE` runner, place the runner under a service-readable path such as `C:\actions-runner-arm64`, not below a user profile, and ensure every parent directory is traversable by that account.
+The runner must be online with `self-hosted`, `Windows`, `ARM64` and `internal-release` labels. The pinned canonical readiness preflight runs with PowerShell 7 (`pwsh`) on Windows; it has no Bash or WSL dependency. PowerShell 7 must therefore be machine-visible to `NETWORK SERVICE`, not available only through a user-profile/MSIX path. For a `NETWORK SERVICE` runner, place the runner under a service-readable path such as `C:\actions-runner-arm64`, not below a user profile, and ensure every parent directory is traversable by that account.
 
-The registered `djconnect-windows11-parallels-arm64` runner is a genuine Windows-on-ARM target. Its first authorized deployment attempt stopped safely before preflight or installation because `pwsh` was unavailable to the service account. The next attempt reached the shared preflight and proved that its Bash dependency resolved to WSL. The pending native-preflight adoption removes this WSL dependency; the consumer's own ephemeral Windows PowerShell steps continue to use a workflow-scoped `-ExecutionPolicy Bypass`.
+The registered `djconnect-windows11-parallels-arm64` runner is a genuine Windows-on-ARM target. Its first authorized deployment attempt stopped safely before preflight or installation because `pwsh` was unavailable to the service account. The next attempt reached the previous shared preflight and proved that its Bash dependency resolved to WSL. This consumer now pins the merged native preflight, removing that WSL dependency; its own ephemeral Windows PowerShell steps continue to use a workflow-scoped `-ExecutionPolicy Bypass`.
 
 ## Windows runner tooling maintenance
 

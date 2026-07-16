@@ -40,15 +40,8 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if ($env:ACTION -ne 'deployment' -or $env:EXECUTION_MODE -ne 'execute' -or $env:TARGET -ne 'windows_internal_arm64' -or $env:RELEASE_PROFILE -ne 'INTERNAL_RELEASE') { throw 'Invalid deployment request' }
           if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$' -or $env:MANIFEST_ID -notmatch '^release-[A-Za-z0-9._-]+$' -or $env:ARTIFACT_ID -notmatch '^release-asset:pcvantol/djconnect-app-releases:windows/v[0-9]+\.[0-9]+\.[0-9]+:DJConnect-Windows-arm64-[0-9]+\.[0-9]+\.[0-9]+-unsigned\.zip$' -or $env:ARTIFACT_SHA256 -notmatch '^[0-9a-f]{64}$' -or $env:PLATFORM_VERSION -notmatch '^[0-9]+\.[0-9]+$') { throw 'Invalid immutable release identity' }
-      - name: Verify service shell prerequisites
-        shell: powershell -ExecutionPolicy Bypass -File {0}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
-            throw 'Windows deployment service requires Bash in the machine-level PATH for the canonical readiness preflight.'
-          }
       - name: Verify target deployment readiness
-        uses: pcvantol/djconnect/.github/actions/deployment-readiness-preflight@962609ad77668c615b00c88b22167ed6b20bffc3
+        uses: pcvantol/djconnect/.github/actions/deployment-readiness-preflight@3d7d24a84b3aaacb8f2fb229e09c33da85e0545d
         with:
           target: ${{ inputs.target }}
           manifest_id: ${{ inputs.manifest_id }}
