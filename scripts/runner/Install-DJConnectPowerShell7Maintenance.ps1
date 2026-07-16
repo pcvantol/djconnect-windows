@@ -89,7 +89,7 @@ try {
 $maintenanceContents | Set-Content -Path $maintenanceScript -Encoding utf8
 
 $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$maintenanceScript`""
-$trigger = New-ScheduledTaskTrigger -Daily -At 03:30
+$trigger = New-ScheduledTaskTrigger -Daily -At 10:00
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 45) -MultipleInstances IgnoreNew
 
