@@ -32,10 +32,11 @@ Installer is registered in a signed-in user's Windows context and must not be
 run under `SYSTEM`. The administrator must therefore be logged in at the
 scheduled time; use `-RunNow` after login for an immediate run.
 
-The task uses WinGet to install or upgrade the machine-scoped
-`Microsoft.PowerShell` and `Microsoft.DotNet.SDK.10` packages, runs
-`dotnet workload update --no-cache`, and records only version, workload and
-error metadata in
+The task detects PowerShell 7 through `pwsh.exe`, so a valid Microsoft Store /
+App Installer installation is upgraded in its existing user context without a
+forced machine scope. It installs or upgrades `Microsoft.DotNet.SDK.10`
+machine-wide, runs `dotnet workload update --no-cache`, and records only
+version, workload and error metadata in
 `C:\ProgramData\DJConnect\runner-maintenance\runner-tooling-maintenance.log`.
 The initial `-RunNow` invocation must succeed before a Windows consumer that
 uses the native preflight can be dispatched. Windows CI and unsigned release
