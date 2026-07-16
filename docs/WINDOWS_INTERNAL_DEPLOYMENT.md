@@ -38,6 +38,9 @@ forced machine scope. It installs or upgrades `Microsoft.DotNet.SDK.10`
 machine-wide, runs `dotnet workload update --no-cache`, and records only
 version, workload and error metadata in
 `C:\ProgramData\DJConnect\runner-maintenance\runner-tooling-maintenance.log`.
+WinGet exit code `0x8A15002B` (`no applicable upgrade`) is recorded as an
+already-current success; package presence and usable versions are still
+verified after that result. Any other non-zero WinGet exit code fails the task.
 The initial `-RunNow` invocation must succeed before a Windows consumer that
 uses the native preflight can be dispatched. Windows CI and unsigned release
 builds then use this machine SDK directly instead of a per-job temporary
