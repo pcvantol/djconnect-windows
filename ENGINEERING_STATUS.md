@@ -1,11 +1,11 @@
 # Windows Engineering Status
 
-**State:** `IMPLEMENTATION_IN_PROGRESS` — Windows internal deployment execution-policy remediation.
+**State:** `IMPLEMENTATION_IN_PROGRESS` — Windows runner tooling maintenance automation.
 
-The Version 2.2 governance adoption and manifest-bound consumer were merged as PRs #17 and #18. The genuine ARM64 runner, Environment configuration and target-scoped manifest authorization are now in place. Authorized deployment run `29482534415` stopped safely before preflight or installation because the `NETWORK SERVICE` runner could not resolve user-profile/MSIX `pwsh`; PR #19 replaced that dependency. Rerun `29483069749` then stopped at its first immutable-request script because the machine PowerShell Execution Policy blocked generated runner scripts. This increment invokes built-in PowerShell with a workflow-scoped execution-policy bypass.
+The Version 2.2 governance adoption and manifest-bound consumer were merged as PRs #17 and #18. The genuine ARM64 runner, Environment configuration and target-scoped manifest authorization are now in place. Earlier retries stopped before target mutation because `NETWORK SERVICE` could not access user-profile `pwsh`, and then because the local Execution Policy blocked generated scripts. The shared-preflight remediation selects native PowerShell 7 on Windows; this increment installs a daily SYSTEM maintenance task that installs or upgrades machine-scoped PowerShell 7 and .NET 10 through `winget`, updates installed .NET workloads and verifies the resulting machine tooling. Windows build jobs use that machine SDK rather than a temporary per-job installation.
 
-**Blockers/limitations:** the remediation PR must merge. Afterward, Bash must be present in the machine-level `PATH` visible to `NETWORK SERVICE`; the workflow will report a specific prerequisite failure if it is not.
+**Blockers/limitations:** the maintenance PR and the central native-preflight PR must merge. The Windows consumer must then pin the merged central action SHA and remove its obsolete Bash prerequisite before rerun. The first SYSTEM maintenance execution is an objective environment gate; if `winget` is unavailable to SYSTEM, it reports a log-backed blocker.
 
-**Deferred work:** rerun the already authorized manifest-bound deployment and, only after it succeeds, its separate smoke operation.
+**Deferred work:** install and verify the maintenance task once on the runner, pin the native preflight action in the Windows consumer, then rerun the already authorized deployment and, only after it succeeds, its separate smoke operation.
 
-**Recommended next prompt:** merge this remediation, rerun the exact authorized Windows deployment, then dispatch the separate post-deployment smoke only on deployment success.
+**Recommended next prompt:** after the two remediation PRs merge, adopt the central immutable preflight SHA in this consumer and remove the local Bash prerequisite; then qualify the authorized deployment and smoke.

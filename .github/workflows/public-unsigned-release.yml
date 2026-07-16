@@ -153,12 +153,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
 
-      - name: Set up .NET
-        env:
-          DOTNET_INSTALL_DIR: ${{ runner.temp }}\dotnet
-        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
-        with:
-          global-json-file: global.json
+      - name: Verify machine .NET 10 SDK
+        run: .\scripts\runner\Test-DJConnectDotNet10.ps1
 
       - name: Install MAUI workload
         shell: powershell -ExecutionPolicy Bypass -File {0}

@@ -1,5 +1,5 @@
 # Windows Management Summary
 
-**Decision:** `WINDOWS_INTERNAL_DEPLOYMENT_EXECUTION_POLICY_REMEDIATION_IN_PROGRESS`.
+**Decision:** `WINDOWS_RUNNER_TOOLING_MAINTENANCE_AUTOMATION_IN_PROGRESS`.
 
-The manifest-bound ARM64 consumer, genuine Windows-on-ARM service runner, Environment configuration and exact target authorization are in place. PR #19 fixed the unavailable user-profile/MSIX `pwsh`; the rerun then stopped before any target mutation because the machine PowerShell Execution Policy blocked an ephemeral runner script. This remediation uses an explicit workflow-scoped bypass with built-in Windows PowerShell. No artifact, target or manifest changes are included.
+The manifest-bound ARM64 consumer, genuine Windows-on-ARM service runner, Environment configuration and exact target authorization are in place. The shared native-preflight remediation changes the Windows preflight runtime to PowerShell 7; this increment adds a daily SYSTEM maintenance task that keeps its machine-scoped PowerShell 7, .NET 10 SDK and installed .NET platform workloads current through `winget`, with log-backed initial verification. Windows CI and artifact jobs consume the machine SDK instead of a temporary job-local SDK download. No artifact, target, manifest or deployment authorization changes are included.
