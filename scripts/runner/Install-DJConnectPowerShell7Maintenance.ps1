@@ -28,6 +28,7 @@ $ErrorActionPreference = 'Stop'
 
 $maintenanceDirectory = Join-Path $env:ProgramData 'DJConnect\runner-maintenance'
 $logFile = Join-Path $maintenanceDirectory 'runner-tooling-maintenance.log'
+$wingetNoApplicableUpdateExitCode = -1978335189 # 0x8A15002B
 
 function Write-MaintenanceLog([string] $message) {
     $timestamp = (Get-Date).ToUniversalTime().ToString('o')
@@ -67,6 +68,10 @@ try {
             $wingetArguments += @('--scope', 'machine')
         }
         & $winget.Source @wingetArguments
+        if ($LASTEXITCODE -eq $wingetNoApplicableUpdateExitCode -and $operation -eq 'upgrade') {
+            Write-MaintenanceLog "$description is already current; WinGet reported no applicable upgrade."
+            return
+        }
         if ($LASTEXITCODE -ne 0) {
             throw "winget $operation for $packageId failed with exit code $LASTEXITCODE."
         }
