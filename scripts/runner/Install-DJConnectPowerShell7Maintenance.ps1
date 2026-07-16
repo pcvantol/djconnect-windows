@@ -6,10 +6,14 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-$principal = [Security.Principal.WindowsPrincipal]::new($identity)
-if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+$windowsPrincipal = [Security.Principal.WindowsPrincipal]::new($identity)
+if ($identity.User.Value -eq 'S-1-5-18') {
+    throw 'Run this installer as the logged-in Windows administrator, not as SYSTEM.'
+}
+if (-not $windowsPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     throw 'Run this installer from an elevated Windows PowerShell session.'
 }
+$maintenanceUser = $identity.Name
 
 $maintenanceDirectory = Join-Path $env:ProgramData 'DJConnect\runner-maintenance'
 $maintenanceScript = Join-Path $maintenanceDirectory 'Update-DJConnectRunnerTooling.ps1'
@@ -31,10 +35,20 @@ function Write-MaintenanceLog([string] $message) {
 }
 
 try {
+    if ([Security.Principal.WindowsIdentity]::GetCurrent().User.Value -eq 'S-1-5-18') {
+        throw 'DJConnect runner tooling maintenance must not run as SYSTEM.'
+    }
+
+    $windowsApps = Join-Path $env:LOCALAPPDATA 'Microsoft\WindowsApps'
+    if ((Test-Path $windowsApps) -and (($env:Path -split ';') -notcontains $windowsApps)) {
+        $env:Path = "$windowsApps;$env:Path"
+    }
     $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
     if ($null -eq $winget) {
-        throw 'winget.exe is not available to the machine service account.'
+        throw 'winget.exe is unavailable for the interactive maintenance user. Sign in to Windows once, complete App Installer registration, then rerun the installer.'
     }
+
+    Write-MaintenanceLog "Running as interactive administrator $([Security.Principal.WindowsIdentity]::GetCurrent().Name)."
 
     function Install-OrUpgrade([string] $packageId, [bool] $isInstalled, [string] $description) {
         $operation = if ($isInstalled) { 'upgrade' } else { 'install' }
@@ -90,10 +104,10 @@ $maintenanceContents | Set-Content -Path $maintenanceScript -Encoding utf8
 
 $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$maintenanceScript`""
 $trigger = New-ScheduledTaskTrigger -Daily -At 10:00
-$principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
+$taskPrincipal = New-ScheduledTaskPrincipal -UserId $maintenanceUser -LogonType Interactive -RunLevel Highest
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 45) -MultipleInstances IgnoreNew
 
-Register-ScheduledTask -TaskName $taskName -TaskPath $taskPath -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'DJConnect runner: keep PowerShell 7, .NET 10 SDK and installed .NET workloads current through winget.' -Force | Out-Null
+Register-ScheduledTask -TaskName $taskName -TaskPath $taskPath -Action $action -Trigger $trigger -Principal $taskPrincipal -Settings $settings -Description 'DJConnect runner: keep PowerShell 7, .NET 10 SDK and installed .NET workloads current through winget as the logged-in administrator.' -Force | Out-Null
 
 if ($RunNow) {
     $startedAt = Get-Date
@@ -116,4 +130,5 @@ if ($RunNow) {
 
 Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath |
     Select-Object TaskName, TaskPath, State
+Write-Host "Maintenance account: $maintenanceUser (interactive administrator; must be logged in at run time)."
 Write-Host "Maintenance log: $logFile"
