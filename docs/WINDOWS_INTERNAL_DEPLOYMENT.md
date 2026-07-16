@@ -15,9 +15,10 @@ The registered `djconnect-windows11-parallels-arm64` runner is a genuine Windows
 ## Windows runner tooling maintenance
 
 The canonical shared readiness preflight uses native PowerShell 7 on Windows;
-it does not use WSL. Keep PowerShell 7 and the .NET 10 SDK machine-wide and
-current by installing the repository maintenance task once from an elevated
-Windows PowerShell session after this script is available on the runner:
+it does not use WSL. Keep PowerShell 7, the .NET 10 SDK and its installed
+platform workloads machine-wide and current by installing the repository
+maintenance task once from an elevated Windows PowerShell session after this
+script is available on the runner:
 
 ```powershell
 Set-Location <djconnect-windows-clone>
@@ -26,7 +27,8 @@ Set-Location <djconnect-windows-clone>
 
 The task runs daily at 03:30 as `SYSTEM`, uses `winget` to install or upgrade
 the machine-scoped `Microsoft.PowerShell` and `Microsoft.DotNet.SDK.10`
-packages, and records only version and error metadata in
+packages, runs `dotnet workload update --no-cache`, and records only version,
+workload and error metadata in
 `C:\ProgramData\DJConnect\runner-maintenance\runner-tooling-maintenance.log`.
 The initial `-RunNow` invocation must succeed before a Windows consumer that
 uses the native preflight can be dispatched. Windows CI and unsigned release

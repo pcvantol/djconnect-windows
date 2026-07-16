@@ -69,6 +69,17 @@ try {
         throw '.NET 10 SDK is absent after maintenance.'
     }
     Write-MaintenanceLog "Machine .NET 10 SDKs verified: $($dotnet10Sdks -join '; ')."
+
+    # The native Windows build depends on the installed .NET workload set as
+    # well as the SDK. Keeping it current here avoids a workflow having to
+    # download or repair platform workloads for every run.
+    Write-MaintenanceLog 'Updating installed .NET workloads for the machine SDK.'
+    & $dotnetPath workload update --no-cache
+    if ($LASTEXITCODE -ne 0) {
+        throw ".NET workload update failed with exit code $LASTEXITCODE."
+    }
+    $workloads = @(& $dotnetPath workload list | Where-Object { $_ -and $_ -notmatch '^-+$' -and $_ -notmatch '^Workload version:' -and $_ -notmatch '^Installed Workload' })
+    Write-MaintenanceLog "Installed .NET workloads after maintenance: $($workloads -join '; ')."
 } catch {
     Write-MaintenanceLog "FAILED: $($_.Exception.Message)"
     throw
@@ -80,14 +91,14 @@ $maintenanceContents | Set-Content -Path $maintenanceScript -Encoding utf8
 $action = New-ScheduledTaskAction -Execute "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -Argument "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$maintenanceScript`""
 $trigger = New-ScheduledTaskTrigger -Daily -At 03:30
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount -RunLevel Highest
-$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 20) -MultipleInstances IgnoreNew
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 45) -MultipleInstances IgnoreNew
 
-Register-ScheduledTask -TaskName $taskName -TaskPath $taskPath -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'DJConnect runner: keep machine-level PowerShell 7 and .NET 10 SDK current through winget.' -Force | Out-Null
+Register-ScheduledTask -TaskName $taskName -TaskPath $taskPath -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'DJConnect runner: keep PowerShell 7, .NET 10 SDK and installed .NET workloads current through winget.' -Force | Out-Null
 
 if ($RunNow) {
     $startedAt = Get-Date
     Start-ScheduledTask -TaskName $taskName -TaskPath $taskPath
-    $deadline = (Get-Date).AddMinutes(20)
+    $deadline = (Get-Date).AddMinutes(45)
     do {
         Start-Sleep -Seconds 2
         $task = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath
@@ -95,7 +106,7 @@ if ($RunNow) {
     } while (($task.State -eq 'Running' -or $taskInfo.LastRunTime -lt $startedAt) -and (Get-Date) -lt $deadline)
 
     if ($task.State -eq 'Running' -or $taskInfo.LastRunTime -lt $startedAt) {
-        throw 'PowerShell 7 maintenance task did not finish within 20 minutes.'
+        throw 'Runner tooling maintenance task did not finish within 45 minutes.'
     }
 
     if ($taskInfo.LastTaskResult -ne 0) {
