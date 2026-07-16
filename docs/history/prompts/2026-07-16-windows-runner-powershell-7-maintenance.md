@@ -1,13 +1,13 @@
-# Windows Runner PowerShell 7 Maintenance Automation
+# Windows Runner Tooling Maintenance Automation
 
-- **Prompt ID:** `WINDOWS-RUNNER-POWERSHELL-7-MAINTENANCE-001`
-- **Title:** Keep the Windows deployment runner's PowerShell 7 current
+- **Prompt ID:** `WINDOWS-RUNNER-TOOLING-MAINTENANCE-001`
+- **Title:** Keep the Windows deployment runner's PowerShell 7 and .NET 10 current
 - **Generation:** 2
 - **Engineering program:** Platform Release Engineering
 - **Branch:** `codex/automate-windows-powershell-maintenance`
-- **Commit SHA:** `486e2f9e58792192cc8c4b88b14fa3c0bec1a85e`
+- **Commit SHA:** `1c1e56b33cf55cda5661b0201661c2e76502651c`
 - **Pull request:** reviewable pull request created from this branch
-- **Decision:** `WINDOWS_RUNNER_POWERSHELL_7_MAINTENANCE_REVIEWABLE`
+- **Decision:** `WINDOWS_RUNNER_TOOLING_MAINTENANCE_REVIEWABLE`
 
 ## Validation summary
 
@@ -16,13 +16,16 @@ preflight resolved to WSL, an unintended non-native dependency. The central
 native-preflight remediation selects PowerShell 7 on Windows. This increment
 adds a one-time elevated installer that creates a daily SYSTEM scheduled task.
 The task uses `winget` to install or upgrade the machine-scoped
-`Microsoft.PowerShell` package, verifies the installed `pwsh.exe` version and
-writes redacted operational metadata to a fixed ProgramData log. Its optional
-`-RunNow` mode waits for the task and fails on a non-zero result.
+`Microsoft.PowerShell` and `Microsoft.DotNet.SDK.10` packages, verifies the
+installed `pwsh.exe` and .NET 10 SDK versions, and writes redacted operational
+metadata to a fixed ProgramData log. Its optional `-RunNow` mode waits for the
+task and fails on a non-zero result. Windows CI and artifact jobs now verify
+and use this machine SDK instead of downloading it into `runner.temp`.
 
 ## Created artifacts
 
 - `scripts/runner/Install-DJConnectPowerShell7Maintenance.ps1`
+- `scripts/runner/Test-DJConnectDotNet10.ps1`
 - This immutable Prompt History record.
 
 ## Updated artifacts
