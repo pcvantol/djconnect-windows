@@ -81,6 +81,13 @@ $taskPath = '\DJConnect\'
 $taskCommand = "$env:ComSpec /d /c `"$launcherPath`""
 & schtasks.exe /Create /TN "$taskPath$taskName" /TR $taskCommand /SC MINUTE /MO 1 /RU $InteractiveUser /IT /RL LIMITED /F | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Failed to register the interactive GUI smoke scheduled task.' }
+$taskAction = New-ScheduledTaskAction -Execute $env:ComSpec -Argument "/d /c `"$launcherPath`""
+Set-ScheduledTask -TaskName $taskName -TaskPath $taskPath -Action $taskAction | Out-Null
+$registeredTask = Get-ScheduledTask -TaskName $taskName -TaskPath $taskPath
+$registeredAction = @($registeredTask.Actions)
+if ($registeredAction.Count -ne 1 -or $registeredAction[0].Execute -ne $env:ComSpec -or $registeredAction[0].Arguments -ne "/d /c `"$launcherPath`"") {
+    throw 'Interactive GUI smoke relay task action was not registered as the expected cmd.exe executable and wrapper argument.'
+}
 
 $heartbeatPath = Join-Path $resultsDirectory 'relay-heartbeat.json'
 Remove-Item -LiteralPath $heartbeatPath -Force -ErrorAction SilentlyContinue
