@@ -80,8 +80,23 @@ $taskName = 'InteractiveGuiSmoke'
 $taskPath = '\DJConnect\'
 & schtasks.exe /Create /TN "$taskPath$taskName" /TR $launcherPath /SC MINUTE /MO 1 /RU $InteractiveUser /IT /RL LIMITED /F | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Failed to register the interactive GUI smoke scheduled task.' }
+
+$heartbeatPath = Join-Path $resultsDirectory 'relay-heartbeat.json'
+Remove-Item -LiteralPath $heartbeatPath -Force -ErrorAction SilentlyContinue
+Start-ScheduledTask -TaskName $taskName -TaskPath $taskPath
+$heartbeatDeadline = (Get-Date).AddSeconds(30)
+while (-not (Test-Path -LiteralPath $heartbeatPath) -and (Get-Date) -lt $heartbeatDeadline) {
+    Start-Sleep -Milliseconds 500
+}
+if (-not (Test-Path -LiteralPath $heartbeatPath)) {
+    throw 'Interactive GUI smoke relay task did not produce a heartbeat within 30 seconds. Keep the configured smoke user signed in and inspect the Task Scheduler operational log.'
+}
+$heartbeat = Get-Content -Raw -LiteralPath $heartbeatPath | ConvertFrom-Json
+if ($heartbeat.schema_version -ne 1 -or $heartbeat.relay_session_kind -ne 'interactive_user_task' -or [int]$heartbeat.process_session_id -eq 0) {
+    throw 'Interactive GUI smoke relay heartbeat did not prove an interactive user session.'
+}
 if ($RunNow) {
-    Start-ScheduledTask -TaskName $taskName -TaskPath $taskPath
+    Write-Host 'Interactive GUI smoke relay heartbeat verified immediately after installation.'
 }
 
 Write-Host "Interactive GUI smoke relay installed for $InteractiveUser."
