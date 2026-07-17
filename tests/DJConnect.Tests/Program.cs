@@ -2050,7 +2050,8 @@ static void WindowsInteractiveGuiSmokeRelayIsIsolated()
     AssertTrue(workflow.Contains("interactive-gui-smoke", StringComparison.Ordinal), "workflow must submit work to the relay rather than launch the GUI directly");
     AssertTrue(!workflow.Contains("Start-Process -FilePath $executable -PassThru", StringComparison.Ordinal), "service-runner workflow must not launch the GUI directly");
     AssertTrue(installer.Contains("/IT", StringComparison.Ordinal) && installer.Contains("/RL LIMITED", StringComparison.Ordinal), "relay task must be interactive and limited");
-    AssertTrue(installer.Contains("$runnerIdentity:(OI)(CI)M", StringComparison.Ordinal), "runner may write only relay requests");
+    AssertTrue(installer.Contains("${runnerIdentity}:(OI)(CI)M", StringComparison.Ordinal), "runner may write only relay requests");
+    AssertTrue(installer.Contains("${InteractiveUser}:(OI)(CI)RX", StringComparison.Ordinal), "ACL variables before a colon must use explicit PowerShell delimiters");
     AssertTrue(relay.Contains("$process.SessionId -eq 0", StringComparison.Ordinal), "relay must reject session-zero GUI launch");
     AssertTrue(relay.Contains("Stop-Process -Id $process.Id", StringComparison.Ordinal), "relay must bound the launched GUI process");
 }
