@@ -13,6 +13,16 @@ function Write-RelayResult([hashtable] $Result, [string] $ResultsDirectory) {
     Move-Item -LiteralPath $temporaryPath -Destination $resultPath -Force
 }
 
+function Write-RelayHeartbeat([string] $ResultsDirectory) {
+    $heartbeat = [ordered]@{
+        schema_version = 1
+        relay_session_kind = 'interactive_user_task'
+        process_session_id = [Diagnostics.Process]::GetCurrentProcess().SessionId
+        observed_at = (Get-Date).ToUniversalTime().ToString('o')
+    }
+    $heartbeat | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $ResultsDirectory 'relay-heartbeat.json') -NoNewline -Encoding utf8
+}
+
 if (-not (Test-Path -LiteralPath $ConfigPath)) {
     throw "Interactive GUI smoke relay configuration is absent: $ConfigPath"
 }
@@ -28,6 +38,8 @@ $installRoot = [IO.Path]::GetFullPath([string]$config.install_root)
 if (-not (Test-Path -LiteralPath $requestsDirectory) -or -not (Test-Path -LiteralPath $resultsDirectory)) {
     throw 'Interactive GUI smoke relay directories are unavailable.'
 }
+
+Write-RelayHeartbeat -ResultsDirectory $resultsDirectory
 
 $request = Get-ChildItem -LiteralPath $requestsDirectory -Filter '*.json' -File |
     Sort-Object Name |

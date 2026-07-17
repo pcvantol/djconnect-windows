@@ -2056,6 +2056,8 @@ static void WindowsInteractiveGuiSmokeRelayIsIsolated()
     AssertTrue(!installer.Contains("$arguments = \"-NoLogo", StringComparison.Ordinal), "scheduled task must not embed an overlong PowerShell command line");
     AssertTrue(installer.Contains("Invoke-RelayAdminRecovery $relayRoot", StringComparison.Ordinal), "elevated reinstall must repair managed relay ACLs before updating files");
     AssertTrue(installer.Contains("'BUILTIN\\Administrators:F'", StringComparison.Ordinal), "relay files must grant administrators direct full control rather than inherit-only access");
+    AssertTrue(installer.Contains("relay-heartbeat.json", StringComparison.Ordinal) && installer.Contains("Start-ScheduledTask -TaskName $taskName", StringComparison.Ordinal), "installer must prove the scheduled task can start after registration");
+    AssertTrue(relay.Contains("Write-RelayHeartbeat", StringComparison.Ordinal) && relay.Contains("process_session_id = [Diagnostics.Process]::GetCurrentProcess().SessionId", StringComparison.Ordinal), "relay must publish non-secret interactive-session heartbeat evidence");
     AssertTrue(relay.Contains("$process.SessionId -eq 0", StringComparison.Ordinal), "relay must reject session-zero GUI launch");
     AssertTrue(relay.Contains("Stop-Process -Id $process.Id", StringComparison.Ordinal), "relay must bound the launched GUI process");
 }
