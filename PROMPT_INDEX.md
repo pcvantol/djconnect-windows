@@ -8,11 +8,11 @@ This file tracks only this repository's local phase state. It must not copy the 
 
 ## Current Repository Phase
 
-No implementation prompt is active.
+Windows interactive GUI smoke relay.
 
 ## Status
 
-MERGED_RECONCILED
+REVIEWABLE_FROZEN
 
 ## Depends On
 
@@ -20,7 +20,7 @@ MERGED_RECONCILED
 - `pcvantol/djconnect/REPOSITORY_OWNERSHIP.md`
 - `pcvantol/djconnect/docs/meta/PHASE_COMPLETION_PROTOCOL.md`
 
-## Completed Prompt
+## Previous Prompt
 
 Windows smoke service diagnostics is completed, merged and reconciled by PR
 [#27](https://github.com/pcvantol/djconnect-windows/pull/27). Its retained
@@ -31,11 +31,18 @@ that cannot qualify interactive application startup.
 
 `docs/history/prompts/2026-07-17-windows-smoke-service-diagnostics.md`
 
+## Current Prompt
+
+Implement a least-privilege interactive-session relay for Windows GUI smoke.
+The hardened service runner may validate and submit a correlation-bound request
+only; it must not start the GUI. The interactive task must run as a limited
+named user with no stored password and scoped request/result ACLs.
+
 ## Next Repository Phase
 
-Implement and qualify a least-privilege interactive-session relay for Windows
-GUI smoke. Then rerun the already authorized smoke against deployment run
-`29583151393`; do not redeploy the unchanged artifact.
+After this increment merges and is installed, rerun the already authorized
+smoke against deployment run `29583151393`; do not redeploy the unchanged
+artifact.
 
 ## Boundary
 

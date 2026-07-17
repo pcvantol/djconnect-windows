@@ -1,13 +1,11 @@
 # Windows Management Summary
 
-**Decision:** `WINDOWS_SMOKE_SERVICE_DIAGNOSTICS_RECONCILED`.
+**Decision:** `WINDOWS_INTERACTIVE_GUI_SMOKE_RELAY_REVIEWABLE`.
 
-PR #27 is merged and its diagnostic evidence is reconciled. The manifest-bound
-ARM64 consumer, genuine Windows-on-ARM service runner, Environment
-configuration and exact target authorization are in place. The approved 3.3.0
-artifact has been deployed successfully in run `29583151393`. Smoke run
-`29583233193` validated the exact binding and installed version, then recorded
-that the GUI process exited in the non-interactive service session with no
-matching Application/.NET crash event. The remaining work is an isolated,
-least-privilege interactive-session smoke relay; deployment identity and
-service hardening remain unchanged.
+The deployed Windows 3.3.0 artifact is still bound to the approved manifest.
+This increment makes GUI smoke executable without weakening the hardened runner:
+the service validates and submits only a version-bound request, while a limited
+interactive-token scheduled task starts the fixed local GUI relay. Scoped ACLs
+prevent the service account from changing the task, script, configuration or
+results. Operational qualification awaits PR merge, one local installer run
+and a smoke-only rerun against deployment `29583151393`.

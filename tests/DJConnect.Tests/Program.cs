@@ -85,6 +85,7 @@ var tests = new (string Name, Action Run)[]
     ("DJConnect Home Assistant HTTP routes use canonical v1 prefix", DJConnectHomeAssistantHttpRoutesUseCanonicalV1Prefix),
     ("Release workflow pushes notes from current HEAD", ReleaseWorkflowPushesNotesFromCurrentHead),
     ("Release workflow extracts only current changelog section", ReleaseWorkflowExtractsOnlyCurrentChangelogSection),
+    ("Windows interactive GUI smoke relay is isolated from the service runner", WindowsInteractiveGuiSmokeRelayIsIsolated),
     ("Release context docs mention current app version", ReleaseContextDocsMentionCurrentAppVersion),
     ("Backend-aware actions preserve Music Assistant value", BackendAwareActionsPreserveMusicAssistantValue),
     ("Backend-aware actions carry backend revision", BackendAwareActionsCarryBackendRevision),
@@ -2036,6 +2037,22 @@ static void ReleaseWorkflowExtractsOnlyCurrentChangelogSection()
     AssertTrue(workflow.Contains("$0 ~ \"^## \" version \"($| - )\" { capture=1; next }", StringComparison.Ordinal), "release notes must start at the matching version heading");
     AssertTrue(workflow.Contains("capture && /^## / { capture=0 }", StringComparison.Ordinal), "release notes must stop before the next changelog version");
     AssertTrue(!workflow.Contains("cat CHANGELOG.md", StringComparison.Ordinal), "release notes must not publish the whole changelog");
+}
+
+static void WindowsInteractiveGuiSmokeRelayIsIsolated()
+{
+    var root = ProjectRoot();
+    var workflow = File.ReadAllText(Path.Combine(root, ".github", "workflows", "windows-post-deployment-smoke.yml"));
+    var installer = File.ReadAllText(Path.Combine(root, "scripts", "runner", "Install-DJConnectInteractiveGuiSmokeRelay.ps1"));
+    var relay = File.ReadAllText(Path.Combine(root, "scripts", "runner", "Invoke-DJConnectInteractiveGuiSmokeRelay.ps1"));
+
+    AssertTrue(workflow.Contains("windows-internal-arm64-smoke-v2", StringComparison.Ordinal), "smoke must declare the interactive relay contract");
+    AssertTrue(workflow.Contains("interactive-gui-smoke", StringComparison.Ordinal), "workflow must submit work to the relay rather than launch the GUI directly");
+    AssertTrue(!workflow.Contains("Start-Process -FilePath $executable -PassThru", StringComparison.Ordinal), "service-runner workflow must not launch the GUI directly");
+    AssertTrue(installer.Contains("/IT", StringComparison.Ordinal) && installer.Contains("/RL LIMITED", StringComparison.Ordinal), "relay task must be interactive and limited");
+    AssertTrue(installer.Contains("$runnerIdentity:(OI)(CI)M", StringComparison.Ordinal), "runner may write only relay requests");
+    AssertTrue(relay.Contains("$process.SessionId -eq 0", StringComparison.Ordinal), "relay must reject session-zero GUI launch");
+    AssertTrue(relay.Contains("Stop-Process -Id $process.Id", StringComparison.Ordinal), "relay must bound the launched GUI process");
 }
 
 static void ReleaseContextDocsMentionCurrentAppVersion()

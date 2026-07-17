@@ -18,7 +18,7 @@ Does not own: backend intelligence, provider-specific playback logic, canonical 
 
 ## Current Phase
 
-Windows smoke service diagnostics, merged and reconciled.
+Windows interactive GUI smoke relay, reviewable.
 
 ## Status
 
@@ -27,16 +27,18 @@ revision and no longer require Bash/WSL. PR #27 is merged at
 `29e998874db2bdb813fe3a4d614367c6da2f7fd4`. The authorized 3.3.0 deployment
 completed successfully in run `29583151393`; smoke run `29583233193` passed
 its immutable identity, deployment-evidence and installed-version checks, then
-observed the GUI process exit under the non-interactive service runner.
+observed the GUI process exit under the non-interactive service runner. The
+current reviewable increment replaces that direct launch with a bounded,
+least-privilege interactive relay.
 
 ## Blocking Dependencies
 
-- A least-privilege interactive-session relay is required before the Windows
-  GUI smoke can qualify the deployed target.
+- The relay installer must run successfully on the Windows VM while its smoke
+  user is signed in.
 
 ## Current Prompt
 
-Implement least-privilege interactive Windows GUI smoke relay
+Windows interactive GUI smoke relay
 
 ## Completion Report
 
@@ -61,8 +63,8 @@ consumer remediation increment.
 
 ## Repository-Local Next Action
 
-Implement the isolated interactive-session smoke relay. Then rerun the already
-authorized smoke against the existing successful deployment evidence; do not
+Review and merge this relay implementation. Install it on the Windows VM, then
+rerun smoke against the existing successful deployment evidence; do not
 redeploy first.
 
 ## Notes
