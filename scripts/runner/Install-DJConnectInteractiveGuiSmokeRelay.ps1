@@ -29,6 +29,7 @@ $requestsDirectory = Join-Path $relayRoot 'requests'
 $resultsDirectory = Join-Path $relayRoot 'results'
 $relayScript = Join-Path $relayRoot 'Invoke-DJConnectInteractiveGuiSmokeRelay.ps1'
 $configPath = Join-Path $relayRoot 'relay-config.json'
+$launcherPath = Join-Path $relayRoot 'RunInteractiveGuiSmoke.cmd'
 $sourceScript = Join-Path $PSScriptRoot 'Invoke-DJConnectInteractiveGuiSmokeRelay.ps1'
 if (-not (Test-Path -LiteralPath $sourceScript)) {
     throw "Relay source script is absent: $sourceScript"
@@ -42,6 +43,10 @@ Copy-Item -LiteralPath $sourceScript -Destination $relayScript -Force
     requests_directory = $requestsDirectory
     results_directory = $resultsDirectory
 } | ConvertTo-Json | Set-Content -LiteralPath $configPath -Encoding utf8
+@"
+@echo off
+"%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Invoke-DJConnectInteractiveGuiSmokeRelay.ps1" -ConfigPath "%~dp0relay-config.json"
+"@ | Set-Content -LiteralPath $launcherPath -Encoding ascii
 
 function Set-RelayAcl([string] $Path, [string[]] $Grants) {
     & icacls.exe $Path /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' 'BUILTIN\Administrators:(OI)(CI)F' @Grants | Out-Null
@@ -52,12 +57,11 @@ Set-RelayAcl $requestsDirectory @("${InteractiveUser}:(OI)(CI)RX", "${runnerIden
 Set-RelayAcl $resultsDirectory @("${InteractiveUser}:(OI)(CI)M", "${runnerIdentity}:(OI)(CI)RX")
 Set-RelayAcl $relayScript @("${InteractiveUser}:RX", "${runnerIdentity}:R")
 Set-RelayAcl $configPath @("${InteractiveUser}:R", "${runnerIdentity}:R")
+Set-RelayAcl $launcherPath @("${InteractiveUser}:RX", "${runnerIdentity}:R")
 
 $taskName = 'InteractiveGuiSmoke'
 $taskPath = '\DJConnect\'
-$powershell = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
-$arguments = "-NoLogo -NoProfile -ExecutionPolicy Bypass -File `"$relayScript`" -ConfigPath `"$configPath`""
-& schtasks.exe /Create /TN "$taskPath$taskName" /TR "`"$powershell`" $arguments" /SC MINUTE /MO 1 /RU $InteractiveUser /IT /RL LIMITED /F | Out-Null
+& schtasks.exe /Create /TN "$taskPath$taskName" /TR $launcherPath /SC MINUTE /MO 1 /RU $InteractiveUser /IT /RL LIMITED /F | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Failed to register the interactive GUI smoke scheduled task.' }
 if ($RunNow) {
     Start-ScheduledTask -TaskName $taskName -TaskPath $taskPath
