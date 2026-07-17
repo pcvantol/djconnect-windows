@@ -35,6 +35,19 @@ if (-not (Test-Path -LiteralPath $sourceScript)) {
     throw "Relay source script is absent: $sourceScript"
 }
 
+function Invoke-RelayAdminRecovery([string] $Path) {
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+
+    # Earlier relay installations used inherit-only administrator ACEs on files.
+    # An elevated installer must be able to repair those ACLs before it updates
+    # its own managed files; the final ACLs below remain least-privilege.
+    & takeown.exe /F $Path /R /D Y | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Failed to take ownership of managed relay path $Path" }
+    & icacls.exe $Path /grant:r 'BUILTIN\Administrators:(OI)(CI)F' /T /C | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Failed to restore administrator access to managed relay path $Path" }
+}
+
+Invoke-RelayAdminRecovery $relayRoot
 New-Item -ItemType Directory -Force -Path $relayRoot, $requestsDirectory, $resultsDirectory | Out-Null
 Copy-Item -LiteralPath $sourceScript -Destination $relayScript -Force
 [ordered]@{
@@ -48,16 +61,20 @@ Copy-Item -LiteralPath $sourceScript -Destination $relayScript -Force
 "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%~dp0Invoke-DJConnectInteractiveGuiSmokeRelay.ps1" -ConfigPath "%~dp0relay-config.json"
 "@ | Set-Content -LiteralPath $launcherPath -Encoding ascii
 
-function Set-RelayAcl([string] $Path, [string[]] $Grants) {
+function Set-RelayDirectoryAcl([string] $Path, [string[]] $Grants) {
     & icacls.exe $Path /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' 'BUILTIN\Administrators:(OI)(CI)F' @Grants | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Failed to apply least-privilege ACL to $Path" }
 }
-Set-RelayAcl $relayRoot @("${InteractiveUser}:(OI)(CI)RX", "${runnerIdentity}:(OI)(CI)RX")
-Set-RelayAcl $requestsDirectory @("${InteractiveUser}:(OI)(CI)RX", "${runnerIdentity}:(OI)(CI)M")
-Set-RelayAcl $resultsDirectory @("${InteractiveUser}:(OI)(CI)M", "${runnerIdentity}:(OI)(CI)RX")
-Set-RelayAcl $relayScript @("${InteractiveUser}:RX", "${runnerIdentity}:R")
-Set-RelayAcl $configPath @("${InteractiveUser}:R", "${runnerIdentity}:R")
-Set-RelayAcl $launcherPath @("${InteractiveUser}:RX", "${runnerIdentity}:R")
+function Set-RelayFileAcl([string] $Path, [string[]] $Grants) {
+    & icacls.exe $Path /inheritance:r /grant:r 'SYSTEM:F' 'BUILTIN\Administrators:F' @Grants | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw "Failed to apply least-privilege ACL to $Path" }
+}
+Set-RelayDirectoryAcl $relayRoot @("${InteractiveUser}:(OI)(CI)RX", "${runnerIdentity}:(OI)(CI)RX")
+Set-RelayDirectoryAcl $requestsDirectory @("${InteractiveUser}:(OI)(CI)RX", "${runnerIdentity}:(OI)(CI)M")
+Set-RelayDirectoryAcl $resultsDirectory @("${InteractiveUser}:(OI)(CI)M", "${runnerIdentity}:(OI)(CI)RX")
+Set-RelayFileAcl $relayScript @("${InteractiveUser}:RX", "${runnerIdentity}:R")
+Set-RelayFileAcl $configPath @("${InteractiveUser}:R", "${runnerIdentity}:R")
+Set-RelayFileAcl $launcherPath @("${InteractiveUser}:RX", "${runnerIdentity}:R")
 
 $taskName = 'InteractiveGuiSmoke'
 $taskPath = '\DJConnect\'
