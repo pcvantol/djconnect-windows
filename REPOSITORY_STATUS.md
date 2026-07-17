@@ -18,26 +18,25 @@ Does not own: backend intelligence, provider-specific playback logic, canonical 
 
 ## Current Phase
 
-Windows smoke service diagnostics, reviewable.
+Windows smoke service diagnostics, merged and reconciled.
 
 ## Status
 
 The Windows consumers pin the immutable central native-preflight action
-revision and no longer require Bash/WSL. The authorized 3.3.0 deployment
-completed successfully in run `29558445560`; smoke run `29558500687` failed
-only after the installed version passed because the GUI process exited under
-the non-interactive service runner.
+revision and no longer require Bash/WSL. PR #27 is merged at
+`29e998874db2bdb813fe3a4d614367c6da2f7fd4`. The authorized 3.3.0 deployment
+completed successfully in run `29583151393`; smoke run `29583233193` passed
+its immutable identity, deployment-evidence and installed-version checks, then
+observed the GUI process exit under the non-interactive service runner.
 
 ## Blocking Dependencies
 
-- The diagnostic smoke update must merge before the authorized smoke rerun.
-- The next evidence must distinguish an application crash from expected
-  non-interactive session termination before changing the runtime or runner
-  topology.
+- A least-privilege interactive-session relay is required before the Windows
+  GUI smoke can qualify the deployed target.
 
 ## Current Prompt
 
-Windows smoke service diagnostics
+Implement least-privilege interactive Windows GUI smoke relay
 
 ## Completion Report
 
@@ -48,9 +47,10 @@ Windows smoke service diagnostics
 The ARM64 runner qualified successfully in service context. Earlier retries
 failed closed before installation because of service-visible PowerShell,
 Execution Policy and WSL/Bash preflight defects. Those defects are resolved.
-Authorized deployment run `29558445560` installed the exact approved artifact.
-Smoke run `29558500687` confirmed the binding and installed `3.3.0` version,
-then reported only that the process exited during the bounded startup window.
+Authorized deployment run `29583151393` installed the exact approved artifact.
+Smoke run `29583233193` confirmed the binding and installed `3.3.0` version,
+then recorded exit code `-1073741189`, session `0` and no matching Application
+or .NET crash event. The GUI target remains unqualified.
 
 ## Validated Base SHA
 
@@ -61,8 +61,9 @@ consumer remediation increment.
 
 ## Repository-Local Next Action
 
-Review and merge this diagnostic update. Then rerun the already authorized
-smoke against the successful deployment evidence; do not redeploy first.
+Implement the isolated interactive-session smoke relay. Then rerun the already
+authorized smoke against the existing successful deployment evidence; do not
+redeploy first.
 
 ## Notes
 
