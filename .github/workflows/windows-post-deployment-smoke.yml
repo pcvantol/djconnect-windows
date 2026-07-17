@@ -16,6 +16,10 @@ permissions:
   actions: read
   contents: read
 
+concurrency:
+  group: windows-internal-arm64-interactive-smoke
+  cancel-in-progress: false
+
 jobs:
   smoke:
     runs-on: [self-hosted, Windows, ARM64, internal-release]
@@ -49,7 +53,7 @@ jobs:
           expected_runner_os: Windows
           expected_runner_arch: ARM64
           required_configuration: DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT
-          smoke_contract: windows-internal-arm64-smoke-v1
+          smoke_contract: windows-internal-arm64-smoke-v2
       - id: manifest
         name: Verify approved central manifest binding
         shell: powershell -ExecutionPolicy Bypass -File {0}
@@ -107,48 +111,51 @@ jobs:
           $observedVersion = (Get-Item $executable).VersionInfo.ProductVersion
           if ($observedVersion -notlike "$env:EXPECTED_VERSION*") { throw "Installed version mismatch: $observedVersion" }
           $start = Get-Date
-          $process = $null
           $failure = $null
           $failureClassification = 'none'
           $startupMarker = 'NOT_STARTED'
-          $crashLogResult = 'NOT_CHECKED'
           $processExited = $null
           $processExitCode = $null
           $processSessionId = $null
-          $runnerSessionKind = 'unknown'
-          $crashEvents = @()
+          $runnerSessionKind = 'service_orchestration'
+          $relayRoot = Join-Path $env:ProgramData 'DJConnect\interactive-gui-smoke'
+          $configPath = Join-Path $relayRoot 'relay-config.json'
+          $requestsDirectory = Join-Path $relayRoot 'requests'
+          $resultsDirectory = Join-Path $relayRoot 'results'
+          $relayResult = 'NOT_STARTED'
+          $relayRequestId = [Guid]::NewGuid().ToString()
+          $requestPath = Join-Path $requestsDirectory "$relayRequestId.json"
+          $resultPath = Join-Path $resultsDirectory "$relayRequestId.json"
           try {
-            $process = Start-Process -FilePath $executable -PassThru
-            $processSessionId = $process.SessionId
-            Start-Sleep -Seconds 10
-            $process.Refresh()
-            $processExited = $process.HasExited
-            if ($processExited) {
-              try { $processExitCode = $process.ExitCode } catch { $processExitCode = $null }
-              $startupMarker = 'PROCESS_EXITED'
+            if (-not (Test-Path -LiteralPath $configPath) -or -not (Test-Path -LiteralPath $requestsDirectory) -or -not (Test-Path -LiteralPath $resultsDirectory)) { throw 'Interactive GUI smoke relay is not installed.' }
+            $relayConfig = Get-Content -Raw -LiteralPath $configPath | ConvertFrom-Json
+            if ($relayConfig.schema_version -ne 1 -or [IO.Path]::GetFullPath([string]$relayConfig.install_root) -ne [IO.Path]::GetFullPath($env:DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT)) { throw 'Interactive GUI smoke relay configuration does not bind to this deployment root.' }
+            [ordered]@{ schema_version = 1; request_id = $relayRequestId; expected_version = $env:EXPECTED_VERSION; submitted_at = (Get-Date).ToUniversalTime().ToString('o') } | ConvertTo-Json -Compress | Set-Content -LiteralPath $requestPath -NoNewline -Encoding utf8
+            $deadline = (Get-Date).AddSeconds(180)
+            while (-not (Test-Path -LiteralPath $resultPath) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
+            if (-not (Test-Path -LiteralPath $resultPath)) {
+              $failureClassification = 'INTERACTIVE_RELAY_UNAVAILABLE'
+              $failure = 'Interactive GUI smoke relay did not return evidence within 180 seconds. Keep the configured smoke user signed in.'
             } else {
-              $startupMarker = 'PROCESS_ALIVE'
-            }
-            $crashEvents = @(Get-WinEvent -FilterHashtable @{ LogName = 'Application'; StartTime = $start } -ErrorAction SilentlyContinue | Where-Object { $_.Message -match 'DJConnect\\.exe' -and $_.ProviderName -in @('Application Error', '.NET Runtime') } | Select-Object Id, ProviderName, LevelDisplayName, TimeCreated)
-            $crashLogResult = if ($crashEvents.Count -gt 0) { 'MATCHING_CRASH_EVENT' } else { 'NO_MATCHING_CRASH_EVENT' }
-            if ($processExited) {
-              $failureClassification = if ($processSessionId -eq 0) { 'NONINTERACTIVE_SERVICE_SESSION_PROCESS_EXITED' } else { 'PROCESS_EXITED_DURING_STARTUP' }
-              $failure = "DJConnect exited during the bounded startup window (exit code: $processExitCode; session: $processSessionId)."
-            } elseif ($crashEvents.Count -gt 0) {
-              $failureClassification = 'MATCHING_APPLICATION_CRASH_EVENT'
-              $failure = 'A bounded DJConnect crash event was observed after launch.'
+              $relay = Get-Content -Raw -LiteralPath $resultPath | ConvertFrom-Json
+              if ($relay.schema_version -ne 1 -or $relay.request_id -ne $relayRequestId -or $relay.expected_version -ne $env:EXPECTED_VERSION -or $relay.observed_version -notlike "$env:EXPECTED_VERSION*") { throw 'Interactive GUI smoke relay evidence is invalid.' }
+              $relayResult = $relay.final_result
+              $startupMarker = $relay.startup_marker_result
+              $processExited = $relay.process_exited
+              $processExitCode = $relay.process_exit_code
+              $processSessionId = $relay.process_session_id
+              if ($relay.relay_session_kind -ne 'interactive_user_task' -or $processSessionId -eq 0) { throw 'Interactive GUI smoke relay did not execute in an interactive session.' }
+              if ($relay.final_result -ne 'PASS') { $failureClassification = $relay.failure_classification; $failure = "Interactive GUI smoke relay failed: $($relay.failure_classification)." }
             }
           } catch {
-            $failureClassification = 'SMOKE_EXECUTION_ERROR'
+            if ($failureClassification -eq 'none') { $failureClassification = 'SMOKE_EXECUTION_ERROR' }
             $failure = $_.Exception.Message
           } finally {
             $finalResult = if ($failure) { 'SMOKE_FAIL' } else { 'SMOKE_PASS' }
             $healthResult = if ($failure) { 'FAIL' } else { 'PASS' }
-            if ($processSessionId -eq 0) { $runnerSessionKind = 'noninteractive_service' }
-            elseif ($null -ne $processSessionId) { $runnerSessionKind = 'interactive_or_user_session' }
-            $smoke = [ordered]@{ schema_version = 2; repository = $env:GITHUB_REPOSITORY; candidate_sha = $env:CANDIDATE_SHA; platform_version = $env:PLATFORM_VERSION; manifest_id = $env:MANIFEST_ID; deployment_workflow_run = $env:DEPLOYMENT_WORKFLOW_RUN; smoke_workflow_run = $env:GITHUB_RUN_ID; runner_identity = "$env:RUNNER_OS/$env:RUNNER_ARCH"; target = $env:TARGET; route_type = 'local_application'; protocol = 'process'; endpoint_class = 'not_applicable'; authentication_mode = 'not_applicable'; artifact_id = $env:ARTIFACT_ID; artifact_sha256 = $env:ARTIFACT_SHA256; expected_version = $env:EXPECTED_VERSION; observed_version = $observedVersion; health_result = $healthResult; websocket_result = 'NOT_APPLICABLE'; startup_marker_result = $startupMarker; process_exited = $processExited; process_exit_code = $processExitCode; process_session_id = $processSessionId; runner_session_kind = $runnerSessionKind; crash_log_result = $crashLogResult; crash_events = $crashEvents; retry_count = 0; stabilization_window = 'PT10S'; timestamps = @{ started_at = $start.ToUniversalTime().ToString('o'); observed_at = (Get-Date).ToUniversalTime().ToString('o') }; final_result = $finalResult; failure_classification = $failureClassification; recovery_reference = 'windows-internal-arm64-smoke-v2' }
+            if (Test-Path -LiteralPath $requestPath) { Remove-Item -LiteralPath $requestPath -Force -ErrorAction SilentlyContinue }
+            $smoke = [ordered]@{ schema_version = 3; repository = $env:GITHUB_REPOSITORY; candidate_sha = $env:CANDIDATE_SHA; platform_version = $env:PLATFORM_VERSION; manifest_id = $env:MANIFEST_ID; deployment_workflow_run = $env:DEPLOYMENT_WORKFLOW_RUN; smoke_workflow_run = $env:GITHUB_RUN_ID; runner_identity = "$env:RUNNER_OS/$env:RUNNER_ARCH"; target = $env:TARGET; route_type = 'interactive_local_application'; protocol = 'process'; endpoint_class = 'not_applicable'; authentication_mode = 'not_applicable'; artifact_id = $env:ARTIFACT_ID; artifact_sha256 = $env:ARTIFACT_SHA256; expected_version = $env:EXPECTED_VERSION; observed_version = $observedVersion; health_result = $healthResult; websocket_result = 'NOT_APPLICABLE'; startup_marker_result = $startupMarker; process_exited = $processExited; process_exit_code = $processExitCode; process_session_id = $processSessionId; runner_session_kind = $runnerSessionKind; relay_result = $relayResult; retry_count = 0; stabilization_window = 'PT10S'; timestamps = @{ started_at = $start.ToUniversalTime().ToString('o'); observed_at = (Get-Date).ToUniversalTime().ToString('o') }; final_result = $finalResult; failure_classification = $failureClassification; recovery_reference = 'windows-interactive-gui-smoke-relay-v1' }
             $smoke | ConvertTo-Json -Depth 5 -Compress | Set-Content -NoNewline -Encoding utf8 windows-post-deployment-smoke-evidence.json
-            if ($process -and -not $process.HasExited) { Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue }
           }
           if ($failure) { throw $failure }
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

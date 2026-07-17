@@ -1,6 +1,6 @@
 # Windows Internal Deployment Consumer
 
-Status: `WINDOWS_SMOKE_SERVICE_DIAGNOSTICS_RECONCILED`
+Status: `WINDOWS_INTERACTIVE_GUI_SMOKE_RELAY_IMPLEMENTATION_IN_PROGRESS`
 
 The Windows ARM64 deployment consumer installs one manifest-bound portable artifact on the qualified self-hosted Windows-on-ARM runner. It is an internal deployment path only; it does not create an installer, publish a release, modify release tags or provide Store distribution.
 
@@ -55,7 +55,18 @@ user-profile-only `pwsh`.
 
 ## Smoke contract
 
-`.github/workflows/windows-post-deployment-smoke.yml` is a separate manual workflow. It validates the same manifest identity and successful deployment evidence, then checks the installed file version and performs one bounded 10-second launch/read-back. Its evidence is written and uploaded even on failure, and records only redacted process diagnostics: startup marker, exit code, session kind and matching Application/.NET crash-event metadata. A session-0 service runner is recorded explicitly as non-interactive; that observation is not treated as proof of a product crash. The current workflow cannot qualify GUI startup until the next scoped increment supplies an isolated interactive relay. Windows is an inbound-only client and exposes no application-local health or WebSocket endpoint, so those checks are explicitly `NOT_APPLICABLE` in the redacted smoke evidence.
+`.github/workflows/windows-post-deployment-smoke.yml` is a separate manual workflow. It validates the same manifest identity and successful deployment evidence, then checks the installed file version. It writes a correlation-bound, version-only request into the relay request directory and waits at most 180 seconds for redacted result evidence. It never starts `DJConnect.exe` itself.
+
+The installed relay is a Windows Scheduled Task running every minute with an interactive-token, limited user principal. It runs only when that configured user is signed in. The fixed relay script is copied below `ProgramData`; its configuration and executable path are not controlled by the GitHub runner. The service virtual account receives only Modify access to `requests` and read-only access to `results`; the interactive user receives the inverse result-write permission. A successful relay result requires a non-zero process session and an alive application after ten seconds. The relay always terminates that bounded process. Windows is an inbound-only client and exposes no application-local health or WebSocket endpoint, so those checks remain `NOT_APPLICABLE` in redacted smoke evidence.
+
+Install or update the relay once from an elevated PowerShell session while the intended smoke user is signed in:
+
+```powershell
+Set-Location C:\DJConnect\source\djconnect-windows
+pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\runner\Install-DJConnectInteractiveGuiSmokeRelay.ps1 -InstallRoot C:\DJConnect\internal-release
+```
+
+The installer rejects service identities, requires the existing hardened runner virtual account, applies scoped ACLs and registers `\DJConnect\InteractiveGuiSmoke` with `/IT` and limited run level. It stores no password, token or GitHub credential. Keep the smoke user signed in during the GitHub smoke run; otherwise the workflow fails closed as `INTERACTIVE_RELAY_UNAVAILABLE`.
 
 ## Authorization boundary
 
