@@ -2054,6 +2054,8 @@ static void WindowsInteractiveGuiSmokeRelayIsIsolated()
     AssertTrue(installer.Contains("${InteractiveUser}:(OI)(CI)RX", StringComparison.Ordinal), "ACL variables before a colon must use explicit PowerShell delimiters");
     AssertTrue(installer.Contains("RunInteractiveGuiSmoke.cmd", StringComparison.Ordinal), "scheduled task must use a short fixed command wrapper");
     AssertTrue(!installer.Contains("$arguments = \"-NoLogo", StringComparison.Ordinal), "scheduled task must not embed an overlong PowerShell command line");
+    AssertTrue(installer.Contains("Invoke-RelayAdminRecovery $relayRoot", StringComparison.Ordinal), "elevated reinstall must repair managed relay ACLs before updating files");
+    AssertTrue(installer.Contains("'BUILTIN\\Administrators:F'", StringComparison.Ordinal), "relay files must grant administrators direct full control rather than inherit-only access");
     AssertTrue(relay.Contains("$process.SessionId -eq 0", StringComparison.Ordinal), "relay must reject session-zero GUI launch");
     AssertTrue(relay.Contains("Stop-Process -Id $process.Id", StringComparison.Ordinal), "relay must bound the launched GUI process");
 }
