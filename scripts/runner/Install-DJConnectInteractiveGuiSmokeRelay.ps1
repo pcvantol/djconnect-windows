@@ -78,7 +78,8 @@ Set-RelayFileAcl $launcherPath @("${InteractiveUser}:RX", "${runnerIdentity}:R")
 
 $taskName = 'InteractiveGuiSmoke'
 $taskPath = '\DJConnect\'
-& schtasks.exe /Create /TN "$taskPath$taskName" /TR $launcherPath /SC MINUTE /MO 1 /RU $InteractiveUser /IT /RL LIMITED /F | Out-Null
+$taskCommand = ('"{0}" /d /c "{1}"' -f $env:ComSpec, $launcherPath)
+& schtasks.exe /Create /TN "$taskPath$taskName" /TR $taskCommand /SC MINUTE /MO 1 /RU $InteractiveUser /IT /RL LIMITED /F | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Failed to register the interactive GUI smoke scheduled task.' }
 
 $heartbeatPath = Join-Path $resultsDirectory 'relay-heartbeat.json'

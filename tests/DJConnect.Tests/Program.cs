@@ -2054,6 +2054,7 @@ static void WindowsInteractiveGuiSmokeRelayIsIsolated()
     AssertTrue(installer.Contains("${InteractiveUser}:(OI)(CI)RX", StringComparison.Ordinal), "ACL variables before a colon must use explicit PowerShell delimiters");
     AssertTrue(installer.Contains("RunInteractiveGuiSmoke.cmd", StringComparison.Ordinal), "scheduled task must use a short fixed command wrapper");
     AssertTrue(!installer.Contains("$arguments = \"-NoLogo", StringComparison.Ordinal), "scheduled task must not embed an overlong PowerShell command line");
+    AssertTrue(installer.Contains("$env:ComSpec", StringComparison.Ordinal) && installer.Contains("/d /c", StringComparison.Ordinal) && !installer.Contains("/TR $launcherPath", StringComparison.Ordinal), "scheduled task must invoke the command wrapper through cmd.exe rather than treating a .cmd file as an executable");
     AssertTrue(installer.Contains("Invoke-RelayAdminRecovery $relayRoot", StringComparison.Ordinal), "elevated reinstall must repair managed relay ACLs before updating files");
     AssertTrue(installer.Contains("'BUILTIN\\Administrators:F'", StringComparison.Ordinal), "relay files must grant administrators direct full control rather than inherit-only access");
     AssertTrue(installer.Contains("relay-heartbeat.json", StringComparison.Ordinal) && installer.Contains("Start-ScheduledTask -TaskName $taskName", StringComparison.Ordinal), "installer must prove the scheduled task can start after registration");
