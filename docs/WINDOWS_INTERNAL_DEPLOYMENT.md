@@ -66,7 +66,7 @@ Set-Location C:\DJConnect\source\djconnect-windows
 pwsh -NoProfile -ExecutionPolicy Bypass -File .\scripts\runner\Install-DJConnectInteractiveGuiSmokeRelay.ps1 -InstallRoot C:\DJConnect\internal-release
 ```
 
-The installer rejects service identities, requires the existing hardened runner virtual account, applies scoped ACLs and registers `\DJConnect\InteractiveGuiSmoke` with `/IT` and limited run level. Before reporting success it starts the task once and requires a non-secret heartbeat proving an interactive, non-zero session. It stores no password, token or GitHub credential. Keep the smoke user signed in during the GitHub smoke run; otherwise installation and the workflow fail closed.
+The installer rejects service identities, requires the existing hardened runner virtual account, applies scoped ACLs and registers `\DJConnect\InteractiveGuiSmoke` with `/IT` and limited run level. Its action explicitly invokes the short command wrapper through `cmd.exe /d /c`, avoiding both the Task Scheduler executable-action ambiguity for `.cmd` files and the `/TR` length limit. Before reporting success it starts the task once and requires a non-secret heartbeat proving an interactive, non-zero session. It stores no password, token or GitHub credential. Keep the smoke user signed in during the GitHub smoke run; otherwise installation and the workflow fail closed.
 
 ## Authorization boundary
 
