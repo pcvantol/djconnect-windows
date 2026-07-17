@@ -8,7 +8,7 @@ This file tracks only this repository's local phase state. It must not copy the 
 
 ## Current Repository Phase
 
-Windows native-preflight consumer adoption.
+Windows smoke service diagnostics.
 
 ## Status
 
@@ -22,18 +22,19 @@ REVIEWABLE_FROZEN
 
 ## Current Prompt
 
-Adopt the immutable merged central deployment-readiness preflight revision in
-the Windows deployment and smoke consumers and remove the obsolete Bash
-prerequisite. Do not alter the manifest, artifact or deployment authorization.
+Retain redacted failure evidence for the Windows post-deployment smoke and
+classify service-session process exits separately from matching crash events.
+Do not alter the manifest, artifact, deployment authorization or runtime.
 
 ## Completion Report
 
-`docs/history/prompts/2026-07-16-windows-native-preflight-consumer-adoption.md`
+`docs/history/prompts/2026-07-17-windows-smoke-service-diagnostics.md`
 
 ## Next Repository Phase
 
-After this increment merges, rerun the already authorized deployment and
-dispatch smoke only if that deployment succeeds.
+After this increment merges, rerun the already authorized smoke against
+deployment run `29558445560` and use its evidence to determine whether an
+interactive-session relay is required.
 
 ## Boundary
 
