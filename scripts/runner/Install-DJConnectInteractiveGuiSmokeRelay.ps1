@@ -47,11 +47,11 @@ function Set-RelayAcl([string] $Path, [string[]] $Grants) {
     & icacls.exe $Path /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' 'BUILTIN\Administrators:(OI)(CI)F' @Grants | Out-Null
     if ($LASTEXITCODE -ne 0) { throw "Failed to apply least-privilege ACL to $Path" }
 }
-Set-RelayAcl $relayRoot @("$InteractiveUser:(OI)(CI)RX", "$runnerIdentity:(OI)(CI)RX")
-Set-RelayAcl $requestsDirectory @("$InteractiveUser:(OI)(CI)RX", "$runnerIdentity:(OI)(CI)M")
-Set-RelayAcl $resultsDirectory @("$InteractiveUser:(OI)(CI)M", "$runnerIdentity:(OI)(CI)RX")
-Set-RelayAcl $relayScript @("$InteractiveUser:RX", "$runnerIdentity:R")
-Set-RelayAcl $configPath @("$InteractiveUser:R", "$runnerIdentity:R")
+Set-RelayAcl $relayRoot @("${InteractiveUser}:(OI)(CI)RX", "${runnerIdentity}:(OI)(CI)RX")
+Set-RelayAcl $requestsDirectory @("${InteractiveUser}:(OI)(CI)RX", "${runnerIdentity}:(OI)(CI)M")
+Set-RelayAcl $resultsDirectory @("${InteractiveUser}:(OI)(CI)M", "${runnerIdentity}:(OI)(CI)RX")
+Set-RelayAcl $relayScript @("${InteractiveUser}:RX", "${runnerIdentity}:R")
+Set-RelayAcl $configPath @("${InteractiveUser}:R", "${runnerIdentity}:R")
 
 $taskName = 'InteractiveGuiSmoke'
 $taskPath = '\DJConnect\'

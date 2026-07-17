@@ -77,6 +77,27 @@ jobs:
               raise SystemExit("Mutable GitHub Action or reusable-workflow reference(s):\\n" + "\\n".join(violations))
           PY
 
+  powershell-script-syntax:
+    name: PowerShell runner-script syntax
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Parse every runner PowerShell script
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $errors = @()
+          Get-ChildItem scripts/runner -Filter '*.ps1' -File | ForEach-Object {
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$parseErrors)
+            $errors += @($parseErrors | ForEach-Object { "$($_.Extent.File):$($_.Extent.StartLineNumber): $($_.Message)" })
+          }
+          if ($errors.Count -gt 0) { throw ("PowerShell parser errors:`n" + ($errors -join "`n")) }
+          Write-Host 'PowerShell runner-script syntax OK.'
+
   protocol-tests:
     name: Protocol/core tests
     runs-on: ubuntu-latest
