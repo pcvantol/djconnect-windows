@@ -1,6 +1,6 @@
 # Windows Internal Deployment Consumer
 
-Status: `NATIVE_PREFLIGHT_CONSUMER_ADOPTION_REVIEWABLE`
+Status: `WINDOWS_SMOKE_SERVICE_DIAGNOSTICS_REVIEWABLE`
 
 The Windows ARM64 deployment consumer installs one manifest-bound portable artifact on the qualified self-hosted Windows-on-ARM runner. It is an internal deployment path only; it does not create an installer, publish a release, modify release tags or provide Store distribution.
 
@@ -10,7 +10,7 @@ The `windows-internal-deployment` GitHub Environment must expose the non-secret 
 
 The runner must be online with `self-hosted`, `Windows`, `ARM64` and `internal-release` labels. The pinned canonical readiness preflight runs with PowerShell 7 (`pwsh`) on Windows; it has no Bash or WSL dependency. PowerShell 7 must therefore be machine-visible to `NETWORK SERVICE`, not available only through a user-profile/MSIX path. For a `NETWORK SERVICE` runner, place the runner under a service-readable path such as `C:\actions-runner-arm64`, not below a user profile, and ensure every parent directory is traversable by that account.
 
-The registered `djconnect-windows11-parallels-arm64` runner is a genuine Windows-on-ARM target. Its first authorized deployment attempt stopped safely before preflight or installation because `pwsh` was unavailable to the service account. The next attempt reached the previous shared preflight and proved that its Bash dependency resolved to WSL. This consumer now pins the merged native preflight, removing that WSL dependency; its own ephemeral Windows PowerShell steps continue to use a workflow-scoped `-ExecutionPolicy Bypass`.
+The registered `djconnect-windows11-parallels-arm64` runner is a genuine Windows-on-ARM target. Its first authorized deployment attempt stopped safely before preflight or installation because `pwsh` was unavailable to the service account. The next attempt reached the previous shared preflight and proved that its Bash dependency resolved to WSL. The consumer now pins the merged native preflight, removing that WSL dependency; its own ephemeral Windows PowerShell steps continue to use a workflow-scoped `-ExecutionPolicy Bypass`. The subsequently authorized 3.3.0 deployment completed successfully; the first smoke run established that the GUI process exits when launched from the service context, but did not retain enough evidence to determine whether that is a crash or a session-bound GUI termination.
 
 ## Windows runner tooling maintenance
 
@@ -55,7 +55,7 @@ user-profile-only `pwsh`.
 
 ## Smoke contract
 
-`.github/workflows/windows-post-deployment-smoke.yml` is a separate manual workflow. It validates the same manifest identity and successful deployment evidence, then checks the installed file version, performs one bounded 10-second safe launch/read-back and rejects a matching immediate crash event. Windows is an inbound-only client and exposes no application-local health or WebSocket endpoint, so those checks are explicitly `NOT_APPLICABLE` in the redacted smoke evidence.
+`.github/workflows/windows-post-deployment-smoke.yml` is a separate manual workflow. It validates the same manifest identity and successful deployment evidence, then checks the installed file version and performs one bounded 10-second launch/read-back. Its evidence is written and uploaded even on failure, and records only redacted process diagnostics: startup marker, exit code, session kind and matching Application/.NET crash-event metadata. A session-0 service runner is recorded explicitly as non-interactive; that observation is not treated as proof of a product crash. Windows is an inbound-only client and exposes no application-local health or WebSocket endpoint, so those checks are explicitly `NOT_APPLICABLE` in the redacted smoke evidence.
 
 ## Authorization boundary
 

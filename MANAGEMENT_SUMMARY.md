@@ -1,5 +1,12 @@
 # Windows Management Summary
 
-**Decision:** `WINDOWS_NATIVE_PREFLIGHT_CONSUMER_ADOPTION_REVIEWABLE`.
+**Decision:** `WINDOWS_SMOKE_SERVICE_DIAGNOSTICS_REVIEWABLE`.
 
-The manifest-bound ARM64 consumer, genuine Windows-on-ARM service runner, Environment configuration and exact target authorization are in place. The central shared preflight is now natively PowerShell 7 on Windows. This increment pins its immutable merged SHA in the deployment and smoke consumers and removes the obsolete consumer-level Bash/WSL prerequisite. Existing PowerShell workflow steps retain their scoped execution-policy bypass. No artifact, target, manifest or deployment authorization changes are included. The next action remains a separately dispatched deployment, then smoke only after deployment success.
+The manifest-bound ARM64 consumer, genuine Windows-on-ARM service runner,
+Environment configuration and exact target authorization are in place. The
+approved 3.3.0 artifact has been deployed successfully. Its initial smoke
+validated the exact binding and installed version, then observed a GUI process
+exit from the non-interactive service session. This increment changes no
+artifact, target, manifest or authorization: it makes failure evidence durable
+and distinguishes a session-bound exit from a matching Application/.NET crash.
+The next action is a smoke-only rerun against the successful deployment.

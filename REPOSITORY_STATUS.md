@@ -18,24 +18,26 @@ Does not own: backend intelligence, provider-specific playback logic, canonical 
 
 ## Current Phase
 
-Windows native-preflight consumer adoption, reviewable.
+Windows smoke service diagnostics, reviewable.
 
 ## Status
 
-The Windows consumers now pin the immutable central native-preflight action
-revision and no longer require Bash/WSL. The authorized operation remains
-pending a post-merge rerun.
+The Windows consumers pin the immutable central native-preflight action
+revision and no longer require Bash/WSL. The authorized 3.3.0 deployment
+completed successfully in run `29558445560`; smoke run `29558500687` failed
+only after the installed version passed because the GUI process exited under
+the non-interactive service runner.
 
 ## Blocking Dependencies
 
-- This consumer-adoption PR must merge before the authorized rerun.
-- PowerShell 7 must be visible to the Windows runner service account. The
-  maintenance task runs in an interactive administrator context; WinGet is not
-  a `SYSTEM` dependency.
+- The diagnostic smoke update must merge before the authorized smoke rerun.
+- The next evidence must distinguish an application crash from expected
+  non-interactive session termination before changing the runtime or runner
+  topology.
 
 ## Current Prompt
 
-Windows native-preflight consumer adoption
+Windows smoke service diagnostics
 
 ## Completion Report
 
@@ -43,14 +45,12 @@ Windows native-preflight consumer adoption
 
 ## Last Qualification
 
-The ARM64 runner qualified successfully in service context. Authorized deployment
-run `29482534415` failed before preflight or installation because `pwsh` was not
-available to `NETWORK SERVICE`; no artifact or target mutation occurred. After
-PR #19, rerun `29483069749` stopped before preflight because the local Execution
-Policy blocked the generated GitHub Actions script. A later run reached the
-previous shared preflight, where Bash resolved to WSL. The consumer now adopts
-the merged native PowerShell 7 preflight; deployment remains pending this PR's
-merge and a fresh authorized run.
+The ARM64 runner qualified successfully in service context. Earlier retries
+failed closed before installation because of service-visible PowerShell,
+Execution Policy and WSL/Bash preflight defects. Those defects are resolved.
+Authorized deployment run `29558445560` installed the exact approved artifact.
+Smoke run `29558500687` confirmed the binding and installed `3.3.0` version,
+then reported only that the process exited during the bounded startup window.
 
 ## Validated Base SHA
 
@@ -61,8 +61,8 @@ consumer remediation increment.
 
 ## Repository-Local Next Action
 
-Review and merge this consumer update. Then rerun the already authorized
-manifest-bound deployment, followed by smoke only on success.
+Review and merge this diagnostic update. Then rerun the already authorized
+smoke against the successful deployment evidence; do not redeploy first.
 
 ## Notes
 
