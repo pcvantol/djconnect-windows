@@ -78,7 +78,7 @@ Set-RelayFileAcl $launcherPath @("${InteractiveUser}:RX", "${runnerIdentity}:R")
 
 $taskName = 'InteractiveGuiSmoke'
 $taskPath = '\DJConnect\'
-$taskCommand = ('"{0}" /d /c "{1}"' -f $env:ComSpec, $launcherPath)
+$taskCommand = "$env:ComSpec /d /c `"$launcherPath`""
 & schtasks.exe /Create /TN "$taskPath$taskName" /TR $taskCommand /SC MINUTE /MO 1 /RU $InteractiveUser /IT /RL LIMITED /F | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Failed to register the interactive GUI smoke scheduled task.' }
 
