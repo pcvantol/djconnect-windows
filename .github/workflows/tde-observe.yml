@@ -75,6 +75,9 @@ jobs:
           dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj \
             -p:TargetFramework=net10.0-windows10.0.19041.0 > tde-observe/dotnet-restore.log 2>&1
           dotnet_restore_exit="$?"
+          dotnet package list --project src/DJConnect.Windows/DJConnect.Windows.csproj \
+            --outdated --include-transitive --format json > tde-observe/dotnet-package-list.json 2> tde-observe/dotnet-package-list.log
+          dotnet_package_list_exit="$?"
           tde --format json validate . \
             --capability code_size \
             --capability complexity \
@@ -102,6 +105,7 @@ jobs:
             echo "- Assessment profile: \`standard\`"
             echo "- .NET workload restore exit code: ${dotnet_workload_restore_exit} (observed only)"
             echo "- NuGet restore exit code: ${dotnet_restore_exit} (observed only)"
+            echo "- NuGet package-list exit code: ${dotnet_package_list_exit} (diagnostic only)"
             echo "- Capability validation exit code: ${capability_validation_exit} (diagnostic only)"
             echo "- Executed capabilities: ${capabilities}"
             echo "- Assessment decision: ${assessment_decision}"
