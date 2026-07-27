@@ -24,11 +24,6 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
-        with:
-          global-json-file: global.json
-
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
@@ -69,6 +64,12 @@ jobs:
           tde --version | tee tde-observe/runtime-version.txt
 
           set +e
+          tde --format json validate . \
+            --capability code_size \
+            --capability complexity \
+            --capability coverage \
+            --capability dependency_health > tde-observe/capability-validation.json
+          capability_validation_exit="$?"
           tde --format json --profile standard assess . > tde-observe/assessment.json
           assessment_exit="$?"
           tde --format json \
@@ -88,6 +89,7 @@ jobs:
             echo
             echo "- Runtime: \`technical-debt-engine-runtime==1.0.0\`"
             echo "- Assessment profile: \`standard\`"
+            echo "- Capability validation exit code: ${capability_validation_exit} (diagnostic only)"
             echo "- Executed capabilities: ${capabilities}"
             echo "- Assessment decision: ${assessment_decision}"
             echo "- Repository qualification: ${qualification_status}"
