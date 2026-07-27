@@ -49,3 +49,4 @@ Desktop.ini
 
 # Local Technical Debt Engine evidence, baselines and qualifications
 /.tde/
+.tde/
