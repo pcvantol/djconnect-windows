@@ -66,6 +66,8 @@ jobs:
           tde --version | tee "$observe_directory/runtime-version.txt"
 
           set +e
+          tde --format json --profile standard validate . > "$observe_directory/validation.json"
+          validation_exit="$?"
           tde --store-location "$evidence_directory" --format json --profile standard assess . > "$observe_directory/assessment.json"
           assessment_exit="$?"
           tde --store-location "$evidence_directory" --format json \
@@ -85,6 +87,7 @@ jobs:
             echo
             echo "- Runtime: \`technical-debt-engine-runtime==1.0.0\`"
             echo "- Assessment profile: \`standard\`"
+            echo "- Validation exit code: ${validation_exit} (diagnostic only)"
             echo "- Executed capabilities: ${capabilities}"
             echo "- Assessment decision: ${assessment_decision}"
             echo "- Repository qualification: ${qualification_status}"
