@@ -247,14 +247,17 @@ jobs:
     name: MAUI Windows build
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: [self-hosted, internal-release, qualification, windows11]
-    env:
-      NUGET_PACKAGES: ${{ runner.temp }}\djconnect-nuget-packages
     defaults:
       run:
         shell: powershell -ExecutionPolicy Bypass -File {0}
     steps:
       - name: Check out repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Isolate NuGet package cache
+        run: |
+          "NUGET_PACKAGES=$env:RUNNER_TEMP\djconnect-nuget-packages" |
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Verify machine .NET 10 SDK
         run: .\scripts\runner\Test-DJConnectDotNet10.ps1
@@ -283,14 +286,17 @@ jobs:
     name: Windows release artifact sanity
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
     runs-on: [self-hosted, internal-release, qualification, windows11]
-    env:
-      NUGET_PACKAGES: ${{ runner.temp }}\djconnect-nuget-packages
     defaults:
       run:
         shell: powershell -ExecutionPolicy Bypass -File {0}
     steps:
       - name: Check out repository
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+
+      - name: Isolate NuGet package cache
+        run: |
+          "NUGET_PACKAGES=$env:RUNNER_TEMP\djconnect-nuget-packages" |
+            Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Verify machine .NET 10 SDK
         run: .\scripts\runner\Test-DJConnectDotNet10.ps1
