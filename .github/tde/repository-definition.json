@@ -1,0 +1,13 @@
+{
+  "identifier": "djconnect-windows",
+  "name": "DJConnect Windows",
+  "repositoryRoot": "../..",
+  "repositoryType": "source",
+  "primaryLanguage": "C#",
+  "defaultAssessmentProfile": "standard",
+  "metadata": {
+    "consumer": "DJConnect",
+    "rolloutPhase": "observe"
+  }
+}
+
