@@ -3,8 +3,12 @@
 Copyright (c) 2026 Peter van Tol.
 
 DJConnect currently uses the .NET runtime, .NET MAUI,
-Microsoft.Maui.Controls `10.0.80`, Windows Credential Manager APIs and macOS
-Keychain access through the platform `security` tool. Their licenses and
+Microsoft.Maui.Controls `10.0.80`, Microsoft.Extensions.Configuration
+`10.0.10`, Microsoft.Extensions.DependencyInjection `10.0.10`,
+Microsoft.Extensions.Diagnostics.Abstractions `10.0.10`,
+Microsoft.Extensions.Hosting.Abstractions `10.0.10`,
+Microsoft.Extensions.Logging `10.0.10`, Windows Credential Manager APIs and
+macOS Keychain access through the platform `security` tool. Their licenses and
 platform terms remain with Microsoft and Apple respectively.
 
 DJConnect integrates with the Home Assistant `djconnect` custom integration
