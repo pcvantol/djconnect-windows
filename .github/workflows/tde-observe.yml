@@ -57,26 +57,28 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
-          mkdir -p tde-observe
+          observe_directory="$RUNNER_TEMP/tde-observe"
+          evidence_directory="$RUNNER_TEMP/tde-evidence"
+          mkdir -p "$observe_directory" "$evidence_directory"
           started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           started_seconds="$(date +%s)"
 
-          tde --version | tee tde-observe/runtime-version.txt
+          tde --version | tee "$observe_directory/runtime-version.txt"
 
           set +e
-          tde --format json --profile standard assess . > tde-observe/assessment.json
+          tde --store-location "$evidence_directory" --format json --profile standard assess . > "$observe_directory/assessment.json"
           assessment_exit="$?"
-          tde --format json \
+          tde --store-location "$evidence_directory" --format json \
             --repository-definition .github/tde/repository-definition.json \
-            qualify . > tde-observe/qualification.json
+            qualify . > "$observe_directory/qualification.json"
           qualification_exit="$?"
           set -e
 
           completed_seconds="$(date +%s)"
           duration_seconds="$((completed_seconds - started_seconds))"
-          capabilities="$(jq -r '.evidence.assessment.executedCapabilities | join(", ")' tde-observe/assessment.json 2>/dev/null || echo unavailable)"
-          assessment_decision="$(jq -r '.evidence.assessmentDecision.decision // "unavailable"' tde-observe/assessment.json 2>/dev/null || echo unavailable)"
-          qualification_status="$(jq -r '.repositoryQualification.qualificationStatus // "unavailable"' tde-observe/qualification.json 2>/dev/null || echo unavailable)"
+          capabilities="$(jq -r '.evidence.assessment.executedCapabilities | join(", ")' "$observe_directory/assessment.json" 2>/dev/null || echo unavailable)"
+          assessment_decision="$(jq -r '.evidence.assessmentDecision.decision // "unavailable"' "$observe_directory/assessment.json" 2>/dev/null || echo unavailable)"
+          qualification_status="$(jq -r '.repositoryQualification.qualificationStatus // "unavailable"' "$observe_directory/qualification.json" 2>/dev/null || echo unavailable)"
 
           {
             echo "# TDE observe result"
@@ -91,7 +93,7 @@ jobs:
             echo "- Duration: ${duration_seconds}s"
             echo "- Started: ${started_at}"
             echo "- Evidence artifact: \`tde-observe-evidence\`"
-          } | tee tde-observe/summary.md >> "$GITHUB_STEP_SUMMARY"
+          } | tee "$observe_directory/summary.md" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish TDE observe evidence
         if: always()
@@ -99,9 +101,8 @@ jobs:
         with:
           name: tde-observe-evidence
           path: |
-            tde-observe/
-            .tde/evidence/
-            .tde/qualifications/
+            ${{ runner.temp }}/tde-observe/
+            ${{ runner.temp }}/tde-evidence/
           if-no-files-found: warn
           retention-days: 14
 
