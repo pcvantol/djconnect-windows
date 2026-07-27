@@ -43,7 +43,7 @@ jobs:
           if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$' -or $env:MANIFEST_ID -notmatch '^release-[A-Za-z0-9._-]+$' -or $env:ARTIFACT_ID -notmatch '^release-asset:pcvantol/djconnect-app-releases:windows/v[0-9]+\.[0-9]+\.[0-9]+:DJConnect-Windows-arm64-[0-9]+\.[0-9]+\.[0-9]+-unsigned\.zip$' -or $env:ARTIFACT_SHA256 -notmatch '^[0-9a-f]{64}$' -or $env:PLATFORM_VERSION -notmatch '^[0-9]+\.[0-9]+$' -or $env:DEPLOYMENT_WORKFLOW_RUN -notmatch '^[0-9]+$') { throw 'Invalid immutable smoke identity' }
           if ($env:TARGET -ne 'windows_internal_arm64' -or $env:RELEASE_PROFILE -ne 'INTERNAL_RELEASE') { throw 'Invalid smoke target or profile' }
       - name: Verify target deployment readiness
-        uses: pcvantol/djconnect/.github/actions/deployment-readiness-preflight@3d7d24a84b3aaacb8f2fb229e09c33da85e0545d
+        uses: pcvantol/djconnect/.github/actions/deployment-readiness-preflight@191b4561bdb659bd2e02905b5bce9643d4390a63
         with:
           target: ${{ inputs.target }}
           manifest_id: ${{ inputs.manifest_id }}
@@ -75,7 +75,7 @@ jobs:
           $authorization = @($manifest.approval.additional_target_authorizations | Where-Object { $_.target -eq $env:TARGET -and $_.candidate_sha -eq $env:CANDIDATE_SHA -and $_.artifact_id -eq $env:ARTIFACT_ID -and $_.artifact_sha256 -eq $env:ARTIFACT_SHA256 })
           if ($source.Count -ne 1 -or $binding.Count -ne 1 -or $authorization.Count -ne 1) { throw 'Smoke identity is not bound by the approved manifest authorization.' }
           "release_version=$($manifest.release_version)" >> $env:GITHUB_OUTPUT
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: windows-internal-deployment-evidence
           run-id: ${{ inputs.deployment_workflow_run }}
@@ -158,7 +158,7 @@ jobs:
             $smoke | ConvertTo-Json -Depth 5 -Compress | Set-Content -NoNewline -Encoding utf8 windows-post-deployment-smoke-evidence.json
           }
           if ($failure) { throw $failure }
-      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: windows-post-deployment-smoke-evidence
