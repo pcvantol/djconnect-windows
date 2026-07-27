@@ -24,6 +24,11 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
 
+      - name: Set up .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1
+        with:
+          global-json-file: global.json
+
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
@@ -57,37 +62,32 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
-          observe_directory="$RUNNER_TEMP/tde-observe"
-          evidence_directory="$RUNNER_TEMP/tde-evidence"
-          mkdir -p "$observe_directory" "$evidence_directory"
+          mkdir -p tde-observe
           started_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           started_seconds="$(date +%s)"
 
-          tde --version | tee "$observe_directory/runtime-version.txt"
+          tde --version | tee tde-observe/runtime-version.txt
 
           set +e
-          tde --format json --profile standard validate . > "$observe_directory/validation.json"
-          validation_exit="$?"
-          tde --store-location "$evidence_directory" --format json --profile standard assess . > "$observe_directory/assessment.json"
+          tde --format json --profile standard assess . > tde-observe/assessment.json
           assessment_exit="$?"
-          tde --store-location "$evidence_directory" --format json \
+          tde --format json \
             --repository-definition .github/tde/repository-definition.json \
-            qualify . > "$observe_directory/qualification.json"
+            qualify . > tde-observe/qualification.json
           qualification_exit="$?"
           set -e
 
           completed_seconds="$(date +%s)"
           duration_seconds="$((completed_seconds - started_seconds))"
-          capabilities="$(jq -r '.evidence.assessment.executedCapabilities | join(", ")' "$observe_directory/assessment.json" 2>/dev/null || echo unavailable)"
-          assessment_decision="$(jq -r '.evidence.assessmentDecision.decision // "unavailable"' "$observe_directory/assessment.json" 2>/dev/null || echo unavailable)"
-          qualification_status="$(jq -r '.repositoryQualification.qualificationStatus // "unavailable"' "$observe_directory/qualification.json" 2>/dev/null || echo unavailable)"
+          capabilities="$(jq -r '.evidence.assessment.executedCapabilities | join(", ")' tde-observe/assessment.json 2>/dev/null || echo unavailable)"
+          assessment_decision="$(jq -r '.evidence.assessmentDecision.decision // "unavailable"' tde-observe/assessment.json 2>/dev/null || echo unavailable)"
+          qualification_status="$(jq -r '.repositoryQualification.qualificationStatus // "unavailable"' tde-observe/qualification.json 2>/dev/null || echo unavailable)"
 
           {
             echo "# TDE observe result"
             echo
             echo "- Runtime: \`technical-debt-engine-runtime==1.0.0\`"
             echo "- Assessment profile: \`standard\`"
-            echo "- Validation exit code: ${validation_exit} (diagnostic only)"
             echo "- Executed capabilities: ${capabilities}"
             echo "- Assessment decision: ${assessment_decision}"
             echo "- Repository qualification: ${qualification_status}"
@@ -96,7 +96,7 @@ jobs:
             echo "- Duration: ${duration_seconds}s"
             echo "- Started: ${started_at}"
             echo "- Evidence artifact: \`tde-observe-evidence\`"
-          } | tee "$observe_directory/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          } | tee tde-observe/summary.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish TDE observe evidence
         if: always()
@@ -104,8 +104,9 @@ jobs:
         with:
           name: tde-observe-evidence
           path: |
-            ${{ runner.temp }}/tde-observe/
-            ${{ runner.temp }}/tde-evidence/
+            tde-observe/
+            .tde/evidence/
+            .tde/qualifications/
           if-no-files-found: warn
           retention-days: 14
 
