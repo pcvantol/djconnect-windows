@@ -19,6 +19,6 @@ jobs:
       owner: pcvantol/djconnect-windows
 
   semgrep:
-    uses: pcvantol/djconnect/.github/workflows/djconnect-semgrep-ci.yml@04b78708bfed26f96dd6436ad4372a648920110e # Repaired reachable workflow closure
+    uses: pcvantol/djconnect/.github/workflows/djconnect-semgrep-ci.yml@191b4561bdb659bd2e02905b5bce9643d4390a63 # Repaired reachable workflow closure
     with:
       continue-on-error: true
