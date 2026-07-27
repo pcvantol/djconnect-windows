@@ -417,6 +417,11 @@ jobs:
               --method GET \
               --jq '.workflow_id'
           )"
+          protected_run_ids=()
+          pr_head_sha="$(gh api -H 'Accept: application/vnd.github+json' "repos/${REPOSITORY}/commits/${GITHUB_SHA}/pulls" --jq '[.[] | select(.merged_at and .base.ref == "main" and .merge_commit_sha == env.GITHUB_SHA)] | if length == 1 then .[0].head.sha else empty end' || true)"
+          if [[ -n "${pr_head_sha}" ]]; then
+            mapfile -t protected_run_ids < <(gh api "repos/${REPOSITORY}/actions/runs?head_sha=${pr_head_sha}&per_page=100" --paginate --jq '.workflow_runs[] | .id')
+          fi
 
           mapfile -t workflow_ids < <(
             gh api "repos/${REPOSITORY}/actions/workflows" \
@@ -448,7 +453,7 @@ jobs:
               run_id="${run_ids[$index]}"
               [[ -z "${run_id}" ]] && continue
 
-              if ((index < keep_limit)) || [[ "${run_id}" == "${CURRENT_RUN_ID}" ]]; then
+              if ((index < keep_limit)) || [[ "${run_id}" == "${CURRENT_RUN_ID}" ]] || [[ " ${protected_run_ids[*]} " == *" ${run_id} "* ]]; then
                 continue
               fi
 
