@@ -75,18 +75,18 @@ jobs:
           dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj \
             -p:TargetFramework=net10.0-windows10.0.19041.0 > tde-observe/dotnet-restore.log 2>&1
           dotnet_restore_exit="$?"
-          dotnet package list --project src/DJConnect.Windows/DJConnect.Windows.csproj \
+          TargetFramework=net10.0-windows10.0.19041.0 dotnet package list --project src/DJConnect.Windows/DJConnect.Windows.csproj \
             --outdated --include-transitive --format json > tde-observe/dotnet-package-list.json 2> tde-observe/dotnet-package-list.log
           dotnet_package_list_exit="$?"
-          tde --format json validate . \
+          TargetFramework=net10.0-windows10.0.19041.0 tde --format json validate . \
             --capability code_size \
             --capability complexity \
             --capability coverage \
             --capability dependency_health > tde-observe/capability-validation.json
           capability_validation_exit="$?"
-          tde --format json --profile standard assess . > tde-observe/assessment.json
+          TargetFramework=net10.0-windows10.0.19041.0 tde --format json --profile standard assess . > tde-observe/assessment.json
           assessment_exit="$?"
-          tde --format json \
+          TargetFramework=net10.0-windows10.0.19041.0 tde --format json \
             --repository-definition .github/tde/repository-definition.json \
             qualify . > tde-observe/qualification.json
           qualification_exit="$?"
