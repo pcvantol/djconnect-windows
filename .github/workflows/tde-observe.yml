@@ -57,6 +57,26 @@ jobs:
           "$RUNNER_TEMP/tde-tools/cloc" --version
           echo "$RUNNER_TEMP/tde-tools" >> "$GITHUB_PATH"
 
+      - name: Restore NuGet dependencies for TDE evidence
+        run: |
+          dotnet workload restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-windows10.0.19041.0
+          dotnet restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-windows10.0.19041.0
+          dotnet restore tests/DJConnect.Tests/DJConnect.Tests.csproj
+
+      - name: Record native NuGet dependency-health input
+        id: nuget
+        shell: bash
+        run: |
+          set +e
+          mkdir -p tde-observe
+          dotnet package list --project src/DJConnect.Windows/DJConnect.Windows.csproj \
+            --outdated --include-transitive --format json \
+            --framework net10.0-windows10.0.19041.0 \
+            > tde-observe/nuget-package-list.json \
+            2> tde-observe/nuget-package-list.stderr.txt
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
       - name: Run TDE standard assessment in observe mode
         id: tde
         shell: bash
@@ -69,6 +89,12 @@ jobs:
           tde --version | tee tde-observe/runtime-version.txt
 
           set +e
+          tde --format json inspect . \
+            --capability code_size \
+            --capability complexity \
+            --capability coverage \
+            --capability dependency_health > tde-observe/inspection.json
+          inspection_exit="$?"
           tde --format json --profile standard assess . > tde-observe/assessment.json
           assessment_exit="$?"
           tde --format json \
@@ -88,6 +114,8 @@ jobs:
             echo
             echo "- Runtime: \`technical-debt-engine-runtime==1.0.2\`"
             echo "- Assessment profile: \`standard\`"
+            echo "- Native NuGet input exit code: ${{ steps.nuget.outputs.exit_code }} (observed only)"
+            echo "- Inspection exit code: ${inspection_exit} (observed only)"
             echo "- Executed capabilities: ${capabilities}"
             echo "- Assessment decision: ${assessment_decision}"
             echo "- Repository qualification: ${qualification_status}"
