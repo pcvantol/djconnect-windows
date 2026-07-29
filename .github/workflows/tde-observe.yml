@@ -37,6 +37,12 @@ jobs:
       - name: Restore Windows target for dependency evidence
         run: dotnet workload restore src/DJConnect.Windows/DJConnect.Windows.csproj -p:TargetFramework=net10.0-windows10.0.19041.0
 
+      - name: Generate canonical coverage input
+        run: |
+          dotnet restore tests/DJConnect.Tests/DJConnect.Tests.csproj
+          dotnet tool install --global dotnet-coverage
+          "$HOME/.dotnet/tools/dotnet-coverage" collect "dotnet run --project tests/DJConnect.Tests/DJConnect.Tests.csproj --no-restore" --output coverage.xml --output-format cobertura
+
       - name: Install published TDE runtime
         run: |
           python -m pip install --upgrade pip
@@ -107,6 +113,7 @@ jobs:
         with:
           name: tde-observe-evidence
           path: |
+            coverage.xml
             tde-observe/
             .tde/evidence/
             .tde/qualifications/
