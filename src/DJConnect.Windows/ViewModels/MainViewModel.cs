@@ -1897,42 +1897,57 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            if (await ApplyStalePairingAsync(ex))
-            {
-                MarkMessageFailed(clientMessageId);
-                AskDJNotice = AppStrings.Get("Status_PairAgain");
-                return;
-            }
-
-            if (ApplyVersionMismatch(ex))
-            {
-                MarkMessageFailed(clientMessageId);
-                AskDJNotice = P("Vm_Update_required_11");
-                AddDiagnostic("WRN Ask DJ request blocked by version mismatch.");
-                return;
-            }
-
-            MarkMessageFailed(clientMessageId);
-            AskDJNotice = P("Vm_Ask_DJ_is_unavailable_3");
-            AddDiagnostic("WRN Ask DJ request failed: " + ex.GetType().Name);
+            await HandleAskDJExceptionAsync(ex, clientMessageId);
             return;
         }
 
         if (!response.Success)
         {
-            if (await ApplyStalePairingAsync(response.Error))
-            {
-                MarkMessageFailed(clientMessageId);
-                AskDJNotice = AppStrings.Get("Status_PairAgain");
-                return;
-            }
-
-            MarkMessageFailed(clientMessageId);
-            AskDJNotice = BackendActionErrorMessage(response.Error, response.Message);
-            AddDiagnostic("WRN Ask DJ request failed.");
+            await HandleFailedAskDJResponseAsync(response, clientMessageId);
             return;
         }
 
+        await ApplyAskDJSuccessAsync(response, clientMessageId);
+    }
+
+    private async Task HandleAskDJExceptionAsync(Exception exception, string clientMessageId)
+    {
+        if (await ApplyStalePairingAsync(exception))
+        {
+            MarkMessageFailed(clientMessageId);
+            AskDJNotice = AppStrings.Get("Status_PairAgain");
+            return;
+        }
+
+        if (ApplyVersionMismatch(exception))
+        {
+            MarkMessageFailed(clientMessageId);
+            AskDJNotice = P("Vm_Update_required_11");
+            AddDiagnostic("WRN Ask DJ request blocked by version mismatch.");
+            return;
+        }
+
+        MarkMessageFailed(clientMessageId);
+        AskDJNotice = P("Vm_Ask_DJ_is_unavailable_3");
+        AddDiagnostic("WRN Ask DJ request failed: " + exception.GetType().Name);
+    }
+
+    private async Task HandleFailedAskDJResponseAsync(AskDJMessageResponse response, string clientMessageId)
+    {
+        if (await ApplyStalePairingAsync(response.Error))
+        {
+            MarkMessageFailed(clientMessageId);
+            AskDJNotice = AppStrings.Get("Status_PairAgain");
+            return;
+        }
+
+        MarkMessageFailed(clientMessageId);
+        AskDJNotice = BackendActionErrorMessage(response.Error, response.Message);
+        AddDiagnostic("WRN Ask DJ request failed.");
+    }
+
+    private async Task ApplyAskDJSuccessAsync(AskDJMessageResponse response, string clientMessageId)
+    {
         ApplyPairingTransport(response.HomeAssistantLocalUrl, response.HomeAssistantRemoteUrl, response.RemoteSupported);
         ApplyBackendSummary(BackendSummaryFrom(response));
         ApplyProfileMetadata(response.ProfileId, response.MusicDnaKey, response.ResolvedProfile, response.Resolution, response.ProfilePrivacyMode, response.ProfilePrivacy);
@@ -4561,6 +4576,13 @@ public sealed class MainViewModel : ObservableObject
 
     private void ApplyPlaybackState(PlaybackState? playback)
     {
+        ApplyPlaybackDetails(playback);
+        ApplyPlaybackVolume(playback);
+        ApplyPlaybackOutput(playback);
+    }
+
+    private void ApplyPlaybackDetails(PlaybackState? playback)
+    {
         HasActivePlayback = playback is not null && !string.IsNullOrWhiteSpace(playback.Title ?? playback.Artist);
         TrackTitle = playback?.Title ?? "";
         TrackArtist = playback?.Artist ?? "";
@@ -4569,13 +4591,20 @@ public sealed class MainViewModel : ObservableObject
         IsPlaying = playback?.IsPlaying == true;
         PlaybackPositionMs = playback?.PositionMs ?? playback?.ProgressMs ?? 0;
         PlaybackDurationMs = playback?.DurationMs ?? 1;
-        _suppressVolumeCommand = true;
-        VolumePercent = playback?.VolumePercent ?? VolumePercent;
-        _suppressVolumeCommand = false;
         NowPlaying = HasActivePlayback
             ? $"{TrackTitle} - {TrackArtist}".Trim(' ', '-')
             : P("Vm_No_active_playback_4");
+    }
 
+    private void ApplyPlaybackVolume(PlaybackState? playback)
+    {
+        _suppressVolumeCommand = true;
+        VolumePercent = playback?.VolumePercent ?? VolumePercent;
+        _suppressVolumeCommand = false;
+    }
+
+    private void ApplyPlaybackOutput(PlaybackState? playback)
+    {
         var activeOutput = playback?.OutputDevice ?? playback?.ActiveOutput;
         if (activeOutput is not null)
         {
