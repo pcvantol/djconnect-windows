@@ -1327,58 +1327,11 @@ public sealed record TrackInsightPresentation(
         var analysisLimitations = detail?.Limitations ?? analysis.Limitations;
         var analysisProviders = detail?.Providers ?? analysis.Providers;
 
-        var trackTitle = JoinNonEmpty(analysis.Track?.Title, analysis.Track?.Artist);
-        if (!string.IsNullOrWhiteSpace(trackTitle))
-        {
-            sections.Add(new TrackInsightRow("Track", analysis.Track?.Album ?? "", trackTitle, ""));
-        }
-
-        if (analysis.MusicDna is not null)
-        {
-            var match = analysis.MusicDna.MatchPercent.HasValue ? $"{analysis.MusicDna.MatchPercent.Value}%" : "";
-            context.Add(new TrackInsightRow("Music DNA Match", "Music DNA", match, ""));
-            if (!string.IsNullOrWhiteSpace(analysis.MusicDna.WhyItFits ?? analysis.MusicDna.Summary))
-            {
-                context.Add(new TrackInsightRow("Why it fits you", "Music DNA", analysis.MusicDna.WhyItFits ?? analysis.MusicDna.Summary ?? "", ""));
-            }
-        }
-
-        if (analysis.VisualProfile is not null)
-        {
-            var visual = JoinNonEmpty(
-                LabelWithPrefix("Vibe", analysis.VisualProfile.Vibe),
-                LabelWithPrefix("Motion", analysis.VisualProfile.Motion),
-                LabelWithPrefix("Palette", JoinNonEmpty(analysis.VisualProfile.Palette?.ToArray() ?? [])));
-            if (!string.IsNullOrWhiteSpace(visual))
-            {
-                context.Add(new TrackInsightRow("Vibe", "Rendering hints", visual, ""));
-            }
-        }
-
-        if (detail is not null)
-        {
-            AddIfPresent(sections, "Summary", "Analysis", FirstNonEmpty(detail.Summary, detail.FullText), SourceConfidenceLabel(null, detail.Confidence));
-            AddIfPresent(sections, "Genre", FirstNonEmpty(detail.Subgenre, "Genre"), FirstNonEmpty(detail.Genre, JoinNonEmpty(analysis.Track?.Genres?.ToArray() ?? [])), "");
-            AddIfPresent(sections, "Mood", "Vibe", JoinNonEmpty(
-                LabelWithPrefix("Mood", detail.Mood),
-                LabelWithPrefix("Vibe", detail.Vibe),
-                LabelWithPrefix("Texture", detail.Texture),
-                LabelWithPrefix("Tone", detail.EmotionalTone)), "");
-            AddIfPresent(sections, "Energy", "Feel", JoinNonEmpty(
-                LabelWithPrefix("Energy", DisplayJson(detail.Energy)),
-                LabelWithPrefix("Danceability", DisplayJson(detail.Danceability)),
-                LabelWithPrefix("Intensity", DisplayJson(detail.Intensity))), "");
-            AddListRow(sections, "Production notes", "Production", detail.ProductionNotes);
-            AddListRow(sections, "Instrumentation", "Instrumentation", detail.Instrumentation);
-            AddListRow(sections, "Arrangement notes", "Arrangement", detail.ArrangementNotes);
-            AddListRow(sections, "Listening cues", "Cues", detail.ListeningCues);
-            AddIfPresent(sections, "Similar tracks", "References", SimilarTracksLabel(detail.SimilarTracks), "");
-        }
-
-        if (analysis.Cache is not null)
-        {
-            context.Add(new TrackInsightRow("Cache", analysis.Cache.Hit == true ? "hit" : "fresh", analysis.Cache.GeneratedAt?.ToString("u") ?? "", ""));
-        }
+        AddTrackSection(sections, analysis.Track);
+        AddMusicDnaContext(context, analysis.MusicDna);
+        AddVisualProfileContext(context, analysis.VisualProfile);
+        AddDetailSections(sections, detail, analysis.Track);
+        AddCacheContext(context, analysis.Cache);
 
         sections.AddRange((analysisSections ?? []).Where(section => !IsMetadataContextSection(section) && !IsForbiddenMusicalMeasurement(section)).Select(SectionRow));
         context.AddRange((analysisSections ?? []).Where(IsMetadataContextSection).Select(MetadataContextSectionRow));
@@ -1398,6 +1351,81 @@ public sealed record TrackInsightPresentation(
         providerDiagnostics.AddRange((analysisProviders ?? []).Select(ProviderRow));
 
         return new TrackInsightPresentation(header, meta, sections, context, timeline, tips, limitations, providerDiagnostics);
+    }
+
+    private static void AddTrackSection(List<TrackInsightRow> sections, TrackInsightTrack? track)
+    {
+        var trackTitle = JoinNonEmpty(track?.Title, track?.Artist);
+        if (!string.IsNullOrWhiteSpace(trackTitle))
+        {
+            sections.Add(new TrackInsightRow("Track", track?.Album ?? "", trackTitle, ""));
+        }
+    }
+
+    private static void AddMusicDnaContext(List<TrackInsightRow> context, TrackInsightMusicDna? musicDna)
+    {
+        if (musicDna is null)
+        {
+            return;
+        }
+
+        var match = musicDna.MatchPercent.HasValue ? $"{musicDna.MatchPercent.Value}%" : "";
+        context.Add(new TrackInsightRow("Music DNA Match", "Music DNA", match, ""));
+        var explanation = musicDna.WhyItFits ?? musicDna.Summary;
+        if (!string.IsNullOrWhiteSpace(explanation))
+        {
+            context.Add(new TrackInsightRow("Why it fits you", "Music DNA", explanation, ""));
+        }
+    }
+
+    private static void AddVisualProfileContext(List<TrackInsightRow> context, TrackInsightVisualProfile? visualProfile)
+    {
+        if (visualProfile is null)
+        {
+            return;
+        }
+
+        var visual = JoinNonEmpty(
+            LabelWithPrefix("Vibe", visualProfile.Vibe),
+            LabelWithPrefix("Motion", visualProfile.Motion),
+            LabelWithPrefix("Palette", JoinNonEmpty(visualProfile.Palette?.ToArray() ?? [])));
+        if (!string.IsNullOrWhiteSpace(visual))
+        {
+            context.Add(new TrackInsightRow("Vibe", "Rendering hints", visual, ""));
+        }
+    }
+
+    private static void AddDetailSections(List<TrackInsightRow> sections, TrackInsightAnalysis? detail, TrackInsightTrack? track)
+    {
+        if (detail is null)
+        {
+            return;
+        }
+
+        AddIfPresent(sections, "Summary", "Analysis", FirstNonEmpty(detail.Summary, detail.FullText), SourceConfidenceLabel(null, detail.Confidence));
+        AddIfPresent(sections, "Genre", FirstNonEmpty(detail.Subgenre, "Genre"), FirstNonEmpty(detail.Genre, JoinNonEmpty(track?.Genres?.ToArray() ?? [])), "");
+        AddIfPresent(sections, "Mood", "Vibe", JoinNonEmpty(
+            LabelWithPrefix("Mood", detail.Mood),
+            LabelWithPrefix("Vibe", detail.Vibe),
+            LabelWithPrefix("Texture", detail.Texture),
+            LabelWithPrefix("Tone", detail.EmotionalTone)), "");
+        AddIfPresent(sections, "Energy", "Feel", JoinNonEmpty(
+            LabelWithPrefix("Energy", DisplayJson(detail.Energy)),
+            LabelWithPrefix("Danceability", DisplayJson(detail.Danceability)),
+            LabelWithPrefix("Intensity", DisplayJson(detail.Intensity))), "");
+        AddListRow(sections, "Production notes", "Production", detail.ProductionNotes);
+        AddListRow(sections, "Instrumentation", "Instrumentation", detail.Instrumentation);
+        AddListRow(sections, "Arrangement notes", "Arrangement", detail.ArrangementNotes);
+        AddListRow(sections, "Listening cues", "Cues", detail.ListeningCues);
+        AddIfPresent(sections, "Similar tracks", "References", SimilarTracksLabel(detail.SimilarTracks), "");
+    }
+
+    private static void AddCacheContext(List<TrackInsightRow> context, TrackInsightCache? cache)
+    {
+        if (cache is not null)
+        {
+            context.Add(new TrackInsightRow("Cache", cache.Hit == true ? "hit" : "fresh", cache.GeneratedAt?.ToString("u") ?? "", ""));
+        }
     }
 
     private static TrackInsightRow SectionRow(TrackInsightSection section)
