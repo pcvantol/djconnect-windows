@@ -109,7 +109,7 @@ Settings JSON must remain non-secret.
 ## Dependencies
 
 Current app-level dependencies are limited to the .NET SDK, .NET MAUI,
-`Microsoft.Maui.Controls` `10.0.80`,
+`Microsoft.Maui.Controls` `10.0.90`,
 `Microsoft.Extensions.Configuration` `10.0.10`,
 `Microsoft.Extensions.DependencyInjection` `10.0.10`,
 `Microsoft.Extensions.Diagnostics.Abstractions` `10.0.10`,
@@ -124,6 +124,14 @@ reports outdated NuGet packages. Release prep reviews `global.json`, MAUI
 workload requirements, GitHub Actions versions and helper scripts before a tag
 is created; accepted dependency changes update notices and setup docs in the
 same commit.
+
+The TDE 1.1.1 dependency-health assessment records 15 remaining outdated
+transitive Windows packages. They are fixed by the stable MAUI 10.0.90 package
+graph, which pins WindowsAppSDK 1.8 and its component versions. The package
+manager's reported newer WindowsAppSDK 2.x packages are a major-version
+transition, so the client does not override those pins. See
+`docs/TDE_1_1_1_DEPENDENCY_HEALTH.md` for the evidence-backed inventory and
+the conditions for revisiting it.
 
 ## Test Strategy
 
