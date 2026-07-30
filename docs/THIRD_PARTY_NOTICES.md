@@ -7,9 +7,12 @@ Microsoft.Maui.Controls `10.0.90`, Microsoft.Extensions.Configuration
 `10.0.10`, Microsoft.Extensions.DependencyInjection `10.0.10`,
 Microsoft.Extensions.Diagnostics.Abstractions `10.0.10`,
 Microsoft.Extensions.Hosting.Abstractions `10.0.10`,
-Microsoft.Extensions.Logging `10.0.10`, Windows Credential Manager APIs and
-macOS Keychain access through the platform `security` tool. Their licenses and
-platform terms remain with Microsoft and Apple respectively.
+Microsoft.Extensions.Logging `10.0.10`, Microsoft.WindowsAppSDK `2.3.1`,
+Microsoft.WindowsAppSDK.WinUI `2.3.2`, Microsoft.Windows.AI.MachineLearning
+`2.2.12`, Microsoft.Web.WebView2 `1.0.4078.44`, Microsoft.Graphics.Win2D
+`1.4.0`, Windows Credential Manager APIs and macOS Keychain access through the
+platform `security` tool. Their licenses and platform terms remain with
+Microsoft and Apple respectively.
 
 DJConnect integrates with the Home Assistant `djconnect` custom integration
 through its documented HTTP endpoints. Home Assistant and any installed custom
