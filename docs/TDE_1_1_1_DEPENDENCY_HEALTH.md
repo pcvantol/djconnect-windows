@@ -21,8 +21,10 @@ update below, the package-manager inventory reports zero outdated packages.
 
 The Windows target now explicitly uses the WindowsAppSDK 2.3 set. This is an
 intentional Windows-only major upgrade: Mac Catalyst remains on the MAUI 10
-graph. NuGet restore resolves this set without package downgrade or conflict
-warnings; the Windows CI build is the required runtime compatibility gate.
+graph. The Windows artifact is self-contained so the 2.3.1 runtime can carry
+the WinUI 2.3.2 component version. NuGet restore resolves this set without
+package downgrade or conflict warnings; the Windows CI build is the required
+runtime compatibility gate.
 
 ## Updated Windows package inventory
 

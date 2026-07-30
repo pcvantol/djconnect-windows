@@ -130,7 +130,9 @@ transitive Windows packages in the previous MAUI package graph. The Windows
 target now declares the tested WindowsAppSDK 2.3 package set directly, keeping
 the package-manager inventory at zero outdated dependencies. See
 `docs/TDE_1_1_1_DEPENDENCY_HEALTH.md` for the evidence-backed before/after
-inventory and validation requirements.
+inventory and validation requirements. WindowsAppSDK is packaged
+self-contained so its runtime 2.3.1 and WinUI 2.3.2 component versions remain
+compatible in the Windows app artifact.
 
 ## Test Strategy
 

@@ -40,4 +40,7 @@
     <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.3.2" />
     <PackageReference Include="System.Numerics.Tensors" Version="10.0.10" />
   </ItemGroup>
+  <PropertyGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+  </PropertyGroup>
 </Project>
