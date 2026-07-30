@@ -57,8 +57,15 @@ Windows and Mac Catalyst.
 
 ## TDE outcome
 
-The existing observe workflow remains non-blocking and unchanged. A fresh
-runtime 1.1.1 assessment must be produced by CI after this documentation is
-published, together with the existing coverage input and artifact contract.
+The existing observe workflow remains non-blocking and unchanged. Its CI run
+for this review produced the existing `tde-observe-evidence` artifact with:
+
+- runtime `technical-debt-engine-runtime==1.1.1`;
+- profile `standard`;
+- `code_size`, `complexity`, `coverage` and `dependency_health` executed;
+- assessment decision `PASS_WITH_WARNINGS`;
+- repository qualification `QUALIFIED`; and
+- `dependency_health.outdated_dependencies = 15`.
+
 No policy, schema, runtime, required-check or workflow-mode exception has
 been introduced.
