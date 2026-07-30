@@ -3,7 +3,7 @@
 Copyright (c) 2026 Peter van Tol.
 
 DJConnect currently uses the .NET runtime, .NET MAUI,
-Microsoft.Maui.Controls `10.0.80`, Microsoft.Extensions.Configuration
+Microsoft.Maui.Controls `10.0.90`, Microsoft.Extensions.Configuration
 `10.0.10`, Microsoft.Extensions.DependencyInjection `10.0.10`,
 Microsoft.Extensions.Diagnostics.Abstractions `10.0.10`,
 Microsoft.Extensions.Hosting.Abstractions `10.0.10`,
