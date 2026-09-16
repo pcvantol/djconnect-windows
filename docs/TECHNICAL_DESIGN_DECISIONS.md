@@ -38,7 +38,8 @@ Current app release: `3.3.0`.
   runner tests/format checks, workflow YAML hygiene, secret-term scanning,
   platform MAUI builds and unsigned Windows artifact sanity checks without
   signing secrets.
-- `.github/workflows/codeql.yml`: CodeQL security analysis for C#.
+- `.github/workflows/codeql.yml`: CodeQL security analysis for C#, with the
+  `init` and `analyze` actions pinned together at CodeQL Action `4.38.0`.
 - `.github/workflows/semgrep.yml`: advisory Semgrep scan through the shared
   DJConnect Semgrep workflow.
 
