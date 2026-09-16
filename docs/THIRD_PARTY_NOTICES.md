@@ -16,6 +16,10 @@ System.Numerics.Tensors `10.0.10`, Windows Credential Manager APIs and macOS
 Keychain access through the platform `security` tool. Their licenses and
 platform terms remain with Microsoft and Apple respectively.
 
+Continuous integration uses GitHub CodeQL Action `4.38.0` for C# security
+analysis. It is pinned by immutable commit in the workflow, is not distributed
+with the application and retains its own upstream license and notices.
+
 DJConnect integrates with the Home Assistant `djconnect` custom integration
 through its documented HTTP endpoints. Home Assistant and any installed custom
 integration dependencies keep their own licenses.
