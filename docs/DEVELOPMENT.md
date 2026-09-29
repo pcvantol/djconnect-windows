@@ -5,9 +5,12 @@
 - .NET SDK matching `global.json`.
 - .NET MAUI workloads for Windows and/or Mac Catalyst.
 - Windows 10 19041 or newer for Windows builds.
-- macOS with Xcode command line tools for Mac Catalyst builds. With the current
-  .NET 10 Mac Catalyst workload, Xcode 26.4.x may be required even when a newer
-  Xcode remains the system default for Apple app workflows.
+- macOS with Xcode command line tools for Mac Catalyst builds. The app's minimum
+  Mac Catalyst deployment target is `17.0`; this is not a macOS version number.
+  The Mac mini is the primary development host. The Windows ARM64 self-hosted
+  runner and its Parallels VM remain on the MacBook and are not migration targets.
+  With the current .NET 10 Mac Catalyst workload, Xcode 26.4.x may be required
+  even when a newer Xcode remains the system default for Apple app workflows.
 
 Install workloads:
 

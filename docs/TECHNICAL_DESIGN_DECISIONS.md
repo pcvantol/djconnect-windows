@@ -116,8 +116,9 @@ Current app-level dependencies are limited to the .NET SDK, .NET MAUI,
 `Microsoft.Extensions.Diagnostics.Abstractions` `10.0.10`,
 `Microsoft.Extensions.Hosting.Abstractions` `10.0.10`,
 `Microsoft.Extensions.Logging` `10.0.10` and platform APIs. The Mac Catalyst
-target uses minimum supported OS platform version `15.0`, matching the .NET 10
-MacCatalyst workload requirement.
+target uses minimum supported Mac Catalyst platform version `17.0` as a project
+policy, above the .NET 10 workload minimum. This is a Mac Catalyst version, not
+a macOS version number.
 
 Release and CI hygiene treat dependency/tooling review as explicit work. CI
 checks that package references are reflected in third-party/dependency docs and
