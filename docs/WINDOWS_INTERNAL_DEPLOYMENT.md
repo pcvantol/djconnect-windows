@@ -2,7 +2,7 @@
 
 Status: `WINDOWS_INTERACTIVE_GUI_SMOKE_RELAY_IMPLEMENTATION_IN_PROGRESS`
 
-The Windows ARM64 deployment consumer installs one manifest-bound portable artifact on the qualified self-hosted Windows-on-ARM runner. It is an internal deployment path only; it does not create an installer, publish a release, modify release tags or provide Store distribution.
+The Windows ARM64 deployment consumer installs one manifest-bound portable artifact on the qualified self-hosted Windows-on-ARM runner. The runner and its Parallels VM stay on the MacBook; they are not moved to the Mac mini, which is the primary development host. It is an internal deployment path only; it does not create an installer, publish a release, modify release tags or provide Store distribution.
 
 ## Required environment
 
