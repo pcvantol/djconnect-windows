@@ -120,7 +120,7 @@ jobs:
         run: |
           $evidence = [ordered]@{ schema_version = 1; kind = 'windows_internal_deployment'; repository = $env:GITHUB_REPOSITORY; candidate_sha = $env:CANDIDATE_SHA; manifest_id = $env:MANIFEST_ID; artifact_id = $env:ARTIFACT_ID; artifact_sha256 = $env:ARTIFACT_SHA256; target = $env:TARGET; platform_version = $env:PLATFORM_VERSION; release_profile = $env:RELEASE_PROFILE; expected_version = $env:RELEASE_VERSION; deployment_workflow_run = $env:GITHUB_RUN_ID; runner_os = $env:RUNNER_OS; runner_arch = $env:RUNNER_ARCH; deployment_result = 'DEPLOYED_PENDING_SMOKE'; timestamp = (Get-Date).ToUniversalTime().ToString('o') }
           $evidence | ConvertTo-Json -Compress | Set-Content -NoNewline -Encoding utf8 windows-internal-deployment-evidence.json
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: windows-internal-deployment-evidence
           path: windows-internal-deployment-evidence.json
