@@ -11,8 +11,8 @@
     <RootNamespace>DJConnect.Windows</RootNamespace>
     <ApplicationTitle>DJConnect</ApplicationTitle>
     <ApplicationId>dev.djconnect.windows</ApplicationId>
-    <ApplicationDisplayVersion>3.3.0</ApplicationDisplayVersion>
-    <ApplicationVersion>3300</ApplicationVersion>
+    <ApplicationDisplayVersion>4.0.0</ApplicationDisplayVersion>
+    <ApplicationVersion>4000</ApplicationVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">17.0</SupportedOSPlatformVersion>
     <SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.19041.0</SupportedOSPlatformVersion>
   </PropertyGroup>
