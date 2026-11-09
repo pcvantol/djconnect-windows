@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 4.0.0 - 2026-11-09
+
+- Aligns the Windows and Mac Catalyst desktop app versions with DJConnect 4.0.0.
+- Keeps the existing Home Assistant API routes and pairing contract.
+
 ## 3.2.10 - 2026-07-09
 
 - Added Windows support for DJ announcement output modes: this device,
