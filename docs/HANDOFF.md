@@ -2,7 +2,7 @@
 
 ## Current Status
 
-DJConnect desktop `3.3.0` is a .NET MAUI app targeting
+DJConnect desktop `4.0.0` is a .NET MAUI app targeting
 Windows and macOS. It includes:
 
 - local Home Assistant app-pairing through `/api/djconnect/v1/pair`;

@@ -4,7 +4,7 @@ This repo is an early desktop scaffold. Public CI releases are unsigned
 diagnostic artifacts until the app has Windows packaging/signing, Mac Catalyst
 signing/notarization and live Home Assistant validation.
 
-Current release: `3.3.0`.
+Current source version: `4.0.0`. Published and deployed versions are verified separately.
 
 ## Pre-Release Checklist
 
