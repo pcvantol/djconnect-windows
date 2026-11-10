@@ -83,7 +83,8 @@ for a different flow:
    ```sh
    gh run list --repo pcvantol/djconnect-windows --limit 10
    gh release list --repo pcvantol/djconnect-windows --limit 5
-   gh release list --repo pcvantol/djconnect-app-releases --limit 10
+   release_repo="$(gh api repositories/1265963920 --jq .full_name)"
+   gh release list --repo "$release_repo" --limit 10
    ```
 
    Newer CI runs for the same branch should cancel older in-progress attempts
@@ -114,11 +115,8 @@ Workflow:
 
 The workflow is manual-only through `workflow_dispatch` with a semver version.
 It builds unsigned Windows and Mac Catalyst artifacts, creates SHA-256 checksum
-files and publishes them to:
-
-```text
-pcvantol/djconnect-app-releases
-```
+files and publishes them to the public binary repository. The workflow resolves
+GitHub repository ID `1265963920` to its current owner before uploading.
 
 Public release tags in that repository:
 
@@ -137,7 +135,7 @@ Required secret in this repository:
 PUBLIC_RELEASES_TOKEN
 ```
 
-The token must have access to `pcvantol/djconnect-app-releases` with:
+The token must have access to the public binary repository under its current owner with:
 
 - Repository contents: read/write, so releases and tags can be created,
   updated and deleted.
