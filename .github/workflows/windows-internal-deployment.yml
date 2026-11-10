@@ -65,7 +65,13 @@ jobs:
           RELEASE_PROFILE: ${{ inputs.release_profile }}
         run: |
           $ErrorActionPreference = 'Stop'
-          $manifest = Invoke-RestMethod -Uri 'https://raw.githubusercontent.com/pcvantol/djconnect/main/docs/release/PLATFORM_3_3_CURRENT_MAIN_MANIFEST_PROPOSAL.json'
+          if ($env:GITHUB_REPOSITORY_ID -cne '1278888172') { throw 'Unexpected Windows source repository ID.' }
+          $manifestFile = switch ($env:PLATFORM_VERSION) {
+            '3.3' { 'PLATFORM_3_3_CURRENT_MAIN_MANIFEST_PROPOSAL.json' }
+            '4.0' { 'PLATFORM_4_0_WINDOWS_OPERATIONAL_MANIFEST.json' }
+            default { throw 'No central Windows operational manifest is configured for this platform version.' }
+          }
+          $manifest = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/pcvantol/djconnect/main/docs/release/$manifestFile"
           if ($manifest.status -notin @('APPROVED_DEPLOYMENT_DISPATCH_PENDING', 'APPROVED_PARTIAL_DEPLOYMENT_OPERATIONAL') -or $manifest.approval.state -ne 'APPROVED') { throw 'Windows deployment requires an approved operational manifest.' }
           if ($manifest.manifest_id -ne $env:MANIFEST_ID -or $manifest.release_profile -ne $env:RELEASE_PROFILE -or $manifest.platform_version -ne $env:PLATFORM_VERSION) { throw 'Manifest identity does not match the deployment request.' }
           $source = @($manifest.repositories | Where-Object { $_.repository -eq $env:GITHUB_REPOSITORY -and $_.source_sha -eq $env:CANDIDATE_SHA -and $_.version -eq $manifest.release_version })
