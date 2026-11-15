@@ -246,9 +246,10 @@ jobs:
   maui-windows-build:
     name: MAUI Windows build
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    # The organization runner group grants access to this workflow on main.
+    # Use the current repository runner until transfer. Public CI under the
+    # organization uses GitHub-hosted ARM64, including on main.
     runs-on: >-
-      ${{ fromJSON(github.ref == 'refs/heads/main' &&
+      ${{ fromJSON(github.repository == 'pcvantol/djconnect-windows' && github.ref == 'refs/heads/main' &&
       '["self-hosted","internal-release","qualification","windows11"]' ||
       '["windows-11-arm"]') }}
     defaults:
@@ -264,13 +265,13 @@ jobs:
             Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Set up .NET on GitHub-hosted Windows
-        if: github.ref != 'refs/heads/main'
+        if: github.repository != 'pcvantol/djconnect-windows' || github.ref != 'refs/heads/main'
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
         with:
           global-json-file: global.json
 
       - name: Verify machine .NET 10 SDK
-        if: github.ref == 'refs/heads/main'
+        if: github.repository == 'pcvantol/djconnect-windows' && github.ref == 'refs/heads/main'
         run: .\scripts\runner\Test-DJConnectDotNet10.ps1
 
       - name: Install MAUI workload
@@ -296,9 +297,9 @@ jobs:
   windows-release-artifact-sanity:
     name: Windows release artifact sanity
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    # The organization runner group grants access to this workflow on main.
+    # Use the same ARM64 runner selection as the main Windows build.
     runs-on: >-
-      ${{ fromJSON(github.ref == 'refs/heads/main' &&
+      ${{ fromJSON(github.repository == 'pcvantol/djconnect-windows' && github.ref == 'refs/heads/main' &&
       '["self-hosted","internal-release","qualification","windows11"]' ||
       '["windows-11-arm"]') }}
     defaults:
@@ -314,13 +315,13 @@ jobs:
             Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Set up .NET on GitHub-hosted Windows
-        if: github.ref != 'refs/heads/main'
+        if: github.repository != 'pcvantol/djconnect-windows' || github.ref != 'refs/heads/main'
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
         with:
           global-json-file: global.json
 
       - name: Verify machine .NET 10 SDK
-        if: github.ref == 'refs/heads/main'
+        if: github.repository == 'pcvantol/djconnect-windows' && github.ref == 'refs/heads/main'
         run: .\scripts\runner\Test-DJConnectDotNet10.ps1
 
       - name: Install MAUI workload
