@@ -142,7 +142,9 @@ jobs:
 
   build-windows:
     name: Build unsigned Windows app
-    runs-on: [self-hosted, internal-release, qualification, windows11]
+    runs-on: windows-11-arm
+    permissions:
+      contents: read
     defaults:
       run:
         shell: powershell -ExecutionPolicy Bypass -File {0}
@@ -152,8 +154,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
-      - name: Verify machine .NET 10 SDK
-        run: .\scripts\runner\Test-DJConnectDotNet10.ps1
+      - name: Set up .NET on GitHub-hosted Windows
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
+        with:
+          global-json-file: global.json
 
       - name: Install MAUI workload
         shell: powershell -ExecutionPolicy Bypass -File {0}
