@@ -37,7 +37,7 @@ Canonical sibling repos:
 - Home Assistant integration: `pcvantol/djconnect`
 - Central API backend: `pcvantol/djconnect-api`
 - Apple app: `pcvantol/djconnect-app`
-- Windows desktop app: `pcvantol/djconnect-windows`
+- Windows desktop app: `djconnect-music-dj/djconnect-windows`
 - ESP firmware: `pcvantol/djconnect-esp32`
 - Website/docs: `pcvantol/djconnect-website`
 - Raspberry Pi client: `pcvantol/djconnect-pi`

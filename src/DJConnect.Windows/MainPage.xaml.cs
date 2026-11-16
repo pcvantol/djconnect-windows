@@ -858,7 +858,7 @@ the current source-of-truth notices.
 
     private async void OpenProjectLink(object sender, EventArgs e)
     {
-        await Launcher.Default.OpenAsync("https://github.com/pcvantol/djconnect-windows");
+        await Launcher.Default.OpenAsync("https://github.com/djconnect-music-dj/djconnect-windows");
     }
 
     private async void OpenPrivacyPolicyLink(object sender, EventArgs e)
@@ -868,12 +868,12 @@ the current source-of-truth notices.
 
     private async void OpenCodeOfConductLink(object sender, EventArgs e)
     {
-        await Launcher.Default.OpenAsync("https://github.com/pcvantol/djconnect-windows/blob/main/CODE_OF_CONDUCT.md");
+        await Launcher.Default.OpenAsync("https://github.com/djconnect-music-dj/djconnect-windows/blob/main/CODE_OF_CONDUCT.md");
     }
 
     private async void OpenLicenseLink(object sender, EventArgs e)
     {
-        await Launcher.Default.OpenAsync("https://github.com/pcvantol/djconnect-windows/blob/main/LICENSE");
+        await Launcher.Default.OpenAsync("https://github.com/djconnect-music-dj/djconnect-windows/blob/main/LICENSE");
     }
 
     private async void ShowLicenseDetail(object sender, EventArgs e)

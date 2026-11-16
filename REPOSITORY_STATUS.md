@@ -4,7 +4,7 @@ Status: Active engineering repository
 
 ## Repository
 
-`pcvantol/djconnect-windows`
+`djconnect-music-dj/djconnect-windows`
 
 ## Role
 

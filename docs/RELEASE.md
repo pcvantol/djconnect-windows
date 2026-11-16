@@ -81,8 +81,8 @@ for a different flow:
 7. Validate GitHub CI/security workflows:
 
    ```sh
-   gh run list --repo pcvantol/djconnect-windows --limit 10
-   gh release list --repo pcvantol/djconnect-windows --limit 5
+   gh run list --repo djconnect-music-dj/djconnect-windows --limit 10
+   gh release list --repo djconnect-music-dj/djconnect-windows --limit 5
    release_repo="$(gh api repositories/1265963920 --jq .full_name)"
    gh release list --repo "$release_repo" --limit 10
    ```
@@ -279,9 +279,9 @@ Troubleshooting `HTTP 403: Could not delete the workflow run`:
 
    ```sh
    gh auth status
-   gh repo view pcvantol/djconnect-windows --json nameWithOwner,viewerPermission
-   gh run list --repo pcvantol/djconnect-windows --limit 5
-   gh release list --repo pcvantol/djconnect-windows --limit 5
+   gh repo view djconnect-music-dj/djconnect-windows --json nameWithOwner,viewerPermission
+   gh run list --repo djconnect-music-dj/djconnect-windows --limit 5
+   gh release list --repo djconnect-music-dj/djconnect-windows --limit 5
    ```
 
 5. Do not delete a real workflow run as a test without explicit confirmation

@@ -2,7 +2,7 @@
 
 Status: repository-local canonical reference map
 
-Repository: `pcvantol/djconnect-windows`
+Repository: `djconnect-music-dj/djconnect-windows`
 
 This repository extends the DJConnect Platform Foundation. It does not redefine
 it.
@@ -74,7 +74,7 @@ Canonical foundation documents include:
 
 ## Local Technical Design Ownership
 
-- Canonical repository: `pcvantol/djconnect-windows` for repository-specific technical
+- Canonical repository: `djconnect-music-dj/djconnect-windows` for repository-specific technical
   design, implementation, build, release and test details.
 - Local responsibility: maintain implementation reality for Windows client implementation, Windows presentation/runtime behavior and localized rendering for Windows surfaces.
 - May this repository modify it: yes, within its ownership boundary.
