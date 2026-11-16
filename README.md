@@ -38,7 +38,7 @@ Canonical sibling repos:
 - Central API backend: `pcvantol/djconnect-api`
 - Apple app: `pcvantol/djconnect-app`
 - Windows desktop app: `djconnect-music-dj/djconnect-windows`
-- ESP firmware: `djconnect-music-dj/djconnect-esp32`
+- ESP firmware: [djconnect-music-dj/djconnect-esp32](https://github.com/djconnect-music-dj/djconnect-esp32)
 - Website/docs: `pcvantol/djconnect-website`
 - Raspberry Pi client: `pcvantol/djconnect-pi`
 
