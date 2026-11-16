@@ -16,7 +16,7 @@ jobs:
     uses: pcvantol/djconnect/.github/workflows/software-assurance-governance.yml@dd02d6470f061e6e755e6fb47ae5331c34f89875
     with:
       execution_profile: balanced
-      owner: pcvantol/djconnect-windows
+      owner: ${{ github.repository }}
 
   semgrep:
     uses: pcvantol/djconnect/.github/workflows/djconnect-semgrep-ci.yml@191b4561bdb659bd2e02905b5bce9643d4390a63 # Repaired reachable workflow closure

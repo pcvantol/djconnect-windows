@@ -26,7 +26,7 @@ jobs:
     uses: pcvantol/djconnect/.github/workflows/software-assurance-governance.yml@dd02d6470f061e6e755e6fb47ae5331c34f89875
     with:
       execution_profile: balanced
-      owner: pcvantol/djconnect-windows
+      owner: ${{ github.repository }}
 
   workflow-hygiene:
     name: Workflow hygiene
@@ -420,7 +420,8 @@ jobs:
       - maui-macos-build
       - maui-windows-build
       - windows-release-artifact-sanity
-    if: ${{ always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
+    # Preserve CI and release evidence; cleanup must not run automatically.
+    if: ${{ false }}
     permissions:
       actions: write
       contents: read
