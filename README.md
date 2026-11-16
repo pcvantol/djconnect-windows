@@ -35,12 +35,12 @@ Assistant integration repo. Do not copy that file into this repository.
 Canonical sibling repos:
 
 - Home Assistant integration: `pcvantol/djconnect`
-- Central API backend: `pcvantol/djconnect-api`
-- Apple app: `pcvantol/djconnect-app`
+- Central API backend: `djconnect-music-dj/djconnect-api`
+- Apple app: `djconnect-music-dj/djconnect-app`
 - Windows desktop app: `djconnect-music-dj/djconnect-windows`
 - ESP firmware: [djconnect-music-dj/djconnect-esp32](https://github.com/djconnect-music-dj/djconnect-esp32)
-- Website/docs: `pcvantol/djconnect-website`
-- Raspberry Pi client: `pcvantol/djconnect-pi`
+- Website/docs: `djconnect-music-dj/djconnect-website`
+- Raspberry Pi client: `djconnect-music-dj/djconnect-pi`
 
 ## Stack
 
@@ -104,7 +104,7 @@ unsigned release publication is a separate manual workflow that uses scoped
 release secrets only in publish steps; see [docs/RELEASE.md](docs/RELEASE.md).
 
 Public unsigned releases use platform-specific tags in
-[pcvantol/djconnect-app-releases](https://github.com/pcvantol/djconnect-app-releases):
+[djconnect-music-dj/djconnect-app-releases](https://github.com/djconnect-music-dj/djconnect-app-releases):
 
 - `windows/vX.Y.Z`
 - `maccatalyst/vX.Y.Z`
