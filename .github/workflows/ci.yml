@@ -420,7 +420,8 @@ jobs:
       - maui-macos-build
       - maui-windows-build
       - windows-release-artifact-sanity
-    if: ${{ always() && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')) }}
+    # Preserve CI and release evidence; cleanup must not run automatically.
+    if: ${{ false }}
     permissions:
       actions: write
       contents: read
