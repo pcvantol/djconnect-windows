@@ -35,7 +35,7 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2957" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.261102100" />
-    <PackageReference Include="Microsoft.Windows.AI.MachineLearning" Version="2.2.12" />
+    <PackageReference Include="Microsoft.Windows.AI.MachineLearning" Version="2.4.89" />
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.6.5" />
     <PackageReference Include="Microsoft.WindowsAppSDK.WinUI" Version="2.6.5" />
     <PackageReference Include="System.Numerics.Tensors" Version="11.0.0" />
