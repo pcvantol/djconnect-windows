@@ -22,7 +22,7 @@ KEEP=1
 KEEP_WORKFLOW_RUNS=1
 SKIP_WORKFLOW_RUNS=false
 EXECUTE=false
-REPO="pcvantol/djconnect-windows"
+REPO="djconnect-music-dj/djconnect-windows"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in

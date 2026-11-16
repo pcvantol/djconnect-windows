@@ -3484,7 +3484,7 @@ public sealed class MainViewModel : ObservableObject
 
         var body = CurrentFeedbackBody();
         var title = $"DJConnect Windows feedback: {SelectedFeedbackType}";
-        var url = "https://github.com/pcvantol/djconnect-windows/issues/new"
+        var url = "https://github.com/djconnect-music-dj/djconnect-windows/issues/new"
             + $"?title={Uri.EscapeDataString(title)}"
             + $"&body={Uri.EscapeDataString(body)}";
 
@@ -3591,7 +3591,7 @@ public sealed class MainViewModel : ObservableObject
         }
 
         var body = CurrentCrashReportBody();
-        var url = "https://github.com/pcvantol/djconnect-windows/issues/new"
+        var url = "https://github.com/djconnect-music-dj/djconnect-windows/issues/new"
             + $"?title={Uri.EscapeDataString("DJConnect Windows crash report")}"
             + $"&body={Uri.EscapeDataString(body)}";
 
