@@ -147,7 +147,7 @@ Required secret for in-app What's New publication:
 WEBSITE_RELEASE_NOTES_TOKEN
 ```
 
-The token must have write access to `pcvantol/djconnect-website`. The workflow
+The token must have write access to `djconnect-music-dj/djconnect-website`. The workflow
 publishes static Markdown and JSON files to:
 
 ```text
