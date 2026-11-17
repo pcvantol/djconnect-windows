@@ -342,7 +342,7 @@ jobs:
           fi
           PUBLIC_REPO="$(gh api repositories/1265963920 --jq 'select(.id == 1265963920 and .visibility == "public") | .full_name')"
           case "$PUBLIC_REPO" in
-            pcvantol/djconnect-app-releases|djconnect-music-dj/djconnect-app-releases)
+            djconnect-music-dj/djconnect-app-releases)
               ;;
             *)
               echo "Unexpected repository for DJConnect public releases (GitHub ID 1265963920)." >&2

@@ -58,7 +58,7 @@ shared public release repository with namespaced tags.
 Rationale:
 
 - The Apple app already uses platform tags in
-  `pcvantol/djconnect-app-releases`.
+  `djconnect-music-dj/djconnect-app-releases`.
 - `windows/vX.Y.Z` and `maccatalyst/vX.Y.Z` keep app startup fallback release
   metadata unambiguous.
 - EN/NL/DE/FR/ES static What's New files on `djconnect.dev` avoid relying on

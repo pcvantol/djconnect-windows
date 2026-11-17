@@ -84,6 +84,7 @@ var tests = new (string Name, Action Run)[]
     ("Protocol 3.2 parses safe backend error object", Protocol32ParsesSafeBackendErrorObject),
     ("DJConnect Home Assistant HTTP routes use canonical v1 prefix", DJConnectHomeAssistantHttpRoutesUseCanonicalV1Prefix),
     ("Release workflow pushes notes from current HEAD", ReleaseWorkflowPushesNotesFromCurrentHead),
+    ("Public release repository uses the organization identity", PublicReleaseRepositoryUsesOrganizationIdentity),
     ("Release workflow extracts only current changelog section", ReleaseWorkflowExtractsOnlyCurrentChangelogSection),
     ("Windows interactive GUI smoke relay is isolated from the service runner", WindowsInteractiveGuiSmokeRelayIsIsolated),
     ("Release context docs mention current app version", ReleaseContextDocsMentionCurrentAppVersion),
@@ -2017,6 +2018,24 @@ static void DJConnectHomeAssistantHttpRoutesUseCanonicalV1Prefix()
         .ToList();
 
     AssertTrue(offenders.Count == 0, "legacy /api/djconnect routes without /v1 remain:\n" + string.Join("\n", offenders));
+}
+
+static void PublicReleaseRepositoryUsesOrganizationIdentity()
+{
+    var root = ProjectRoot();
+    var publish = File.ReadAllText(Path.Combine(root, ".github", "workflows", "public-unsigned-release.yml"));
+    var access = File.ReadAllText(Path.Combine(root, ".github", "workflows", "public-release-access.yml"));
+    const string organization = "djconnect-music-dj/djconnect-app-releases";
+    const string formerOwner = "pcvantol/djconnect-app-releases";
+    foreach (var workflow in new[] { publish, access })
+    {
+        AssertTrue(workflow.Contains("repositories/1265963920", StringComparison.Ordinal), "release repository must be resolved by immutable ID");
+        AssertTrue(workflow.Contains(".visibility == \"public\"", StringComparison.Ordinal), "release repository must remain public");
+        AssertTrue(workflow.Contains(organization, StringComparison.Ordinal), "release repository must use the organization identity");
+        AssertTrue(!workflow.Contains(formerOwner, StringComparison.Ordinal), "former owner must not be accepted for publication");
+        AssertTrue(workflow.Contains("PUBLIC_RELEASES_TOKEN", StringComparison.Ordinal), "existing scoped publisher token must remain in use");
+    }
+    AssertTrue(access.Contains(".permissions.push == true", StringComparison.Ordinal), "read-only check must verify publication rights");
 }
 
 static void ReleaseWorkflowPushesNotesFromCurrentHead()
