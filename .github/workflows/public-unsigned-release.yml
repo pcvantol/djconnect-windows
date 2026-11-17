@@ -414,7 +414,7 @@ jobs:
       - name: Publish static release notes to djconnect.dev
         env:
           GH_TOKEN: ${{ secrets.WEBSITE_RELEASE_NOTES_TOKEN }}
-          WEBSITE_REPO: pcvantol/djconnect-website
+          WEBSITE_REPO: djconnect-music-dj/djconnect-website
         shell: bash
         run: |
           set -euo pipefail
@@ -422,6 +422,8 @@ jobs:
             echo "Configure repository secret WEBSITE_RELEASE_NOTES_TOKEN with write access to ${WEBSITE_REPO}." >&2
             exit 1
           fi
+
+          test "$(gh api "repos/${WEBSITE_REPO}" --jq .id)" = 1265889311 || { echo "Unexpected website repository identity." >&2; exit 1; }
 
           version="${{ needs.resolve-version.outputs.version }}"
           website_dir=".public-release/website"
