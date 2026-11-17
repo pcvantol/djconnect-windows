@@ -21,8 +21,7 @@ jobs:
           gh api repositories/1265963920 | jq -e '
             select(
               .id == 1265963920 and .visibility == "public" and .permissions.push == true and
-              (.full_name == "pcvantol/djconnect-app-releases" or
-               .full_name == "djconnect-music-dj/djconnect-app-releases")
+              .full_name == "djconnect-music-dj/djconnect-app-releases"
             )
             | {repository: .full_name, publisher_has_write_access: .permissions.push}
           '
