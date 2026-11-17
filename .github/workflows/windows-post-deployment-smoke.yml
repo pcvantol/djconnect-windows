@@ -42,12 +42,20 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$' -or $env:MANIFEST_ID -notmatch '^release-[A-Za-z0-9._-]+$' -or $env:ARTIFACT_ID -notmatch '^release-asset:(?:pcvantol|djconnect-music-dj)/djconnect-app-releases:windows/v[0-9]+\.[0-9]+\.[0-9]+:DJConnect-Windows-arm64-[0-9]+\.[0-9]+\.[0-9]+-unsigned\.zip$' -or $env:ARTIFACT_SHA256 -notmatch '^[0-9a-f]{64}$' -or $env:PLATFORM_VERSION -notmatch '^[0-9]+\.[0-9]+$' -or $env:DEPLOYMENT_WORKFLOW_RUN -notmatch '^[0-9]+$') { throw 'Invalid immutable smoke identity' }
           if ($env:TARGET -ne 'windows_internal_arm64' -or $env:RELEASE_PROFILE -ne 'INTERNAL_RELEASE') { throw 'Invalid smoke target or profile' }
-      - name: Require unused canonical preflight path
+      - id: canonical_preflight_parent
+        name: Create owned canonical preflight path
         shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = 'Stop'
-          $existing = Get-Item -Force -LiteralPath '.canonical-core-preflight' -ErrorAction SilentlyContinue
-          if ($null -ne $existing -or (Test-Path -LiteralPath '.canonical-core-preflight')) { throw 'Canonical preflight path already exists.' }
+          $workspace = (Resolve-Path -LiteralPath $env:GITHUB_WORKSPACE).ProviderPath
+          $parent = Join-Path $workspace '.canonical-core-preflight'
+          if ((Get-Item -Force -LiteralPath $workspace).Attributes -band [IO.FileAttributes]::ReparsePoint) { throw 'Workspace is a link.' }
+          if ($null -ne (Get-Item -Force -LiteralPath $parent -ErrorAction SilentlyContinue) -or (Test-Path -LiteralPath $parent)) { throw 'Canonical preflight parent already exists.' }
+          New-Item -ItemType Directory -Path $parent -ErrorAction Stop | Out-Null
+          $marker = Join-Path $parent '.owner-run'
+          $owner = "$env:GITHUB_RUN_ID/$env:GITHUB_RUN_ATTEMPT"
+          [IO.File]::WriteAllText($marker, $owner)
+          "created=true" >> $env:GITHUB_OUTPUT
       - id: canonical_preflight_source
         name: Resolve canonical Core by immutable repository ID
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
@@ -66,16 +74,16 @@ jobs:
         with:
           repository: ${{ steps.canonical_preflight_source.outputs.repository }}
           ref: 191b4561bdb659bd2e02905b5bce9643d4390a63
-          path: .canonical-core-preflight
+          path: .canonical-core-preflight/source
           persist-credentials: false
       - name: Verify exact canonical preflight bytes
         shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = 'Stop'
-          if ((git -C .canonical-core-preflight rev-parse HEAD) -ne '191b4561bdb659bd2e02905b5bce9643d4390a63') { throw 'Canonical Core commit mismatch.' }
-          if ((Get-FileHash -Algorithm SHA256 '.canonical-core-preflight/.github/actions/deployment-readiness-preflight/action.yml').Hash.ToLowerInvariant() -ne '8af709b8a6ddf29843562d4f1b09de0747204feb086eeebbb485d16f5423fd37') { throw 'Canonical preflight bytes mismatch.' }
+          if ((git -C .canonical-core-preflight/source rev-parse HEAD) -ne '191b4561bdb659bd2e02905b5bce9643d4390a63') { throw 'Canonical Core commit mismatch.' }
+          if ((Get-FileHash -Algorithm SHA256 '.canonical-core-preflight/source/.github/actions/deployment-readiness-preflight/action.yml').Hash.ToLowerInvariant() -ne '8af709b8a6ddf29843562d4f1b09de0747204feb086eeebbb485d16f5423fd37') { throw 'Canonical preflight bytes mismatch.' }
       - name: Verify target deployment readiness
-        uses: ./.canonical-core-preflight/.github/actions/deployment-readiness-preflight
+        uses: ./.canonical-core-preflight/source/.github/actions/deployment-readiness-preflight
         with:
           target: ${{ inputs.target }}
           manifest_id: ${{ inputs.manifest_id }}
@@ -86,14 +94,21 @@ jobs:
           expected_runner_arch: ARM64
           required_configuration: DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT
           smoke_contract: windows-internal-arm64-smoke-v2
-      - name: Remove verified temporary Core checkout
-        if: always() && steps.canonical_preflight_checkout.outcome == 'success'
+      - name: Remove owned temporary Core checkout
+        if: always() && steps.canonical_preflight_parent.outputs.created == 'true'
         shell: powershell -ExecutionPolicy Bypass -File {0}
         run: |
           $ErrorActionPreference = 'Stop'
-          $checkout = Get-Item -Force -LiteralPath '.canonical-core-preflight' -ErrorAction Stop
-          if (($checkout.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Canonical checkout became a link.' }
-          Remove-Item -LiteralPath '.canonical-core-preflight' -Recurse -Force
+          $workspace = (Resolve-Path -LiteralPath $env:GITHUB_WORKSPACE).ProviderPath
+          $parent = Join-Path $workspace '.canonical-core-preflight'
+          $item = Get-Item -Force -LiteralPath $parent -ErrorAction Stop
+          if (($item.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Canonical parent became a link.' }
+          if ((Resolve-Path -LiteralPath $parent).ProviderPath -cne [IO.Path]::GetFullPath($parent)) { throw 'Canonical parent path changed.' }
+          $marker = Get-Item -Force -LiteralPath (Join-Path $parent '.owner-run') -ErrorAction Stop
+          if (($marker.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 -or [IO.File]::ReadAllText($marker.FullName) -cne "$env:GITHUB_RUN_ID/$env:GITHUB_RUN_ATTEMPT") { throw 'Canonical parent ownership mismatch.' }
+          $links = @(Get-ChildItem -Force -Recurse -LiteralPath $parent | Where-Object { ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0 })
+          if ($links.Count -ne 0) { throw 'Canonical checkout contains a link.' }
+          Remove-Item -LiteralPath $parent -Recurse -Force
       - id: manifest
         name: Verify approved central manifest binding
         shell: powershell -ExecutionPolicy Bypass -File {0}
