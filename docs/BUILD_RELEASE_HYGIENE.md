@@ -44,8 +44,8 @@
 - Confirm GitHub Actions workflow permissions are read/write before release
   cleanup; workflow-run deletion requires `actions: write`.
 - Manual public unsigned release publication requires `PUBLIC_RELEASES_TOKEN`
-  with write access to `pcvantol/djconnect-app-releases`.
+  with write access to `djconnect-music-dj/djconnect-app-releases`.
 - Static EN/NL/DE/FR/ES What's New publication requires `WEBSITE_RELEASE_NOTES_TOKEN`
-  with write access to `pcvantol/djconnect-website`.
+  with write access to `djconnect-music-dj/djconnect-website`.
 - Keep `docs/release-notes/{en|nl|de|fr|es}/vX.Y.Z.md` aligned with
   user-visible release changes.
