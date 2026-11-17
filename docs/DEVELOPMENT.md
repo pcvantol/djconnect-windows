@@ -187,7 +187,7 @@ Manual release workflow:
 
 It runs only through manual dispatch, builds unsigned Windows and Mac Catalyst
 artifacts, and publishes platform releases to
-`pcvantol/djconnect-app-releases` when `PUBLIC_RELEASES_TOKEN` is configured.
+`djconnect-music-dj/djconnect-app-releases` when `PUBLIC_RELEASES_TOKEN` is configured.
 The public tags are `windows/vX.Y.Z` and `maccatalyst/vX.Y.Z`. Windows release
 artifacts are produced for both `win-x64` and `win-arm64`; the ARM64 zip is the
 native Windows-on-ARM build for Parallels Windows VMs on Apple Silicon Macs.
