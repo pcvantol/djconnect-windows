@@ -1,6 +1,6 @@
 # Windows Roadmap Index
 
-This is local navigation only; central planning remains in `pcvantol/djconnect`.
+This is local navigation only; central planning remains in `djconnect-music-dj/djconnect`.
 
 The governance adoption, native-preflight consumer adoption and smoke
 diagnostics are merged and reconciled. The 3.3.0 ARM64 deployment completed

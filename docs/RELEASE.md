@@ -11,7 +11,7 @@ Current source version: `4.0.0`. Published and deployed versions are verified se
 - Confirm the working tree contains only intended changes.
 - Review `/Users/pcvantol/Documents/GitHub/djconnect/SYNC_PROMPTS.md` and
   `/Users/pcvantol/Documents/GitHub/djconnect/PRODUCT_ROADMAP.md` before
-  publishing. Keep those central files in `pcvantol/djconnect`; do not copy
+  publishing. Keep those central files in `djconnect-music-dj/djconnect`; do not copy
   them into this repository.
 - Update `README.md`, `CHANGELOG.md`, `docs/HANDOFF.md`,
   `docs/TODO.md`, `docs/ISSUES.md`, `docs/API_CONTRACT.md` and
@@ -31,7 +31,7 @@ Current source version: `4.0.0`. Published and deployed versions are verified se
   and About UI.
 - If this release changes cross-repo contracts, endpoints, client types,
   Spotify OAuth behavior, discovery/pairing, firmware/app publication or
-  shared release hygiene, update `pcvantol/djconnect/SYNC_PROMPTS.md` in the
+  shared release hygiene, update `djconnect-music-dj/djconnect/SYNC_PROMPTS.md` in the
   Home Assistant integration repo or open a follow-up there.
 - Run `./run_tests.sh`.
 - Run formatting and build checks on a machine with MAUI workloads installed.

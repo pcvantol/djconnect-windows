@@ -34,7 +34,7 @@ Assistant integration repo. Do not copy that file into this repository.
 
 Canonical sibling repos:
 
-- Home Assistant integration: `pcvantol/djconnect`
+- Home Assistant integration: `djconnect-music-dj/djconnect`
 - Central API backend: `djconnect-music-dj/djconnect-api`
 - Apple app: `djconnect-music-dj/djconnect-app`
 - Windows desktop app: `djconnect-music-dj/djconnect-windows`

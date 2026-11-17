@@ -1,7 +1,7 @@
 # Windows Governance Adoption
 
 This repository adopts AI-Native Engineering Operating System **2.2** from
-`pcvantol/djconnect/docs/governance/PLATFORM_ARCHITECT_SYSTEM_INSTRUCTIONS.md`.
+`djconnect-music-dj/djconnect/docs/governance/PLATFORM_ARCHITECT_SYSTEM_INSTRUCTIONS.md`.
 It references rather than copies central governance and has no local exception.
 
 Definition of Done: synchronized clean main; implementation-reality check;

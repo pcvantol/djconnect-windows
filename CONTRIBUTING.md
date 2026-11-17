@@ -21,7 +21,7 @@ small enough to inspect and update docs when behavior changes.
 - Keep `client_type` and device-id conventions centralized.
 - For release or Ask DJ/audio behavior changes, review this repo against the
   `DJ Announcement Output Sync` section in
-  `pcvantol/djconnect/SYNC_PROMPTS.md`. Confirm Windows exposes only the
+  `djconnect-music-dj/djconnect/SYNC_PROMPTS.md`. Confirm Windows exposes only the
   contract output modes, gates HA speaker modes on capabilities, prefers nested
   `announcement.audio_url` and never infers delivery state from user-facing
   text.
