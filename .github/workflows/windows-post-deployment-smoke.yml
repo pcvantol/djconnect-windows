@@ -42,8 +42,40 @@ jobs:
           $ErrorActionPreference = 'Stop'
           if ($env:CANDIDATE_SHA -notmatch '^[0-9a-f]{40}$' -or $env:MANIFEST_ID -notmatch '^release-[A-Za-z0-9._-]+$' -or $env:ARTIFACT_ID -notmatch '^release-asset:(?:pcvantol|djconnect-music-dj)/djconnect-app-releases:windows/v[0-9]+\.[0-9]+\.[0-9]+:DJConnect-Windows-arm64-[0-9]+\.[0-9]+\.[0-9]+-unsigned\.zip$' -or $env:ARTIFACT_SHA256 -notmatch '^[0-9a-f]{64}$' -or $env:PLATFORM_VERSION -notmatch '^[0-9]+\.[0-9]+$' -or $env:DEPLOYMENT_WORKFLOW_RUN -notmatch '^[0-9]+$') { throw 'Invalid immutable smoke identity' }
           if ($env:TARGET -ne 'windows_internal_arm64' -or $env:RELEASE_PROFILE -ne 'INTERNAL_RELEASE') { throw 'Invalid smoke target or profile' }
+      - name: Require unused canonical preflight path
+        shell: powershell -ExecutionPolicy Bypass -File {0}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $existing = Get-Item -Force -LiteralPath '.canonical-core-preflight' -ErrorAction SilentlyContinue
+          if ($null -ne $existing -or (Test-Path -LiteralPath '.canonical-core-preflight')) { throw 'Canonical preflight path already exists.' }
+      - id: canonical_preflight_source
+        name: Resolve canonical Core by immutable repository ID
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3
+        with:
+          script: |
+            const repo = (await github.request('GET /repositories/{repository_id}', {repository_id: 1258575431})).data;
+            if (repo.id !== 1258575431 || repo.private !== false || !['pcvantol/djconnect', 'djconnect-music-dj/djconnect'].includes(repo.full_name)) throw new Error('Canonical Core identity is not authorized');
+            core.setOutput('repository', repo.full_name);
+      - id: canonical_preflight_checkout
+        name: Checkout exact canonical preflight
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        env:
+          GIT_CONFIG_COUNT: 1
+          GIT_CONFIG_KEY_0: core.autocrlf
+          GIT_CONFIG_VALUE_0: 'false'
+        with:
+          repository: ${{ steps.canonical_preflight_source.outputs.repository }}
+          ref: 191b4561bdb659bd2e02905b5bce9643d4390a63
+          path: .canonical-core-preflight
+          persist-credentials: false
+      - name: Verify exact canonical preflight bytes
+        shell: powershell -ExecutionPolicy Bypass -File {0}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ((git -C .canonical-core-preflight rev-parse HEAD) -ne '191b4561bdb659bd2e02905b5bce9643d4390a63') { throw 'Canonical Core commit mismatch.' }
+          if ((Get-FileHash -Algorithm SHA256 '.canonical-core-preflight/.github/actions/deployment-readiness-preflight/action.yml').Hash.ToLowerInvariant() -ne '8af709b8a6ddf29843562d4f1b09de0747204feb086eeebbb485d16f5423fd37') { throw 'Canonical preflight bytes mismatch.' }
       - name: Verify target deployment readiness
-        uses: pcvantol/djconnect/.github/actions/deployment-readiness-preflight@191b4561bdb659bd2e02905b5bce9643d4390a63
+        uses: ./.canonical-core-preflight/.github/actions/deployment-readiness-preflight
         with:
           target: ${{ inputs.target }}
           manifest_id: ${{ inputs.manifest_id }}
@@ -54,10 +86,19 @@ jobs:
           expected_runner_arch: ARM64
           required_configuration: DJCONNECT_WINDOWS_INTERNAL_INSTALL_ROOT
           smoke_contract: windows-internal-arm64-smoke-v2
+      - name: Remove verified temporary Core checkout
+        if: always() && steps.canonical_preflight_checkout.outcome == 'success'
+        shell: powershell -ExecutionPolicy Bypass -File {0}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $checkout = Get-Item -Force -LiteralPath '.canonical-core-preflight' -ErrorAction Stop
+          if (($checkout.Attributes -band [IO.FileAttributes]::ReparsePoint) -ne 0) { throw 'Canonical checkout became a link.' }
+          Remove-Item -LiteralPath '.canonical-core-preflight' -Recurse -Force
       - id: manifest
         name: Verify approved central manifest binding
         shell: powershell -ExecutionPolicy Bypass -File {0}
         env:
+          CORE_REPOSITORY: ${{ steps.canonical_preflight_source.outputs.repository }}
           CANDIDATE_SHA: ${{ inputs.candidate_sha }}
           MANIFEST_ID: ${{ inputs.manifest_id }}
           ARTIFACT_ID: ${{ inputs.artifact_id }}
@@ -73,7 +114,7 @@ jobs:
             '4.0' { 'PLATFORM_4_0_WINDOWS_OPERATIONAL_MANIFEST.json' }
             default { throw 'No central Windows operational manifest is configured for this platform version.' }
           }
-          $manifest = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/pcvantol/djconnect/main/docs/release/$manifestFile"
+          $manifest = Invoke-RestMethod -Uri "https://raw.githubusercontent.com/$env:CORE_REPOSITORY/main/docs/release/$manifestFile"
           if ($manifest.status -notin @('APPROVED_DEPLOYMENT_DISPATCH_PENDING', 'APPROVED_PARTIAL_DEPLOYMENT_OPERATIONAL') -or $manifest.approval.state -ne 'APPROVED') { throw 'Windows smoke requires an approved operational manifest.' }
           if ($manifest.manifest_id -ne $env:MANIFEST_ID -or $manifest.release_profile -ne $env:RELEASE_PROFILE -or $manifest.platform_version -ne $env:PLATFORM_VERSION) { throw 'Manifest identity does not match the smoke request.' }
           $source = @($manifest.repositories | Where-Object { $_.repository -eq $env:GITHUB_REPOSITORY -and $_.source_sha -eq $env:CANDIDATE_SHA -and $_.version -eq $manifest.release_version })
