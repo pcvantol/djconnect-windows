@@ -29,7 +29,7 @@ automatically.
 ## Cross-Repo Source Of Truth
 
 Cross-repo DJConnect contracts, repo ownership and shared release hygiene live
-in `/Users/pcvantol/Documents/GitHub/djconnect/SYNC_PROMPTS.md` in the Home
+in [SYNC_PROMPTS.md](https://github.com/djconnect-music-dj/djconnect/blob/main/SYNC_PROMPTS.md) in the Home
 Assistant integration repo. Do not copy that file into this repository.
 
 Canonical sibling repos:
@@ -57,7 +57,7 @@ native Windows and macOS desktop stacks. It also avoids an Electron/web runtime.
 
 ## Functional Reference
 
-The macOS app in `/Users/pcvantol/Documents/GitHub/djconnect-app` was used as
+The macOS app in [djconnect-app](https://github.com/djconnect-music-dj/djconnect-app) was used as
 the functional reference. The desktop implementation translates workflows and
 API contracts rather than copying SwiftUI or Apple-specific code.
 

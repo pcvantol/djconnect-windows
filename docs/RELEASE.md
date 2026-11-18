@@ -9,8 +9,8 @@ Current source version: `4.0.0`. Published and deployed versions are verified se
 ## Pre-Release Checklist
 
 - Confirm the working tree contains only intended changes.
-- Review `/Users/pcvantol/Documents/GitHub/djconnect/SYNC_PROMPTS.md` and
-  `/Users/pcvantol/Documents/GitHub/djconnect/PRODUCT_ROADMAP.md` before
+- Review [SYNC_PROMPTS.md](https://github.com/djconnect-music-dj/djconnect/blob/main/SYNC_PROMPTS.md) and
+  [PRODUCT_ROADMAP.md](https://github.com/djconnect-music-dj/djconnect/blob/main/PRODUCT_ROADMAP.md) before
   publishing. Keep those central files in `djconnect-music-dj/djconnect`; do not copy
   them into this repository.
 - Update `README.md`, `CHANGELOG.md`, `docs/HANDOFF.md`,
